@@ -1,2 +1,3 @@
 # ur3-control
-ur3 manipulator control
+
+https://github.com/PUT-UGV-Team/ur3_erc_docker
