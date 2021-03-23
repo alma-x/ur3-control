@@ -22,7 +22,8 @@ project(code)
   roscpp
   tf2_eigen
   tf2_geometry_msgs
-  tf2_ros 
+  tf2_ros
+  std_msgs
   )
 
 
@@ -149,7 +150,9 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/code_node.cpp)
 add_executable(ERC src/ERC.cpp)
- target_link_libraries(ERC ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_executable(joystick src/joystick.cpp)
+target_link_libraries(ERC ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(joystick ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use

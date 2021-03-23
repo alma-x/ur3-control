@@ -1,5 +1,5 @@
+//Piacere, Federico
 #include <ros/ros.h>
-#include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <iostream>
@@ -19,6 +19,64 @@
 #include <tf/tf.h>
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Pose2D.h>
+#include "geometric_shapes/shapes.h"
+#include "geometric_shapes/mesh_operations.h"
+#include "geometric_shapes/shape_operations.h"
+#include <moveit/planning_scene_interface/planning_scene_interface.h>
+#include <geometric_shapes/shape_operations.h>
+#include "std_msgs/String.h"
+
+using namespace std;
+using namespace geometry_msgs;
+using namespace moveit;
+using namespace planning_interface;
+using namespace moveit_msgs;
+
+double tol=0.01;
+unsigned int attempt=10000;
+static const string PLANNING_GROUP = "manipulator";
+bool success;
+int alpha,beta,positivita=1;
+MoveGroupInterface *robot;
+MoveGroupInterface::Plan my_plan;
+vector<double> joint_group_positions;
+vector<CollisionObject> collision_objects;
+string CollisionObjectID;
+vector<string> object_ids;
+ros::Publisher planning_scene_diff_publisher;
+char joystick_input_char='0';
+bool controller_bool=false;
+void controlla(int key_int);
+void Start();
+void chatterCallback(const std_msgs::String::ConstPtr& msg);
+
+
+int main(int argc, char** argv)
+{
+  // Initialize the ROS Node "roscpp_hello_world"
+  ros::init(argc, argv, "simulation");
+  ros::AsyncSpinner spinner(1);
+  spinner.start();
+  ros::WallDuration(1.0).sleep();
+  ros::NodeHandle joystick_node;
+  MoveGroupInterface move_group(PLANNING_GROUP);
+  ros::NodeHandle node_handle;
+  int queue_size=1;
+  ros::Subscriber sub = joystick_node.subscribe("almax_joystick", queue_size, chatterCallback);
+  robot=&move_group;
+  namespace rvt = rviz_visual_tools;
+  moveit_visual_tools::MoveItVisualTools visual_tools("base_link");
+  visual_tools.deleteAllMarkers();
+  robot->setPlannerId("RRTConnectkConfigDefault");
+  //robot->setPlannerId("RRTstarkConfigDefault");
+  //robot->setPlanningTime(10);
+
+  //add_block();
+  //PROVA();
+  Start();
+  ros::shutdown();
+  return 0;
+}
 char getch() {
         char buf = 0;
         struct termios old = {0};
@@ -38,26 +96,17 @@ char getch() {
                 perror ("tcsetattr ~ICANON");
         return (buf);
 }
-using namespace std;
-using namespace geometry_msgs;
-using namespace moveit;
-using namespace planning_interface;
-using namespace moveit_msgs;
-
-double tol=0.01;
-unsigned int attempt=10000;
-static const string PLANNING_GROUP = "manipulator";
-bool success;
-int alpha,beta,positivita=1;
-MoveGroupInterface *robot;
-MoveGroupInterface::Plan my_plan;
-vector<double> joint_group_positions;
-PlanningSceneInterface *interface;
-vector<CollisionObject> collision_objects;
-string CollisionObjectID;
-vector<string> object_ids;
-
-
+void chatterCallback(const std_msgs::String::ConstPtr& msg)
+{
+  if(controller_bool){
+    joystick_input_char=msg->data.c_str()[0];
+    //ROS_INFO("I heard: [%c]", joystick_input_char);
+    controlla(joystick_input_char);
+  }
+  else{
+    ROS_INFO("\n\nPer utilizzare il joystick, devi essere in modalita joystick.\nInserisci un comando del menu di scelta qui sopra e premi invio:");
+  }
+}
 double grad_to_rad(double grad)
 {
   return grad*3.1415/180;
@@ -184,6 +233,11 @@ void add_block(){
 //  cin>>alpha;
 //  cout<<"Inserisci beta:";
 //  cin>>beta;
+
+  namespace rvt = rviz_visual_tools;
+  moveit_visual_tools::MoveItVisualTools visual_tools("base_link");
+  visual_tools.deleteAllMarkers();
+  moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
   CollisionObject collision_object;
   tf2::Quaternion quat;
   shape_msgs::SolidPrimitive primitive;
@@ -191,27 +245,37 @@ void add_block(){
   collision_object.header.frame_id = robot->getPlanningFrame();
   primitive.type = primitive.BOX;
   primitive.dimensions.resize(3);
-  primitive.dimensions[0] = 0.4;
-  primitive.dimensions[1] = 0.1;
-  primitive.dimensions[2] = 0.05;
+  primitive.dimensions[0] = 2;
+  primitive.dimensions[1] =2;
+  primitive.dimensions[2] = 2;
 
-  box_pose.position.x = 1;
-  box_pose.position.y = 1;
-  box_pose.position.z = 1;
-  SetPoseOrientationRPY(&box_pose,0,0,45);
+  box_pose.position.x = 0;
+  box_pose.position.y = 0;
+  box_pose.position.z = 0;
+  SetPoseOrientationRPY(&box_pose,0,0,0);
   collision_object.primitives.push_back(primitive);
   collision_object.primitive_poses.push_back(box_pose);
   collision_object.operation = collision_object.ADD;
 
   collision_objects.push_back(collision_object);
-  interface->addCollisionObjects(collision_objects);
+  planning_scene_interface.addCollisionObjects(collision_objects);
   CollisionObjectID=collision_object.id;
   object_ids.push_back(CollisionObjectID);
+
+  // Show text in RViz of status and wait for MoveGroup to receive and process the collision object message
+ visual_tools.trigger();
+  visual_tools.prompt("Press 'next' in the RvizVisualToolsGui window to once the collision object appears in RViz");
+
+  // Now when we plan a trajectory it will avoid the obstacle
+  ROS_INFO_NAMED("tutorial", "Visualizing plan 6 (pose goal move around cuboid) %s", success ? "" : "FAILED");
+  visual_tools.trigger();
+  visual_tools.prompt("Press 'next' in the RvizVisualToolsGui window once the plan is complete");
+
 }
 void remove_block(){
   //collision_objects.pop_back();
   collision_objects.clear();
-  interface->removeCollisionObjects(object_ids);
+  //planning_scene_interface.removeCollisionObjects(object_ids);
   object_ids.clear();
 }
 void controlla(int key_int){
@@ -219,7 +283,7 @@ void controlla(int key_int){
     Pose targ=robot->getCurrentPose().pose;
     char key=key_int;
     unsigned int giunto=0;
-    int angolo_base=30;
+    int angolo_base=3;
     bool bool_joint=false,bool_ee=false;
     double step=0.02,orientationstep=5;
 
@@ -289,7 +353,7 @@ void controlla(int key_int){
       break;
     }
 
-    case 'h':{
+    /*case 'h':{
 
     cout<<endl<<endl<<"Info:"<<endl;
     cout<<"q:ee moves along x"<<endl;
@@ -306,7 +370,7 @@ void controlla(int key_int){
     cout<<"m:ee rotate along -yaw"<<endl;
     cout<<"e:EXIT"<<endl;
     break;
-    }
+    }*/
 
 
     }
@@ -741,23 +805,26 @@ void MenuDiScelta(){
 
 }
 void Controller(){
-  int input;
+  ROS_INFO("\nModalita joystick! Attendo comando dal nodo joystick");
   do{
-
+    controller_bool=true;
+/*
     cout<<endl<<endl<<"Press any key to continue... (h for info)"<<endl;
-
     system("stty raw");
     input=getch();
     system("stty cooked");
     controlla(input);
-
-  }while(input!='e');
+    */
+    ros::spinOnce();
+  }while(joystick_input_char!='e');
+  controller_bool=false;
+  joystick_input_char='0';
 }
 void Start(){
   unsigned int comando;
   do{
       cout<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl;
-      cout<<endl<<"0)Esci"<<endl<<"1)Menu Di Scelta"<<endl<<"2)Controller"<<endl<<"Scelta:";
+      cout<<endl<<"0)Esci"<<endl<<"1)Menu Di Scelta"<<endl<<"2)Joystick"<<endl<<"Scelta:";
       cin>>comando;
       cout<<endl<<endl<<endl;
       switch(comando){
@@ -779,25 +846,78 @@ void Start(){
       }
   }while(comando!=0);
 }
-int main(int argc, char** argv)
-{
-  // Initialize the ROS Node "roscpp_hello_world"
-  ros::init(argc, argv, "simulation");
-  ros::AsyncSpinner spinner(1);
-  spinner.start();
-  ros::WallDuration(1.0).sleep();
+void PROVA(){
 
-  MoveGroupInterface move_group(PLANNING_GROUP);
-  PlanningSceneInterface planning_scene_interface;
-  robot=&move_group;
-  robot->setPlannerId("RRTConnectkConfigDefault");
-  //robot->setPlannerId("RRTstarkConfigDefault");
-  //robot->setPlanningTime(10);
-  interface=&planning_scene_interface;
+  namespace rvt = rviz_visual_tools;
+  moveit_visual_tools::MoveItVisualTools visual_tools("base_link");
+  visual_tools.deleteAllMarkers();
+  moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
+  tf2::Quaternion quat;
+  shape_msgs::SolidPrimitive primitive;
+  Pose box_pose;
+  moveit_msgs::CollisionObject collision_object;
+  collision_object.header.frame_id = robot->getPlanningFrame();
 
-  Start();
-  ros::shutdown();
-  return 0;
+  // The id of the object is used to identify it.
+  collision_object.id = "box1";
+
+  // Define a box to add to the world.
+  primitive.type = primitive.BOX;
+  primitive.dimensions.resize(3);
+  primitive.dimensions[primitive.BOX_X] = 0.1;
+  primitive.dimensions[primitive.BOX_Y] = 1.5;
+  primitive.dimensions[primitive.BOX_Z] = 0.5;
+
+  // Define a pose for the box (specified relative to frame_id)
+  box_pose.orientation.w = 1.0;
+  box_pose.position.x = 0.5;
+  box_pose.position.y = 0.0;
+  box_pose.position.z = 0.25;
+
+  collision_object.primitives.push_back(primitive);
+  collision_object.primitive_poses.push_back(box_pose);
+  collision_object.operation = collision_object.ADD;
+
+  std::vector<moveit_msgs::CollisionObject> collision_objects;
+  collision_objects.push_back(collision_object);
+
+  // Now, let's add the collision object into the world
+  // (using a vector that could contain additional objects)
+  ROS_INFO_NAMED("tutorial", "Add an object into the world");
+  planning_scene_interface.addCollisionObjects(collision_objects);
+
+
+  moveit_msgs::AttachedCollisionObject attached_object;
+  attached_object.link_name = "r_wrist_roll_link";
+  /* The header must contain a valid TF frame*/
+  attached_object.object.header.frame_id = "r_wrist_roll_link";
+  /* The id of the object */
+  attached_object.object.id = "box";
+
+  /* A default pose */
+  geometry_msgs::Pose pose;
+  pose.orientation.w = 1.0;
+
+  /* Define a box to be attached */
+  primitive.type = primitive.BOX;
+  primitive.dimensions.resize(3);
+  primitive.dimensions[0] = 0.1;
+  primitive.dimensions[1] = 0.1;
+  primitive.dimensions[2] = 0.1;
+
+  attached_object.object.primitives.push_back(primitive);
+  attached_object.object.primitive_poses.push_back(pose);
+  attached_object.object.operation = attached_object.object.ADD;
+  ROS_INFO("Adding the object into the world at the location of the right wrist.");
+  moveit_msgs::PlanningScene planning_scene;
+  planning_scene.world.collision_objects.push_back(attached_object.object);
+  planning_scene.is_diff = true;
+  planning_scene_diff_publisher.publish(planning_scene);
+
+
+
+
+
 
 }
 
