@@ -2,6 +2,7 @@
 
 https://github.com/PUT-UGV-Team/ur3_erc_docker
 
+Questo è il catkin_pkg da scaricare dentro workspace/src
 
 Come minimizzare il codice in Qt(unfold all):
 Tools->Options->Enviroment->Keyboard
