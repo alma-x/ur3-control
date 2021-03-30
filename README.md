@@ -32,5 +32,5 @@ Come usare empty_world_server.launch (per avere solo il gazebo server e non il c
 
 4) vai su (partendo dalla catkin_ws): catkin_ws->src->ERC_2021_simulator->ur_gazebo->launch->ur3.launch
 
-5) commenta la riga  "<include file="$(find gazebo_ros)/launch/empty_world.launch">" e sostituiscila con "<include file="$(find gazebo_ros)/launch/empty_world_server.launch">"
+5) commenta la riga  <include file="$(find gazebo_ros)/launch/empty_world.launch"> e sostituiscila con <include file="$(find gazebo_ros)/launch/empty_world_server.launch">
    
