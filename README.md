@@ -26,7 +26,7 @@ Come usare empty_world_server.launch (per avere solo il gazebo server e non il c
 
 1) esegui su terminale:  roscd gazebo_ros
 
-2) entra nella cartella launch -> cd launch
+2) entra nella cartella launch : cd launch
 
 3) incolla empty_world_server.launch
 
