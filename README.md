@@ -20,3 +20,18 @@ rosrun code ERC
 rosrun code joystick
 3)
 All'interno di ERC selezionare modalità joystick. A quel punto dal processo joystick inserire i comandi
+
+
+Come usare empty_world_server.launch (per avere solo il gazebo server e non il client):
+
+1) esegui su terminale:  roscd gazebo_ros
+
+2) entra nella cartella launch -> cd launch
+
+3) incolla empty_world_server.launch
+
+4) vai su (partendo dalla catkin_ws): catkin_ws->src->ERC_2021_simulator->ur_gazebo->launch->ur3.launch
+
+5) commenta la riga  <include file="$(find gazebo_ros)/launch/empty_world.launch"> 
+   e sostituiscila con <include file="$(find gazebo_ros)/launch/empty_world_server.launch">
+   
