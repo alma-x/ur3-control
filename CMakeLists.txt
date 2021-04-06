@@ -25,6 +25,7 @@ project(ur3_control)
   tf2_geometry_msgs
   tf2_ros
   std_msgs
+  eigen_conversions
   )
 
 

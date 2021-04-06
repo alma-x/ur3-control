@@ -10,6 +10,7 @@ void MenuMovimentiBase();
 void MenuDiScelta();
 void joystick();
 void Start();
+void MenudDiScelta_sdr_solidale();
 
 int main(int argc, char** argv)
 {
@@ -30,6 +31,7 @@ int main(int argc, char** argv)
   //robot->setPlannerId("RRTstarkConfigDefault");
   //robot->setPlanningTime(10);
   gazebo_model_state_pub = node_handle.advertise<gazebo_msgs::ModelState>("/gazebo/set_model_state", 100);
+  pose_object_client = node_handle.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
   //->dd_block();
   //PROVA();
   Start();
@@ -242,7 +244,7 @@ void MenudDiSceltaEndEffector(){
   unsigned int comando;
   do{
     cout<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl;
-    cout<<endl<<"0)Esci"<<endl<<"1)Muovi lungo gli assi"<<endl<<"2)Scegli target"<<endl<<"Scelta:";
+    cout<<endl<<"0)Esci"<<endl<<"1)Muovi lungo gli assi"<<endl<<"2)Scegli target"<<endl<<"3)Muovi lungo sdr solidale"<<endl<<"Scelta:";
     cin>>comando;
     switch(comando){
       case 1:{
@@ -257,7 +259,12 @@ void MenudDiSceltaEndEffector(){
         break;
 
       }
+      case 3:{
 
+          MenudDiScelta_sdr_solidale();
+          break;
+
+        }
     }
   }while(comando!=0);
 }
@@ -478,7 +485,7 @@ void Start(){
   unsigned int comando;
   do{
       cout<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl;
-      cout<<endl<<"0)Esci"<<endl<<"1)Menu Di Scelta"<<endl<<"2)Joystick"<<endl<<"3)pick object"<<endl<<"4)unpick object"<<endl<<"Scelta:";
+      cout<<endl<<"0)Esci"<<endl<<"1)Menu Di Scelta"<<endl<<"2)Joystick"<<endl<<"3)pick object"<<endl<<"4)unpick object"<<endl<<"5)move to take object"<<endl<<"Scelta:";
       cin>>comando;
       cout<<endl<<endl<<endl;
       switch(comando){
@@ -497,22 +504,92 @@ void Start(){
           break;
 
         }
-      case 3:{
+        case 3:{
           cout<<endl<<"nome oggetto: ";
           cin>>nome_oggetto;
           boost::thread pick_thread(pick, nome_oggetto);
           break;
 
         }
-      case 4:{
+        case 4:{
           picked=false;
           break;
 
         }
+      case 5:{
+        take_object();
+        }
       }
   }while(comando!=0);
 }
+void MenudDiScelta_sdr_solidale(){
+  int comando,Verso;
+  double Spostamento=0.02;
+  bool PositivitaSpostamento=true;
+  string AsseScelto="x";
+  Vector3d translation(0,0,0);
+  do{
+    Pose target=robot->getCurrentPose().pose;
+    cout<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl;
+    cout<<endl<<"0)Esci"<<endl<<"1)Cambia verso di spostamento, per ora:"<<PositivitaSpostamento<<endl<<"2)Cambia distanza di spostamento, per ora:"<<Spostamento<<endl<<"3)Cambia asse da muovere, per ora:"<<AsseScelto<<endl<<"6)Muovi"<<endl<<"Scelta:";
+    cin>>comando;
+    switch(comando){
+      case 1:{
+        PositivitaSpostamento=!PositivitaSpostamento;
+        break;
+      }
+      case 2:{
 
+        cout<<endl<<endl<<endl;
+        cout<<"Inserisci distanza da percorrere in metri:";
+        cin>>Spostamento;
+        break;
+
+      }
+      case 3:{
+        if(AsseScelto=="x")
+          AsseScelto="y";
+        else
+          if(AsseScelto=="y")
+            AsseScelto="z";
+          else
+            if(AsseScelto=="z")
+              AsseScelto="x";
+        break;
+
+      }
+      case 6:{
+        if(PositivitaSpostamento)
+          Verso=1;
+        else
+          Verso=-1;
+          if(AsseScelto=="x") {
+            Vector3d temp(Spostamento*Verso,0,0);
+            translation=temp;
+          }
+          if(AsseScelto=="y") {
+            Vector3d temp(0,Spostamento*Verso,0);
+            translation=temp;
+          }
+          if(AsseScelto=="z"){
+            Vector3d temp(0,0,Spostamento*Verso);
+            translation=temp;
+          }
+
+          Affine3d T_actual;
+          tf::Pose pose_robot_tf;
+          tf::poseMsgToTF(target,pose_robot_tf);
+          tf::poseTFToEigen(pose_robot_tf,T_actual);
+
+          T_actual.translate(translation);
+          tf::poseEigenToTF(T_actual,pose_robot_tf);
+          tf::poseTFToMsg(pose_robot_tf,target);
+          move_to_pose(target,true);
+          break;
+      }
+     }
+  }while(comando!=0);
+}
 /*
 ROBA DA FARE:
   - Aggiustare parametri pianificazione

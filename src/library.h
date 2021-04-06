@@ -19,6 +19,7 @@
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Pose2D.h>
 #include <gazebo_msgs/ModelState.h>
+#include <gazebo_msgs/GetModelState.h>
 #include "geometric_shapes/shapes.h"
 #include "geometric_shapes/mesh_operations.h"
 #include "geometric_shapes/shape_operations.h"
@@ -26,14 +27,20 @@
 #include <geometric_shapes/shape_operations.h>
 #include "std_msgs/String.h"
 #include <boost/thread/thread.hpp>
+#include "tf/transform_datatypes.h"
+#include "Eigen/Core"
+#include "Eigen/Geometry"
+#include "tf_conversions/tf_eigen.h"
 
 using namespace std;
 using namespace geometry_msgs;
 using namespace moveit;
 using namespace planning_interface;
 using namespace moveit_msgs;
+using namespace Eigen;
 
 double tol=0.01;
+bool SDR_SOLIDALE=false;
 unsigned int attempt=10000;
 static const string PLANNING_GROUP = "manipulator";
 bool success;
@@ -46,6 +53,7 @@ string CollisionObjectID;
 vector<string> object_ids;
 ros::Publisher planning_scene_diff_publisher;
 ros:: Publisher gazebo_model_state_pub;
+ros::ServiceClient pose_object_client;
 char joystick_input_char='0';
 bool controller_bool=false;
 bool picked=false;
@@ -66,14 +74,15 @@ void stampa_Pose(Pose po);
 void stampa_giunti();
 void PosizioniBase(int posizione);
 void publish_joystick_info();
+void take_object();
 
 void pick(string name_object){
   Pose pose;
   pose.position.x = 0.0;
   pose.position.y = 0.2;
   pose.position.z = 0.0;
-  pose.orientation.w = 0;
-  pose.orientation.x = 0;
+  pose.orientation.w = 1;
+  pose.orientation.x = 1;
   pose.orientation.y = 0;
   pose.orientation.z = 0;
 
@@ -230,13 +239,17 @@ void PosizioniBase(int posizione){
 
 }
 void controlla(int key_int){
+    Vector3d translation(0,0,0);
     string k;
-    Pose targ=robot->getCurrentPose().pose;
+    Pose targ,pose_robot=robot->getCurrentPose().pose;
+    targ=pose_robot;
     char key=key_int;
     unsigned int giunto=0;
     int angolo_base=3;
     bool bool_joint=false,bool_ee=false;
     double step=0.02,orientationstep=5;
+
+
 
     switch(key){
     case '0':{//positività
@@ -246,31 +259,43 @@ void controlla(int key_int){
     case 'q':{//x
       bool_ee=true;
       targ.position.x+=step;
+      Vector3d temp(step,0,0);
+      translation=temp;
       break;
     }
     case 'w':{//-x
       bool_ee=true;
       targ.position.x-=step;
+      Vector3d temp(-step,0,0);
+      translation=temp;
       break;
     }
     case 'a':{//y
       bool_ee=true;
       targ.position.y+=step;
+      Vector3d temp(0,step,0);
+      translation=temp;
       break;
     }
     case 's':{//-y
       bool_ee=true;
       targ.position.y-=step;
+      Vector3d temp(0,-step,0);
+      translation=temp;
       break;
     }
     case 'z':{//z
       bool_ee=true;
       targ.position.z+=step;
+      Vector3d temp(0,0,step);
+      translation=temp;
       break;
     }
     case 'x':{//-z
       bool_ee=true;
       targ.position.z-=step;
+      Vector3d temp(0,0,-step);
+      translation=temp;
       break;
     }
     case 'p':{//-roll
@@ -303,8 +328,13 @@ void controlla(int key_int){
       AddToPoseOrientationRPYInGradi(&targ,0,0,orientationstep);
       break;
     }
-
+    case 'r':{
+      SDR_SOLIDALE=!SDR_SOLIDALE;
+      ROS_INFO("Cambio sistema di riferimento\n Ora:%s\n",(SDR_SOLIDALE)?"SRD_SOLIDALE":"SDR non solidale");
+    }
     /*case 'h':{
+
+
 
     cout<<endl<<endl<<"Info:"<<endl;
     cout<<"q:ee moves along x"<<endl;
@@ -324,19 +354,24 @@ void controlla(int key_int){
     }*/
 
 
+
     }
+
+
 
     if('1'<=key && key<='6'){
       giunto=key-'1';
       bool_joint=true;
     }
 
+
+
     if(bool_joint){
       ruotagiunto(giunto,positivita*angolo_base);
     }
     else{
       if(bool_ee){
-
+        if(!SDR_SOLIDALE){
         vector<Pose> waypoints;
         waypoints.push_back(targ);
         moveit_msgs::RobotTrajectory trajectory;
@@ -346,6 +381,62 @@ void controlla(int key_int){
         my_plan.trajectory_=trajectory;
         robot->execute(my_plan);
         waypoints.clear();
+        }
+        else{
+          tf2::Quaternion quat1;
+          tf::Quaternion q1(
+                pose_robot.orientation.x,
+                pose_robot.orientation.y,
+                pose_robot.orientation.z,
+                pose_robot.orientation.w);
+          tf::Matrix3x3 m1(q1);
+          double r0_first, p0_first, y0_first;
+          m1.getRPY(r0_first,p0_first,y0_first);
+          quat1.setRPY(0,p0_first,y0_first);
+
+
+
+          pose_robot.orientation.x=quat1.getX();
+          pose_robot.orientation.y=quat1.getY();
+          pose_robot.orientation.z=quat1.getZ();
+          pose_robot.orientation.w=quat1.getW();
+
+
+
+          Affine3d T_actual;
+          tf::Pose pose_robot_tf;
+          tf::poseMsgToTF(pose_robot,pose_robot_tf);
+          tf::poseTFToEigen(pose_robot_tf,T_actual);
+          T_actual.translate(translation);
+          tf::poseEigenToTF(T_actual,pose_robot_tf);
+          tf::poseTFToMsg(pose_robot_tf,pose_robot);
+
+
+
+
+          tf2::Quaternion quat2;
+          tf::Quaternion q2(
+                pose_robot.orientation.x,
+                pose_robot.orientation.y,
+                pose_robot.orientation.z,
+                pose_robot.orientation.w);
+          tf::Matrix3x3 m2(q2);
+          double r0_second, p0_second, y0_second;
+          m2.getRPY(r0_second,p0_second,y0_second);
+          quat2.setRPY(r0_first,p0_second,y0_second);//r0_first per lasciarlo al vecchio roll
+
+
+
+
+          pose_robot.orientation.x=quat2.getX();
+          pose_robot.orientation.y=quat2.getY();
+          pose_robot.orientation.z=quat2.getZ();
+          pose_robot.orientation.w=quat2.getW();
+
+
+
+          move_to_pose(pose_robot,true);
+        }
       }
     }
 }
@@ -367,4 +458,30 @@ void publish_joystick_info(){
 
   ROS_INFO("\n\nPremi h, per info.Da qui in poi inserisci i comandi:");
 }
+void take_object(){
+  tf2::Quaternion quat;
+  Pose target;
+  gazebo_msgs::GetModelState getmodelstate;
+  cout<<endl<<"nome oggetto: ";
+  cin>>nome_oggetto;
+  getmodelstate.request.model_name=nome_oggetto;
+  pose_object_client.call(getmodelstate);
+  cout<<endl<<"posizione di "<<nome_oggetto<<endl;
+  cout<<"X: "<<getmodelstate.response.pose.position.x<<endl;
+  cout<<"Y: "<<getmodelstate.response.pose.position.y<<endl;
+  cout<<"Z: "<<getmodelstate.response.pose.position.z<<endl;
+  cout<<endl<<"orientazione: "<<endl;
+  cout<<"X: "<<getmodelstate.response.pose.orientation.x<<endl;
+  cout<<"Y: "<<getmodelstate.response.pose.orientation.y<<endl;
+  cout<<"Z: "<<getmodelstate.response.pose.orientation.z<<endl;
+  cout<<"W: "<<getmodelstate.response.pose.orientation.w<<endl;
 
+ //PosizioniBase(2);
+ //usleep(5000000);
+  target.position.x=getmodelstate.response.pose.position.x;
+  target.position.y=getmodelstate.response.pose.position.y;
+  target.position.z=getmodelstate.response.pose.position.z+0.05;
+  quat.setRPY(grad_to_rad(0),grad_to_rad(90),grad_to_rad(0));
+  tf2quat_to_pose(quat,&target);
+  move_to_pose(target,true);
+}
