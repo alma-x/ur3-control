@@ -178,15 +178,15 @@ void MenudDiSceltaEndEffectorTarget(){
   string Errore;
   Pose target;
   int alpha=0,beta=0,gamma=0;
-  target.position.x=0.3;
-  target.position.y=0.3;
-  target.position.z=0.3;
+  double x=0.3,y=0.3,z=0.3;
+  bool void_sdr_solidale=false;
+  Vector3d translation(0,0,0);
   do{
     VettoreSomma = target.position.x*target.position.x + target.position.y*target.position.y + (target.position.z-0.1)*(target.position.z-0.1);
     if(VettoreSomma<0.5*0.5) Errore="False";
     else Errore="True";
     cout<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl;
-    cout<<endl<<"0)Esci"<<endl<<"1)Orientamento casuale:"<<(Orientamento ? "ATTIVO" : "NON ATTIVO")<<endl<<"2)X:"<<target.position.x<<endl<<"3)Y:"<<target.position.y<<endl<<"4)Z:"<<target.position.z<<endl<<"5)Muovi"<<endl<<"Errore:"<<Errore<<endl<<"RPY:"<<alpha<<" "<<beta<<" "<<gamma<<endl<<"Scelta:";
+    cout<<endl<<"0)Esci"<<endl<<"1)Orientamento casuale:"<<(Orientamento ? "ATTIVO" : "NON ATTIVO")<<endl<<"2)X:"<<x<<endl<<"3)Y:"<<y<<endl<<"4)Z:"<<z<<endl<<"5)Sdr Solidale"<<endl<<"6)Muovi"<<endl<<"Errore:"<<Errore<<endl<<"RPY:"<<alpha<<" "<<beta<<" "<<gamma<<endl<<"Scelta:";
     cin>>comando;
     switch(comando){
       case 1:{
@@ -211,7 +211,7 @@ void MenudDiSceltaEndEffectorTarget(){
 
         cout<<endl<<endl<<endl;
         cout<<"Inserisci X:";
-        cin>>target.position.x;
+        cin>>x;
         break;
 
       }
@@ -219,7 +219,7 @@ void MenudDiSceltaEndEffectorTarget(){
 
         cout<<endl<<endl<<endl;
         cout<<"Inserisci Y:";
-        cin>>target.position.y;
+        cin>>y;
         break;
 
       }
@@ -227,14 +227,67 @@ void MenudDiSceltaEndEffectorTarget(){
 
         cout<<endl<<endl<<endl;
         cout<<"Inserisci Z:";
-        cin>>target.position.z;
+        cin>>z;
         break;
 
       }
       case 5:{
-      move_to_pose(target,!Orientamento);//Orientamento
+      void_sdr_solidale=!void_sdr_solidale;
       break;
+      }
+      case 6:{
+      if(!void_sdr_solidale){
+        target.position.x=x;
+        target.position.y=y;
+        target.position.z=z;
+        move_to_pose(target,!Orientamento);//Orientamento
+      }else{
+        Vector3d temp(x,y,z);
+        translation=temp;
+        Pose pose_robot=robot->getCurrentPose().pose;
+        tf2::Quaternion quat1;
+        tf::Quaternion q1(
+              pose_robot.orientation.x,
+              pose_robot.orientation.y,
+              pose_robot.orientation.z,
+              pose_robot.orientation.w);
+        tf::Matrix3x3 m1(q1);
+        double r0_first, p0_first, y0_first;
+        m1.getRPY(r0_first,p0_first,y0_first);
+        quat1.setRPY(0,p0_first,y0_first);
 
+        pose_robot.orientation.x=quat1.getX();
+        pose_robot.orientation.y=quat1.getY();
+        pose_robot.orientation.z=quat1.getZ();
+        pose_robot.orientation.w=quat1.getW();
+
+        Affine3d T_actual;
+        tf::Pose pose_robot_tf;
+        tf::poseMsgToTF(pose_robot,pose_robot_tf);
+        tf::poseTFToEigen(pose_robot_tf,T_actual);
+        T_actual.translate(translation);
+        tf::poseEigenToTF(T_actual,pose_robot_tf);
+        tf::poseTFToMsg(pose_robot_tf,pose_robot);
+
+        tf2::Quaternion quat2;
+        tf::Quaternion q2(
+              pose_robot.orientation.x,
+              pose_robot.orientation.y,
+              pose_robot.orientation.z,
+              pose_robot.orientation.w);
+        tf::Matrix3x3 m2(q2);
+        double r0_second, p0_second, y0_second;
+        m2.getRPY(r0_second,p0_second,y0_second);
+        quat2.setRPY(r0_first,p0_second,y0_second);//r0_first per lasciarlo al vecchio roll
+
+        pose_robot.orientation.x=quat2.getX();
+        pose_robot.orientation.y=quat2.getY();
+        pose_robot.orientation.z=quat2.getZ();
+        pose_robot.orientation.w=quat2.getW();
+
+        move_to_pose(pose_robot,true);
+      }
+      break;
       }
 
     }
@@ -576,15 +629,65 @@ void MenudDiScelta_sdr_solidale(){
             translation=temp;
           }
 
+          Pose pose_robot=robot->getCurrentPose().pose;
+          tf2::Quaternion quat1;
+          tf::Quaternion q1(
+                pose_robot.orientation.x,
+                pose_robot.orientation.y,
+                pose_robot.orientation.z,
+                pose_robot.orientation.w);
+          tf::Matrix3x3 m1(q1);
+          double r0_first, p0_first, y0_first;
+          m1.getRPY(r0_first,p0_first,y0_first);
+          quat1.setRPY(0,p0_first,y0_first);
+
+
+
+          pose_robot.orientation.x=quat1.getX();
+          pose_robot.orientation.y=quat1.getY();
+          pose_robot.orientation.z=quat1.getZ();
+          pose_robot.orientation.w=quat1.getW();
+
+
+
           Affine3d T_actual;
           tf::Pose pose_robot_tf;
-          tf::poseMsgToTF(target,pose_robot_tf);
+          tf::poseMsgToTF(pose_robot,pose_robot_tf);
           tf::poseTFToEigen(pose_robot_tf,T_actual);
-
           T_actual.translate(translation);
           tf::poseEigenToTF(T_actual,pose_robot_tf);
-          tf::poseTFToMsg(pose_robot_tf,target);
-          move_to_pose(target,true);
+          tf::poseTFToMsg(pose_robot_tf,pose_robot);
+
+
+
+
+          tf2::Quaternion quat2;
+          tf::Quaternion q2(
+                pose_robot.orientation.x,
+                pose_robot.orientation.y,
+                pose_robot.orientation.z,
+                pose_robot.orientation.w);
+          tf::Matrix3x3 m2(q2);
+          double r0_second, p0_second, y0_second;
+          m2.getRPY(r0_second,p0_second,y0_second);
+          quat2.setRPY(r0_first,p0_second,y0_second);//r0_first per lasciarlo al vecchio roll
+
+
+
+
+          pose_robot.orientation.x=quat2.getX();
+          pose_robot.orientation.y=quat2.getY();
+          pose_robot.orientation.z=quat2.getZ();
+          pose_robot.orientation.w=quat2.getW();
+
+
+
+          move_to_pose(pose_robot,true);
+
+
+
+
+
           break;
       }
      }
