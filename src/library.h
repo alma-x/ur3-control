@@ -1,4 +1,6 @@
 #include <ros/ros.h>
+#include "ros/service.h"
+#include "ur3_control/aruco_service.h"
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <iostream>
@@ -75,6 +77,9 @@ void stampa_giunti();
 void PosizioniBase(int posizione);
 void publish_joystick_info();
 void take_object();
+Pose pose_traslation_FAKE_solidale(Vector3d translation);
+Pose pose_traslation_solidale(Vector3d translation);
+void ruota_e_cerca_aruco();
 
 void pick(string name_object){
   Pose pose;
@@ -484,4 +489,94 @@ void take_object(){
   quat.setRPY(grad_to_rad(0),grad_to_rad(90),grad_to_rad(0));
   tf2quat_to_pose(quat,&target);
   move_to_pose(target,true);
+}
+Pose pose_traslation_FAKE_solidale(Vector3d translation)
+{
+  Pose pose_robot=robot->getCurrentPose().pose;
+  tf2::Quaternion quat1;
+  tf::Quaternion q1(
+        pose_robot.orientation.x,
+        pose_robot.orientation.y,
+        pose_robot.orientation.z,
+        pose_robot.orientation.w);
+  tf::Matrix3x3 m1(q1);
+  double r0_first, p0_first, y0_first;
+  m1.getRPY(r0_first,p0_first,y0_first);
+  quat1.setRPY(0,p0_first,y0_first);
+
+  pose_robot.orientation.x=quat1.getX();
+  pose_robot.orientation.y=quat1.getY();
+  pose_robot.orientation.z=quat1.getZ();
+  pose_robot.orientation.w=quat1.getW();
+
+  Affine3d T_actual;
+  tf::Pose pose_robot_tf;
+  tf::poseMsgToTF(pose_robot,pose_robot_tf);
+  tf::poseTFToEigen(pose_robot_tf,T_actual);
+  T_actual.translate(translation);
+  tf::poseEigenToTF(T_actual,pose_robot_tf);
+  tf::poseTFToMsg(pose_robot_tf,pose_robot);
+
+  tf2::Quaternion quat2;
+  tf::Quaternion q2(
+        pose_robot.orientation.x,
+        pose_robot.orientation.y,
+        pose_robot.orientation.z,
+        pose_robot.orientation.w);
+  tf::Matrix3x3 m2(q2);
+  double r0_second, p0_second, y0_second;
+  m2.getRPY(r0_second,p0_second,y0_second);
+  quat2.setRPY(r0_first,p0_second,y0_second);//r0_first per lasciarlo al vecchio roll
+
+  pose_robot.orientation.x=quat2.getX();
+  pose_robot.orientation.y=quat2.getY();
+  pose_robot.orientation.z=quat2.getZ();
+  pose_robot.orientation.w=quat2.getW();
+
+  return pose_robot;
+}
+Pose pose_traslation_solidale(Vector3d translation)
+{
+  Pose pose_robot=robot->getCurrentPose().pose;
+
+
+  Affine3d T_actual;
+  tf::Pose pose_robot_tf;
+  tf::poseMsgToTF(pose_robot,pose_robot_tf);
+  tf::poseTFToEigen(pose_robot_tf,T_actual);
+  T_actual.translate(translation);
+  tf::poseEigenToTF(T_actual,pose_robot_tf);
+  tf::poseTFToMsg(pose_robot_tf,pose_robot);
+
+  return pose_robot;
+}
+void ruota_e_cerca_aruco(){
+  ros::NodeHandle node_handle;
+  ros::ServiceClient client1;
+  client1 = node_handle.serviceClient<ur3_control::aruco_service>("/aruco_service");
+  //bool aruco_trovato=false;
+  int angolo=10;
+  int cont=0;
+
+  ur3_control::aruco_service aruco_srv;
+  do{
+  cont++;
+  joint_group_positions=robot->getCurrentJointValues();
+  joint_group_positions[1] = grad_to_rad(-120);
+  joint_group_positions[2] = grad_to_rad(100);
+  joint_group_positions[3] = grad_to_rad(-100);
+  joint_group_positions[4] = grad_to_rad(-90);
+  joint_group_positions[0] = joint_group_positions[0]+grad_to_rad(angolo);  // radians
+  robot->setJointValueTarget(joint_group_positions);
+  success = (robot->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+  robot->move();
+
+  client1.call(aruco_srv);
+  ROS_INFO("Aruco found:%s",(aruco_srv.response.success ? "YES":"NO"));
+
+  }while((!aruco_srv.response.success) && (cont!=(360/angolo)));
+
+
+
+
 }

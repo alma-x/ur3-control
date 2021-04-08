@@ -48,10 +48,49 @@
   <!--   <test_depend>gtest</test_depend> -->
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
+  
+  
   <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>geometric_shapes</buildtool_depend>
+  <buildtool_depend>interactive_markers</buildtool_depend>
+  <buildtool_depend>moveit_core</buildtool_depend>
+  <buildtool_depend>moveit_ros_perception</buildtool_depend>
+  <buildtool_depend>moveit_ros_planning</buildtool_depend>
+  <buildtool_depend>moveit_visual_tools</buildtool_depend>
+  <buildtool_depend>moveit_ros_planning_interface</buildtool_depend>
+  <buildtool_depend>gazebo_msgs</buildtool_depend>
+  <buildtool_depend>pcl_conversions</buildtool_depend>
+  <buildtool_depend>pcl_ros</buildtool_depend>
+  <buildtool_depend>pluginlib</buildtool_depend>
+  <buildtool_depend>rosbag</buildtool_depend>
   <build_depend>roscpp</build_depend>
-  <!--<run_depend>roscpp</run_depend> -->
-  <exec_depend>roscpp</exec_depend>
+  <build_depend>tf2_eigen</build_depend>
+  <build_depend>tf2_geometry_msgs</build_depend>
+  <build_depend>tf2_ros</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>eigen_conversions</build_depend>
+  <build_depend>message_generation</build_depend>
+
+<!--<run_depend>std_msgs</run_depend> -->
+  
+  <exec_depend>catkin</exec_depend>
+  <exec_depend>geometric_shapes</exec_depend>
+  <exec_depend>interactive_markers</exec_depend>
+  <exec_depend>moveit_core</exec_depend>
+  <exec_depend>moveit_ros_perception</exec_depend>
+  <exec_depend>moveit_ros_planning</exec_depend>
+  <exec_depend>moveit_visual_tools</exec_depend>
+  <exec_depend>moveit_ros_planning_interface</exec_depend>
+  <exec_depend>gazebo_msgs</exec_depend>
+  <exec_depend>pcl_conversions</exec_depend>
+  <exec_depend>pcl_ros</exec_depend>
+  <exec_depend>pluginlib</exec_depend>
+  <exec_depend>tf2_eigen</exec_depend>
+  <exec_depend>tf2_geometry_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>eigen_conversions</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->

@@ -19,9 +19,8 @@ int main(int argc, char** argv)
   ros::AsyncSpinner spinner(1);
   spinner.start();
   ros::WallDuration(1.0).sleep();
-  ros::NodeHandle joystick_node;
-  MoveGroupInterface move_group(PLANNING_GROUP);
   ros::NodeHandle node_handle;
+  MoveGroupInterface move_group(PLANNING_GROUP);
   int queue_size=1;
   robot=&move_group;
   namespace rvt = rviz_visual_tools;
@@ -186,7 +185,7 @@ void MenudDiSceltaEndEffectorTarget(){
     if(VettoreSomma<0.5*0.5) Errore="False";
     else Errore="True";
     cout<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl;
-    cout<<endl<<"0)Esci"<<endl<<"1)Orientamento casuale:"<<(Orientamento ? "ATTIVO" : "NON ATTIVO")<<endl<<"2)X:"<<x<<endl<<"3)Y:"<<y<<endl<<"4)Z:"<<z<<endl<<"5)Sdr Solidale"<<endl<<"6)Muovi"<<endl<<"Errore:"<<Errore<<endl<<"RPY:"<<alpha<<" "<<beta<<" "<<gamma<<endl<<"Scelta:";
+    cout<<endl<<"0)Esci"<<endl<<"1)Orientamento casuale:"<<(Orientamento ? "ATTIVO" : "NON ATTIVO")<<endl<<"2)X:"<<x<<endl<<"3)Y:"<<y<<endl<<"4)Z:"<<z<<endl<<"5)Sdr Solidale:"<<(void_sdr_solidale?"YES":"NO")<<endl<<"6)Muovi"<<endl<<"Errore:"<<Errore<<endl<<"RPY:"<<alpha<<" "<<beta<<" "<<gamma<<endl<<"Scelta:";
     cin>>comando;
     switch(comando){
       case 1:{
@@ -244,48 +243,10 @@ void MenudDiSceltaEndEffectorTarget(){
       }else{
         Vector3d temp(x,y,z);
         translation=temp;
-        Pose pose_robot=robot->getCurrentPose().pose;
-        tf2::Quaternion quat1;
-        tf::Quaternion q1(
-              pose_robot.orientation.x,
-              pose_robot.orientation.y,
-              pose_robot.orientation.z,
-              pose_robot.orientation.w);
-        tf::Matrix3x3 m1(q1);
-        double r0_first, p0_first, y0_first;
-        m1.getRPY(r0_first,p0_first,y0_first);
-        quat1.setRPY(0,p0_first,y0_first);
 
-        pose_robot.orientation.x=quat1.getX();
-        pose_robot.orientation.y=quat1.getY();
-        pose_robot.orientation.z=quat1.getZ();
-        pose_robot.orientation.w=quat1.getW();
+        Pose target=pose_traslation_solidale(translation);
 
-        Affine3d T_actual;
-        tf::Pose pose_robot_tf;
-        tf::poseMsgToTF(pose_robot,pose_robot_tf);
-        tf::poseTFToEigen(pose_robot_tf,T_actual);
-        T_actual.translate(translation);
-        tf::poseEigenToTF(T_actual,pose_robot_tf);
-        tf::poseTFToMsg(pose_robot_tf,pose_robot);
-
-        tf2::Quaternion quat2;
-        tf::Quaternion q2(
-              pose_robot.orientation.x,
-              pose_robot.orientation.y,
-              pose_robot.orientation.z,
-              pose_robot.orientation.w);
-        tf::Matrix3x3 m2(q2);
-        double r0_second, p0_second, y0_second;
-        m2.getRPY(r0_second,p0_second,y0_second);
-        quat2.setRPY(r0_first,p0_second,y0_second);//r0_first per lasciarlo al vecchio roll
-
-        pose_robot.orientation.x=quat2.getX();
-        pose_robot.orientation.y=quat2.getY();
-        pose_robot.orientation.z=quat2.getZ();
-        pose_robot.orientation.w=quat2.getW();
-
-        move_to_pose(pose_robot,true);
+        move_to_pose(target,true);
       }
       break;
       }
@@ -538,7 +499,7 @@ void Start(){
   unsigned int comando;
   do{
       cout<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl;
-      cout<<endl<<"0)Esci"<<endl<<"1)Menu Di Scelta"<<endl<<"2)Joystick"<<endl<<"3)pick object"<<endl<<"4)unpick object"<<endl<<"5)move to take object"<<endl<<"Scelta:";
+      cout<<endl<<"0)Esci"<<endl<<"1)Menu Di Scelta"<<endl<<"2)Joystick"<<endl<<"3)pick object"<<endl<<"4)unpick object"<<endl<<"5)move to take object"<<endl<<"6)ruota e cerca aruco"<<endl<<"Scelta:";
       cin>>comando;
       cout<<endl<<endl<<endl;
       switch(comando){
@@ -569,8 +530,13 @@ void Start(){
           break;
 
         }
-      case 5:{
+        case 5:{
         take_object();
+        break;
+        }
+        case 6:{
+          ruota_e_cerca_aruco();
+        break;
         }
       }
   }while(comando!=0);

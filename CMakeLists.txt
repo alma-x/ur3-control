@@ -26,6 +26,8 @@ project(ur3_control)
   tf2_ros
   std_msgs
   eigen_conversions
+  tf_conversions
+  message_generation
   )
 
 
@@ -69,12 +71,11 @@ project(ur3_control)
 #   Message2.msg
 # )
 
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+ #Generate services in the 'srv' folder
+ add_service_files(
+   FILES
+   aruco_service.srv
+ )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -84,10 +85,10 @@ project(ur3_control)
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+ generate_messages(
+   DEPENDENCIES
+   std_msgs  # Or other packages containing msgs
+ )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -120,7 +121,7 @@ project(ur3_control)
 ## DEPENDS: system dependencies of this project that dependent projects also need
  catkin_package(
     INCLUDE_DIRS
-    CATKIN_DEPENDS roscpp
+    CATKIN_DEPENDS
   )
 
 
@@ -151,10 +152,16 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/code_node.cpp)
+#add_executable(prova src/prova.cpp)
+#target_link_libraries(prova ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
+
 add_executable(ERC src/ERC.cpp)
-add_executable(joystick src/joystick.cpp)
+add_executable(prova_cpp src/prova_cpp.cpp)
 target_link_libraries(ERC ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-target_link_libraries(joystick ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(prova_cpp ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
+
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
@@ -179,10 +186,10 @@ target_link_libraries(joystick ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
-# catkin_install_python(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+ catkin_install_python(PROGRAMS
+   script/prova.py
+   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+ )
 
 ## Mark executables for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
