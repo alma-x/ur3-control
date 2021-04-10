@@ -80,6 +80,8 @@ void take_object();
 Pose pose_traslation_FAKE_solidale(Vector3d translation);
 Pose pose_traslation_solidale(Vector3d translation);
 void ruota_e_cerca_aruco();
+void ruota_360();
+
 
 void pick(string name_object){
   Pose pose;
@@ -550,7 +552,91 @@ Pose pose_traslation_solidale(Vector3d translation)
 
   return pose_robot;
 }
+void ruota_360(){/*
+  robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
+  robot_model::RobotModelPtr kinematic_model = robot_model_loader.getModel();
+  ROS_INFO("Model frame: %s", kinematic_model->getModelFrame().c_str());
+
+  robot_state::RobotStatePtr kinematic_state(new robot_state::RobotState(kinematic_model));
+  kinematic_state->setToDefaultValues();
+  const robot_state::JointModelGroup* joint_model_group = kinematic_model->getJointModelGroup("manipulator");
+const std::vector<std::string>& joint_names = joint_model_group->getVariableNames();
+
+  joint_group_positions=robot->getCurrentJointValues();
+  joint_group_positions[1] = grad_to_rad(-120);
+  joint_group_positions[2] = grad_to_rad(100);
+  joint_group_positions[3] = grad_to_rad(-100);
+  joint_group_positions[4] = grad_to_rad(-90);
+
+
+
+
+  double r,resolution,step,xc,yc,zc;
+  double angle_resolution=1;
+  for (int i= 0; i< 360/angle_resolution; i++)
+    {
+
+      joint_group_positions[0] = joint_group_positions[0]+grad_to_rad(angle_resolution);  // radians
+
+      std::vector<double> joint_values;
+      joint_values[0]=joint_group_positions[0];
+      joint_values[1]=joint_group_positions[1];
+      joint_values[2]=joint_group_positions[2];
+      joint_values[3]=joint_group_positions[3];
+      joint_values[4]=joint_group_positions[4];
+      joint_values[5]=joint_group_positions[5];
+      robot_state->setJointGroupPositions(joint_model_group, joint_values);
+      const Eigen::Affine3d& link_pose = robot_state->getGlobalLinkTransform("link_name");
+      Eigen::Vector3d cartesian_position = link_pose.translation();
+      Eigen::Matrix3d link_orientation = link_pose.orientation();
+    }
+
+
+
+
+
+
+  vector<Pose> waypoints;
+
+  Pose ee_point_goal;
+  double r,resolution,step,xc,yc,zc;
+
+  r=0.3;
+  resolution=10;
+  step=r/resolution;
+  double angle_resolution=1/resolution;
+  double d_angle;
+  double angle= 0;
+  d_angle = angle_resolution*3.14/180;
+
+  xc=robot->getCurrentPose().pose.position.x;
+  yc=robot->getCurrentPose().pose.position.y;
+  zc=robot->getCurrentPose().pose.position.z;
+  ee_point_goal.position.x=xc;
+  ee_point_goal.orientation=robot->getCurrentPose().pose.orientation;
+
+  for (int i= 0; i< 360/angle_resolution; i++)
+    {
+      angle+= d_angle;
+      ee_point_goal.position.z = zc + r*cos(angle);
+      ee_point_goal.position.y = yc + r*sin(angle);
+      waypoints.push_back(ee_point_goal);
+    }
+
+      moveit_msgs::RobotTrajectory trajectory;
+      robot->computeCartesianPath(waypoints,0.01,0,trajectory);
+
+      success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
+      ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+      my_plan.trajectory_=trajectory;
+      sleep(1.0);
+      robot->execute(my_plan);
+      break;
+
+*/
+}
 void ruota_e_cerca_aruco(){
+  robot->setPlanningTime(0.2);
   ros::NodeHandle node_handle;
   ros::ServiceClient client1;
   client1 = node_handle.serviceClient<ur3_control::aruco_service>("/aruco_service");
@@ -566,7 +652,9 @@ void ruota_e_cerca_aruco(){
   joint_group_positions[2] = grad_to_rad(100);
   joint_group_positions[3] = grad_to_rad(-100);
   joint_group_positions[4] = grad_to_rad(-90);
-  joint_group_positions[0] = joint_group_positions[0]+grad_to_rad(angolo);  // radians
+  if(cont!=0){
+    joint_group_positions[0] = joint_group_positions[0]+grad_to_rad(angolo);  // radians
+  }
   robot->setJointValueTarget(joint_group_positions);
   success = (robot->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
   robot->move();
@@ -576,7 +664,135 @@ void ruota_e_cerca_aruco(){
 
   }while((!aruco_srv.response.success) && (cont!=(360/angolo)));
 
+  robot->setPlanningTime(3);//resetto il planning time abbassato per eseguire i precedenti movimenti
+
+  ROS_INFO("Aruco position: x=%f y=%f z=%f",aruco_srv.response.x,aruco_srv.response.y,aruco_srv.response.z);
+  Pose target_aruco;
+  Vector3d camera_block_vector(aruco_srv.response.x,aruco_srv.response.y,aruco_srv.response.z);
+  target_aruco=pose_traslation_solidale(camera_block_vector);
+
+  //target_aruco.position.z=target_aruco.position.z+0.01;//evita collisione
+  char scelta;
+  cout<<"Inserisci 'y' se vuoi che il robot arrivi con la testa bassa\nScelta:";
+  cin>>scelta;
+  if(scelta=='y'){
+    SetPoseOrientationRPY(&target_aruco,0,-270,0);
+  }
+  else{
+    //from linear vector to Matrix
+    Matrix3d R_cam_aruco;
+    {
+    R_cam_aruco(0,0)=aruco_srv.response.vector[0]; R_cam_aruco(0,1)=aruco_srv.response.vector[1]; R_cam_aruco(0,2)=aruco_srv.response.vector[2];
+    R_cam_aruco(1,0)=aruco_srv.response.vector[3]; R_cam_aruco(1,1)=aruco_srv.response.vector[4]; R_cam_aruco(1,2)=aruco_srv.response.vector[5];
+    R_cam_aruco(2,0)=aruco_srv.response.vector[6]; R_cam_aruco(2,1)=aruco_srv.response.vector[7]; R_cam_aruco(2,2)=aruco_srv.response.vector[8];
+    }
+    for(int r=0;r<3;r++){
+      for(int c=0;c<3;c++){
+        printf("%f ",R_cam_aruco(r,c));
+      }
+      printf("\n");
+    }
+
+    Matrix3d R_w3_cam,R_w3_cam_rot_y,R_w3_cam_rot_x;
+    {
+    R_w3_cam_rot_y(0,0)=0; R_w3_cam_rot_y(0,1)=0; R_w3_cam_rot_y(0,2)=-1;
+    R_w3_cam_rot_y(1,0)=0; R_w3_cam_rot_y(1,1)=1; R_w3_cam_rot_y(1,2)=0;
+    R_w3_cam_rot_y(2,0)=1; R_w3_cam_rot_y(2,1)=0; R_w3_cam_rot_y(2,2)=0;
+
+    R_w3_cam_rot_x(0,0)=1; R_w3_cam_rot_x(0,1)=0; R_w3_cam_rot_x(0,2)=0;
+    R_w3_cam_rot_x(1,0)=0; R_w3_cam_rot_x(1,1)=0; R_w3_cam_rot_x(1,2)=1;
+    R_w3_cam_rot_x(2,0)=0; R_w3_cam_rot_x(2,1)=-1; R_w3_cam_rot_x(2,2)=0;
+
+    R_w3_cam=R_w3_cam_rot_y*R_w3_cam_rot_x;
+    }
 
 
+    Pose pose_robot=robot->getCurrentPose().pose;
+    Affine3d T_actual;
+    tf::Pose pose_robot_tf;
+    tf::poseMsgToTF(pose_robot,pose_robot_tf);
+    tf::poseTFToEigen(pose_robot_tf,T_actual);
+
+    Matrix3d R_0_w3,R_0_cam,R_0_aruco;
+    R_0_w3=T_actual.rotation();
+    R_0_cam=R_0_w3*R_w3_cam;
+    R_0_aruco=R_0_cam*R_cam_aruco;
+
+
+    tf::Matrix3x3 M;
+    /// Converts an Eigen Quaternion into a tf Matrix3x3
+    matrixEigenToTF(R_0_aruco, M);
+
+    double r0, p0, y0;
+    M.getRPY(r0, p0, y0);
+    tf2::Quaternion quat;
+    quat.setRPY(r0,p0,y0);
+
+    target_aruco.orientation.x=quat.getX();
+    target_aruco.orientation.y=quat.getY();
+    target_aruco.orientation.z=quat.getZ();
+    target_aruco.orientation.w=quat.getW();
+
+
+  }
+
+  move_to_pose(target_aruco,true);
 
 }
+void trasformazioni(){
+  Pose pose_robot=robot->getCurrentPose().pose;
+  Affine3d T_actual;
+  tf::Pose pose_robot_tf;
+  tf::poseMsgToTF(pose_robot,pose_robot_tf);
+  tf::poseTFToEigen(pose_robot_tf,T_actual);
+
+  Matrix3d R_0_w3,R_0_cam,R_w3_cam,R_cam_aruco,R_0_aruco;
+  R_0_w3=T_actual.rotation();
+  R_0_cam=R_0_w3*R_w3_cam;
+  R_0_aruco=R_0_cam*R_cam_aruco;
+
+
+  tf::Matrix3x3 M;
+  /// Converts an Eigen Quaternion into a tf Matrix3x3
+  matrixEigenToTF(R_0_aruco, M);
+
+  double r0, p0, y0;
+  M.getRPY(r0, p0, y0);
+  tf2::Quaternion quat;
+  quat.setRPY(r0,p0,y0);
+  Pose p;
+  p.orientation.x=quat.getX();
+  p.orientation.y=quat.getY();
+  p.orientation.z=quat.getZ();
+  p.orientation.w=quat.getW();
+}
+void reshape(){/*
+  Matrix3d new_vector;
+  {
+  int rows,columns,dimensione,i=0,c=0,r=-1;
+  rows=aruco_srv.response.dim[0];
+  columns=aruco_srv.response.dim[1];
+  dimensione=rows*columns;
+  do{
+    if(c%columns==0){
+      c=0;
+      r++;
+    }
+    new_vector=aruco_srv.response.vector[i];
+    c++;
+    i++;
+  }while(i!=dimensione);
+  for(r=0;r<rows;r++){
+    for(c=0;c<rows;c++){
+      printf("%f ",new_vector[r][c]);
+    }
+    printf("\n");
+  }
+  }*/
+}
+
+/*
+
+  T_actual.rotation
+
+*/

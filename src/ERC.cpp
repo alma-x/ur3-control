@@ -26,13 +26,13 @@ int main(int argc, char** argv)
   namespace rvt = rviz_visual_tools;
   moveit_visual_tools::MoveItVisualTools visual_tools("base_link");
   visual_tools.deleteAllMarkers();
+
   robot->setPlannerId("RRTConnectkConfigDefault");
-  //robot->setPlannerId("RRTstarkConfigDefault");
-  //robot->setPlanningTime(10);
+  robot->setPlanningTime(3);
+
   gazebo_model_state_pub = node_handle.advertise<gazebo_msgs::ModelState>("/gazebo/set_model_state", 100);
   pose_object_client = node_handle.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
-  //->dd_block();
-  //PROVA();
+
   Start();
   ros::shutdown();
   return 0;
@@ -368,6 +368,7 @@ void MenuMovimentiBase(){
     switch(comando){
       case 1:{
       vector<Pose> waypoints;
+
       Pose ee_point_goal;
       double r,resolution,step,xc,yc,zc;
 
@@ -399,10 +400,9 @@ void MenuMovimentiBase(){
           success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
           ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
           my_plan.trajectory_=trajectory;
-          sleep(5.0);
+          sleep(1.0);
           robot->execute(my_plan);
           break;
-
       }
       case 2:{
         PosizioniBase(3);
