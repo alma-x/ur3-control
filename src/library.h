@@ -81,12 +81,13 @@ Pose pose_traslation_FAKE_solidale(Vector3d translation);
 Pose pose_traslation_solidale(Vector3d translation);
 void ruota_e_cerca_aruco();
 void ruota_360();
-
+void automatizzato();
+double rad_to_grad(double rad);
 
 void pick(string name_object){
   Pose pose;
   pose.position.x = 0.0;
-  pose.position.y = 0.2;
+  pose.position.y = 0.15;
   pose.position.z = 0.0;
   pose.orientation.w = 1;
   pose.orientation.x = 1;
@@ -127,6 +128,10 @@ char getch() {
 double grad_to_rad(double grad)
 {
   return grad*3.1415/180;
+}
+double rad_to_grad(double rad)
+{
+  return rad*180/3.1415;
 }
 void tf2quat_to_pose(tf2::Quaternion q,Pose *p)
 {
@@ -208,7 +213,7 @@ void stampa_giunti()
   joint_group_positions=robot->getCurrentJointValues();
   cout<<endl<<"Giunti:"<<endl;
   for(int i=0;i<joint_group_positions.size();i++){
-    cout<<i<<":"<<joint_group_positions[i]<<endl;
+    cout<<i<<":"<<joint_group_positions[i]<<"---"<<rad_to_grad(joint_group_positions[i])<<endl;
   }
 }
 void PosizioniBase(int posizione){
@@ -552,88 +557,68 @@ Pose pose_traslation_solidale(Vector3d translation)
 
   return pose_robot;
 }
-void ruota_360(){/*
+void ruota_360(){
+  ROS_INFO("Starting rotating 360");
+
+
+  vector<double> joint_positions;
+  joint_positions=robot->getCurrentJointValues();
+  joint_positions[1] = grad_to_rad(-100);
+  joint_positions[2] = grad_to_rad(100);
+  joint_positions[3] = grad_to_rad(-100);
+  joint_positions[4] = grad_to_rad(-90);
+
+
+  robot->setJointValueTarget(joint_positions);
+  success = (robot->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+  ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+  robot->move();
+
+
+
   robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
   robot_model::RobotModelPtr kinematic_model = robot_model_loader.getModel();
   ROS_INFO("Model frame: %s", kinematic_model->getModelFrame().c_str());
 
   robot_state::RobotStatePtr kinematic_state(new robot_state::RobotState(kinematic_model));
-  kinematic_state->setToDefaultValues();
   const robot_state::JointModelGroup* joint_model_group = kinematic_model->getJointModelGroup("manipulator");
-const std::vector<std::string>& joint_names = joint_model_group->getVariableNames();
+//const std::vector<std::string>& joint_names = joint_model_group->getVariableNames();
+  ROS_INFO("kinematic model aquired");
+int sada=1;
 
-  joint_group_positions=robot->getCurrentJointValues();
-  joint_group_positions[1] = grad_to_rad(-120);
-  joint_group_positions[2] = grad_to_rad(100);
-  joint_group_positions[3] = grad_to_rad(-100);
-  joint_group_positions[4] = grad_to_rad(-90);
-
+  //rotazione
+  joint_positions=robot->getCurrentJointValues();
 
 
 
-  double r,resolution,step,xc,yc,zc;
-  double angle_resolution=1;
-  for (int i= 0; i< 360/angle_resolution; i++)
-    {
-
-      joint_group_positions[0] = joint_group_positions[0]+grad_to_rad(angle_resolution);  // radians
-
-      std::vector<double> joint_values;
-      joint_values[0]=joint_group_positions[0];
-      joint_values[1]=joint_group_positions[1];
-      joint_values[2]=joint_group_positions[2];
-      joint_values[3]=joint_group_positions[3];
-      joint_values[4]=joint_group_positions[4];
-      joint_values[5]=joint_group_positions[5];
-      robot_state->setJointGroupPositions(joint_model_group, joint_values);
-      const Eigen::Affine3d& link_pose = robot_state->getGlobalLinkTransform("link_name");
-      Eigen::Vector3d cartesian_position = link_pose.translation();
-      Eigen::Matrix3d link_orientation = link_pose.orientation();
-    }
-
-
-
-
-
-
+  double angle_resolution=10;
   vector<Pose> waypoints;
-
-  Pose ee_point_goal;
-  double r,resolution,step,xc,yc,zc;
-
-  r=0.3;
-  resolution=10;
-  step=r/resolution;
-  double angle_resolution=1/resolution;
-  double d_angle;
-  double angle= 0;
-  d_angle = angle_resolution*3.14/180;
-
-  xc=robot->getCurrentPose().pose.position.x;
-  yc=robot->getCurrentPose().pose.position.y;
-  zc=robot->getCurrentPose().pose.position.z;
-  ee_point_goal.position.x=xc;
-  ee_point_goal.orientation=robot->getCurrentPose().pose.orientation;
-
-  for (int i= 0; i< 360/angle_resolution; i++)
+  for (int i= 0; i< 270/angle_resolution; i++)
     {
-      angle+= d_angle;
-      ee_point_goal.position.z = zc + r*cos(angle);
-      ee_point_goal.position.y = yc + r*sin(angle);
-      waypoints.push_back(ee_point_goal);
+      joint_positions[0] = joint_positions[0]+grad_to_rad(angle_resolution);  // radians
+
+
+      kinematic_state->setJointGroupPositions(joint_model_group, joint_positions);
+
+
+      tf::Pose target_tf;
+      Pose target;
+      const Eigen::Affine3d& link_pose = kinematic_state->getGlobalLinkTransform("tool0");//forse tool0
+      tf::poseEigenToTF(link_pose,target_tf);
+      tf::poseTFToMsg(target_tf,target);
+      SetPoseOrientationRPY(&target,0,90,0);
+      waypoints.push_back(target);
     }
 
       moveit_msgs::RobotTrajectory trajectory;
-      robot->computeCartesianPath(waypoints,0.01,0,trajectory);
+      robot->computeCartesianPath(waypoints,0.0001,0,trajectory);
 
       success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
       ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
       my_plan.trajectory_=trajectory;
-      sleep(1.0);
       robot->execute(my_plan);
-      break;
 
-*/
+
 }
 void ruota_e_cerca_aruco(){
   robot->setPlanningTime(0.2);
@@ -738,6 +723,7 @@ void ruota_e_cerca_aruco(){
 
   move_to_pose(target_aruco,true);
 
+
 }
 void trasformazioni(){
   Pose pose_robot=robot->getCurrentPose().pose;
@@ -790,7 +776,11 @@ void reshape(){/*
   }
   }*/
 }
+void automatizzato(){
+ruota_e_cerca_aruco();
 
+boost::thread pick_thread(pick,"cubo5s");
+}
 /*
 
   T_actual.rotation

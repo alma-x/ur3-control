@@ -10,7 +10,9 @@ void MenuMovimentiBase();
 void MenuDiScelta();
 void joystick();
 void Start();
-void MenudDiScelta_sdr_solidale();
+void Interazione_Environment();
+void Menu_Di_Scelta_Prove();
+void MenuDiSceltaOpzioni();
 
 int main(int argc, char** argv)
 {
@@ -21,6 +23,7 @@ int main(int argc, char** argv)
   ros::WallDuration(1.0).sleep();
   ros::NodeHandle node_handle;
   MoveGroupInterface move_group(PLANNING_GROUP);
+  ROS_INFO("INIZIOOO");
   int queue_size=1;
   robot=&move_group;
   namespace rvt = rviz_visual_tools;
@@ -33,7 +36,12 @@ int main(int argc, char** argv)
   gazebo_model_state_pub = node_handle.advertise<gazebo_msgs::ModelState>("/gazebo/set_model_state", 100);
   pose_object_client = node_handle.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
 
+
+  //ruota_360();
   Start();
+
+
+
   ros::shutdown();
   return 0;
 }
@@ -258,7 +266,7 @@ void MenudDiSceltaEndEffector(){
   unsigned int comando;
   do{
     cout<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl;
-    cout<<endl<<"0)Esci"<<endl<<"1)Muovi lungo gli assi"<<endl<<"2)Scegli target"<<endl<<"3)Muovi lungo sdr solidale"<<endl<<"Scelta:";
+    cout<<endl<<"0)Esci"<<endl<<"1)Muovi lungo gli assi"<<endl<<"2)Scegli target"<<endl<<"Scelta:";
     cin>>comando;
     switch(comando){
       case 1:{
@@ -273,12 +281,6 @@ void MenudDiSceltaEndEffector(){
         break;
 
       }
-      case 3:{
-
-          MenudDiScelta_sdr_solidale();
-          break;
-
-        }
     }
   }while(comando!=0);
 }
@@ -495,11 +497,112 @@ void Controller(){
     }while(input_char!='e');
 
 }
+void Interazione_Environment(){
+
+  unsigned int comando;
+  cout<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl;
+  cout<<endl<<"0)Esci"<<endl<<"1)Movimento automatizzato gara"<<endl<<"2)NULLA"<<endl<<"3)pick object"<<endl<<"4)unpick object"<<endl<<"5)move to take object"<<endl<<"6)ruota e cerca aruco"<<endl<<"Scelta:";
+  cin>>comando;
+  cout<<endl<<endl<<endl;
+  switch(comando){
+    case 1:{
+
+      automatizzato();
+      break;
+
+  }
+    case 2:{
+      break;
+
+    }
+    case 3:{
+      cout<<endl<<"nome oggetto: ";
+      cin>>nome_oggetto;
+      boost::thread pick_thread(pick, nome_oggetto);
+      break;
+
+    }
+    case 4:{
+      picked=false;
+      break;
+
+    }
+    case 5:{
+    take_object();
+    break;
+    }
+    case 6:{
+      ruota_e_cerca_aruco();
+    break;
+    }
+  }
+}
+void Menu_Di_Scelta_Prove(){
+  unsigned int comando;
+  do{
+      cout<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl;
+      cout<<endl<<"0)Esci"<<endl<<"1)Movimento 360"<<endl<<"Scelta:";
+      cin>>comando;
+      cout<<endl<<endl<<endl;
+      switch(comando){
+        case 1:{
+
+          ruota_360();
+          break;
+
+      }
+        case 2:{
+          break;
+
+        }
+        case 3:{
+          break;
+
+        }
+        case 4:{
+
+          break;
+
+        }
+      }
+  }while(comando!=0);
+}
+void MenuDiSceltaOpzioni(){
+  unsigned int comando;
+  do{
+      cout<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl;
+      cout<<endl<<"0)Esci"<<endl<<"1)Stampa giunti"<<endl<<"2)Stampa pose"<<endl<<"Scelta:";
+      cin>>comando;
+      cout<<endl<<endl<<endl;
+      switch(comando){
+        case 1:{
+
+          stampa_giunti();
+          break;
+
+      }
+        case 2:{
+          stampa_Pose(robot->getCurrentPose().pose);
+          break;
+
+        }
+        case 3:{
+          break;
+
+        }
+        case 4:{
+
+          break;
+
+        }
+      }
+  }while(comando!=0);
+}
 void Start(){
   unsigned int comando;
   do{
       cout<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl;
-      cout<<endl<<"0)Esci"<<endl<<"1)Menu Di Scelta"<<endl<<"2)Joystick"<<endl<<"3)pick object"<<endl<<"4)unpick object"<<endl<<"5)move to take object"<<endl<<"6)ruota e cerca aruco"<<endl<<"Scelta:";
+      cout<<endl<<"0)Esci"<<endl<<"1)Menu Di Scelta"<<endl<<"2)Joystick"<<endl<<"3)Interagisci con Environment"<<endl<<"4)Menu Prove"<<endl<<"5)Opzioni"<<endl<<"Scelta:";
       cin>>comando;
       cout<<endl<<endl<<endl;
       switch(comando){
@@ -519,144 +622,21 @@ void Start(){
 
         }
         case 3:{
-          cout<<endl<<"nome oggetto: ";
-          cin>>nome_oggetto;
-          boost::thread pick_thread(pick, nome_oggetto);
+          Interazione_Environment();
           break;
 
         }
         case 4:{
-          picked=false;
+
+          Menu_Di_Scelta_Prove();
           break;
 
         }
-        case 5:{
-        take_object();
-        break;
-        }
-        case 6:{
-          ruota_e_cerca_aruco();
-        break;
-        }
-      }
-  }while(comando!=0);
-}
-void MenudDiScelta_sdr_solidale(){
-  int comando,Verso;
-  double Spostamento=0.02;
-  bool PositivitaSpostamento=true;
-  string AsseScelto="x";
-  Vector3d translation(0,0,0);
-  do{
-    Pose target=robot->getCurrentPose().pose;
-    cout<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl;
-    cout<<endl<<"0)Esci"<<endl<<"1)Cambia verso di spostamento, per ora:"<<PositivitaSpostamento<<endl<<"2)Cambia distanza di spostamento, per ora:"<<Spostamento<<endl<<"3)Cambia asse da muovere, per ora:"<<AsseScelto<<endl<<"6)Muovi"<<endl<<"Scelta:";
-    cin>>comando;
-    switch(comando){
-      case 1:{
-        PositivitaSpostamento=!PositivitaSpostamento;
+      case 5:{
+        MenuDiSceltaOpzioni();
         break;
       }
-      case 2:{
-
-        cout<<endl<<endl<<endl;
-        cout<<"Inserisci distanza da percorrere in metri:";
-        cin>>Spostamento;
-        break;
-
       }
-      case 3:{
-        if(AsseScelto=="x")
-          AsseScelto="y";
-        else
-          if(AsseScelto=="y")
-            AsseScelto="z";
-          else
-            if(AsseScelto=="z")
-              AsseScelto="x";
-        break;
-
-      }
-      case 6:{
-        if(PositivitaSpostamento)
-          Verso=1;
-        else
-          Verso=-1;
-          if(AsseScelto=="x") {
-            Vector3d temp(Spostamento*Verso,0,0);
-            translation=temp;
-          }
-          if(AsseScelto=="y") {
-            Vector3d temp(0,Spostamento*Verso,0);
-            translation=temp;
-          }
-          if(AsseScelto=="z"){
-            Vector3d temp(0,0,Spostamento*Verso);
-            translation=temp;
-          }
-
-          Pose pose_robot=robot->getCurrentPose().pose;
-          tf2::Quaternion quat1;
-          tf::Quaternion q1(
-                pose_robot.orientation.x,
-                pose_robot.orientation.y,
-                pose_robot.orientation.z,
-                pose_robot.orientation.w);
-          tf::Matrix3x3 m1(q1);
-          double r0_first, p0_first, y0_first;
-          m1.getRPY(r0_first,p0_first,y0_first);
-          quat1.setRPY(0,p0_first,y0_first);
-
-
-
-          pose_robot.orientation.x=quat1.getX();
-          pose_robot.orientation.y=quat1.getY();
-          pose_robot.orientation.z=quat1.getZ();
-          pose_robot.orientation.w=quat1.getW();
-
-
-
-          Affine3d T_actual;
-          tf::Pose pose_robot_tf;
-          tf::poseMsgToTF(pose_robot,pose_robot_tf);
-          tf::poseTFToEigen(pose_robot_tf,T_actual);
-          T_actual.translate(translation);
-          tf::poseEigenToTF(T_actual,pose_robot_tf);
-          tf::poseTFToMsg(pose_robot_tf,pose_robot);
-
-
-
-
-          tf2::Quaternion quat2;
-          tf::Quaternion q2(
-                pose_robot.orientation.x,
-                pose_robot.orientation.y,
-                pose_robot.orientation.z,
-                pose_robot.orientation.w);
-          tf::Matrix3x3 m2(q2);
-          double r0_second, p0_second, y0_second;
-          m2.getRPY(r0_second,p0_second,y0_second);
-          quat2.setRPY(r0_first,p0_second,y0_second);//r0_first per lasciarlo al vecchio roll
-
-
-
-
-          pose_robot.orientation.x=quat2.getX();
-          pose_robot.orientation.y=quat2.getY();
-          pose_robot.orientation.z=quat2.getZ();
-          pose_robot.orientation.w=quat2.getW();
-
-
-
-          move_to_pose(pose_robot,true);
-
-
-
-
-
-          break;
-      }
-     }
   }while(comando!=0);
 }
 /*
