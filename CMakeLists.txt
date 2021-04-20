@@ -65,16 +65,16 @@ project(ur3_control)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+ add_message_files(
+   FILES
+   cv_to_bridge.msg
+ )
 
  #Generate services in the 'srv' folder
  add_service_files(
    FILES
    aruco_service.srv
+   cv_server.srv
  )
 
 ## Generate actions in the 'action' folder
@@ -121,7 +121,7 @@ project(ur3_control)
 ## DEPENDS: system dependencies of this project that dependent projects also need
  catkin_package(
     INCLUDE_DIRS
-    CATKIN_DEPENDS
+    CATKIN_DEPENDS message_runtime
   )
 
 
@@ -156,12 +156,16 @@ include_directories(
 #target_link_libraries(prova ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 
+add_executable(bridge src/bridge.cpp)
 add_executable(ERC src/ERC.cpp)
 add_executable(prova_cpp src/prova_cpp.cpp)
+target_link_libraries(bridge ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(ERC ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(prova_cpp ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-
+add_dependencies(bridge ${catkin_EXPORTED_TARGETS})
+add_dependencies(prova_cpp ${catkin_EXPORTED_TARGETS})
+add_dependencies(ERC ${catkin_EXPORTED_TARGETS})
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
@@ -187,7 +191,7 @@ target_link_libraries(prova_cpp ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
  catkin_install_python(PROGRAMS
-   script/prova.py
+   scripts/prova.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 
@@ -219,6 +223,7 @@ target_link_libraries(prova_cpp ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 #   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
 
+install(TARGETS prova_cpp DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 install(DIRECTORY launch DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 install(DIRECTORY config DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})

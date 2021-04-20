@@ -1,6 +1,5 @@
 //Piacere, Federico
 #include "library.h"
-
 void MenuDiSceltaGiunti();
 void MenudDiSceltaEndEffectorAssi();
 void MenudDiSceltaEndEffectorTarget();
@@ -21,9 +20,8 @@ int main(int argc, char** argv)
   ros::AsyncSpinner spinner(1);
   spinner.start();
   ros::WallDuration(1.0).sleep();
-  ros::NodeHandle node_handle;
+  ros::NodeHandle node_handle,node_service_aruco;
   MoveGroupInterface move_group(PLANNING_GROUP);
-  ROS_INFO("INIZIOOO");
   int queue_size=1;
   robot=&move_group;
   namespace rvt = rviz_visual_tools;
@@ -32,12 +30,12 @@ int main(int argc, char** argv)
 
   robot->setPlannerId("RRTConnectkConfigDefault");
   robot->setPlanningTime(3);
-
   gazebo_model_state_pub = node_handle.advertise<gazebo_msgs::ModelState>("/gazebo/set_model_state", 100);
   pose_object_client = node_handle.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
 
 
-  //ruota_360();
+
+  load_parameters();
   Start();
 
 
@@ -285,81 +283,13 @@ void MenudDiSceltaEndEffector(){
   }while(comando!=0);
 }
 void MenuPosizioniBase(){
-  unsigned int comando;
-  do{
-    cout<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl;
-    cout<<endl<<"0)Esci"<<endl<<"1)PROVAAA"<<endl<<"2)Full Stand"<<endl<<"3)Testa in basso"<<endl<<"4)Testa in alto"<<endl<<"Scelta:";
-    cin>>comando;
-    switch(comando){
-    case 1:{
-
-      PosizioniBase(1);
-      /*
-
-
-
-      const robot_state::JointModelGroup* joint_model_group =robot->getCurrentState()->getJointModelGroup(PLANNING_GROUP);
-
-
-      geometry_msgs::Pose target_pose1;
-      SetPoseOrientationRPY(&target_pose1,0,0,0);
-      target_pose1.position.x = 0.3;
-      target_pose1.position.y = -0.3;
-      target_pose1.position.z = 0.3;
-      //robot->setPoseTarget(target_pose1);
-
-      moveit_msgs::OrientationConstraint ocm;
-      ocm.link_name = "wrist_3_link";
-
-      ocm.header.frame_id = "base_link";
-      tf2::Quaternion quat;
-      quat.setRPY(grad_to_rad(0),grad_to_rad(0),grad_to_rad(0));
-      ocm.orientation.x=quat.getX();
-      ocm.orientation.y=quat.getY();
-      ocm.orientation.z=quat.getZ();
-      ocm.orientation.w=quat.getW();
-
-      ocm.absolute_x_axis_tolerance = 0.2;
-      ocm.absolute_y_axis_tolerance = 0.2;
-      ocm.absolute_z_axis_tolerance = 0.2;
-      ocm.weight = 1.0;
-
-      moveit_msgs::Constraints test_constraints;
-      test_constraints.orientation_constraints.push_back(ocm);
-      robot->setPathConstraints(test_constraints);
-
-
-      robot->setPoseTarget(target_pose1);
-
-      robot->setPlanningTime(10.0);
-
-      success = (robot->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
-      ROS_INFO_NAMED("tutorial", "Visualizing plan 3 (constraints) %s", success ? "" : "FAILED");
-      robot->execute(my_plan);
-      robot->clearPathConstraints();*/
-      break;
-
-    }
-    case 2:{
-
-      PosizioniBase(2);
-      break;
-
-    }
-    case 3:{
-
-      PosizioniBase(3);
-      break;
-
-    }case 4:{
-
-      PosizioniBase(4);
-      break;
-
-    }
-
-    }
-  }while(comando!=0);
+  string comando;
+  cout<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl;
+  cout<<endl<<"Inserisci una stringa tra queste elencate:";
+  cout<<endl<<str_r<<endl<<str_ta<<endl<<str_tb<<endl<<str_up<<endl<<str_home<<endl<<str_centrifuga<<endl<<str_pannello<<endl;
+  cout<<"Scelta:";
+  cin>>comando;
+  PosizioniBase(comando);
 }
 void MenuMovimentiBase(){
   unsigned int comando;
@@ -407,7 +337,7 @@ void MenuMovimentiBase(){
           break;
       }
       case 2:{
-        PosizioniBase(3);
+        PosizioniBase(str_tb);
         sleep(2.0);
 
         break;
@@ -501,7 +431,7 @@ void Interazione_Environment(){
 
   unsigned int comando;
   cout<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl;
-  cout<<endl<<"0)Esci"<<endl<<"1)Movimento automatizzato gara"<<endl<<"2)NULLA"<<endl<<"3)pick object"<<endl<<"4)unpick object"<<endl<<"5)move to take object"<<endl<<"6)ruota e cerca aruco"<<endl<<"Scelta:";
+  cout<<endl<<"0)Esci"<<endl<<"1)Movimento automatizzato gara"<<endl<<"2)Muoviti fino alla centrifuga"<<endl<<"21)Muoviti quasi vicino alla centrifuga"<<endl<<"3)pick object"<<endl<<"4)unpick object"<<endl<<"5)move to take object"<<endl<<"6)Individua_aruco"<<endl<<"7)Individua e prendi aruco"<<endl<<"8)Pannello"<<endl<<"Scelta:";
   cin>>comando;
   cout<<endl<<endl<<endl;
   switch(comando){
@@ -512,9 +442,14 @@ void Interazione_Environment(){
 
   }
     case 2:{
+    move_to_centrifuga();
       break;
 
     }
+    case 21:{
+      move_near_to_centrifuga();
+      break;
+  }
     case 3:{
       cout<<endl<<"nome oggetto: ";
       cin>>nome_oggetto;
@@ -532,10 +467,19 @@ void Interazione_Environment(){
     break;
     }
     case 6:{
-      ruota_e_cerca_aruco();
-    break;
+      Pose aruco_pose_solidale;
+      individua_aruco(&aruco_pose_solidale);
+      break;
     }
-  }
+    case 7:{
+  move_to_aruco();
+  break;
+}
+    case 8:{
+        aruco_pannello();
+        break;
+    }
+    }
 }
 void Menu_Di_Scelta_Prove(){
   unsigned int comando;
@@ -547,7 +491,16 @@ void Menu_Di_Scelta_Prove(){
       switch(comando){
         case 1:{
 
-          ruota_360();
+           ros:: Publisher pub_traj_cancel;
+           ros::NodeHandle node_traj_cancel;
+           boost::thread ruota_thread(ruota_360);
+
+           pub_traj_cancel = node_traj_cancel.advertise<actionlib_msgs::GoalID>("/execute_trajectory/cancel", 100);
+           sleep(10);
+
+           ROS_INFO("Stopping trajectory");
+           actionlib_msgs::GoalID msg_traj_cancel;
+           pub_traj_cancel.publish(msg_traj_cancel);
           break;
 
       }
@@ -571,20 +524,22 @@ void MenuDiSceltaOpzioni(){
   unsigned int comando;
   do{
       cout<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl;
-      cout<<endl<<"0)Esci"<<endl<<"1)Stampa giunti"<<endl<<"2)Stampa pose"<<endl<<"Scelta:";
+      cout<<endl<<"0)Esci"<<endl<<"1)Stampa valori robot"<<"\nScelta:";
       cin>>comando;
       cout<<endl<<endl<<endl;
       switch(comando){
         case 1:{
 
           stampa_giunti();
+          stampa_Pose(robot->getCurrentPose().pose);
+
+
           break;
 
       }
         case 2:{
-          stampa_Pose(robot->getCurrentPose().pose);
-          break;
 
+          break;
         }
         case 3:{
           break;
