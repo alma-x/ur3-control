@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>700</width>
+    <height>605</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>30</width>
+    <height>0</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Screen_Main</string>
+  </property>
+  <widget class="QWidget" name="">
+   <property name="geometry">
+    <rect>
+     <x>240</x>
+     <y>150</y>
+     <width>101</width>
+     <height>124</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout_3">
+    <item>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QPushButton" name="pushButton">
+          <property name="text">
+           <string>SPEGNI</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButton_2">
+          <property name="text">
+           <string>Manual Pose</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_3">
+        <property name="text">
+         <string>Joystick</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QPushButton" name="pushButton_4">
+      <property name="text">
+       <string>Automazione</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>pushButton</sender>
+   <signal>clicked()</signal>
+   <receiver>Form</receiver>
+   <slot>spegni_console()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>261</x>
+     <y>154</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>612</x>
+     <y>39</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_2</sender>
+   <signal>clicked()</signal>
+   <receiver>Form</receiver>
+   <slot>goToManualPose()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>284</x>
+     <y>206</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>636</x>
+     <y>168</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_3</sender>
+   <signal>clicked()</signal>
+   <receiver>Form</receiver>
+   <slot>goToJoystick()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>306</x>
+     <y>225</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>399</x>
+     <y>233</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_4</sender>
+   <signal>clicked()</signal>
+   <receiver>Form</receiver>
+   <slot>goToAutomazione()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>294</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>342</x>
+     <y>326</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>prova()</slot>
+  <slot>pub()</slot>
+  <slot>service()</slot>
+  <slot>pB_esegui()</slot>
+  <slot>spegni_console()</slot>
+  <slot>fRandomOrientationcheck()</slot>
+  <slot>pB_setJoints()</slot>
+  <slot>goToJoystick()</slot>
+  <slot>joystick_moveJoints()</slot>
+  <slot>goToManualPose()</slot>
+  <slot>goToAutomazione()</slot>
+ </slots>
+</ui>

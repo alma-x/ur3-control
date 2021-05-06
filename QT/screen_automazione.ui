@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>700</width>
+    <height>605</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>30</width>
+    <height>0</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Screen_Automazione</string>
+  </property>
+  <widget class="QWidget" name="">
+   <property name="geometry">
+    <rect>
+     <x>540</x>
+     <y>93</y>
+     <width>91</width>
+     <height>58</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QPushButton" name="pushButton">
+      <property name="text">
+       <string>SPEGNI</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="pushButton_2">
+      <property name="text">
+       <string>Main Menu</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="">
+   <property name="geometry">
+    <rect>
+     <x>150</x>
+     <y>100</y>
+     <width>237</width>
+     <height>168</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout_3">
+    <item>
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>PANNELLO</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="pushButton_4">
+      <property name="text">
+       <string>Automazione completa</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <widget class="QPushButton" name="pushButton_3">
+        <property name="text">
+         <string>Posizione vista pannello</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_5">
+        <property name="text">
+         <string>Muoviti fino all'aruco selezionato</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_6">
+        <property name="text">
+         <string>Next Aruco</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="l_comunicazione">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>COMMUNICATION LABLE</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>pushButton</sender>
+   <signal>clicked()</signal>
+   <receiver>Form</receiver>
+   <slot>spegni_console()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>562</x>
+     <y>98</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>612</x>
+     <y>39</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_2</sender>
+   <signal>clicked()</signal>
+   <receiver>Form</receiver>
+   <slot>goToMainMenu()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>611</x>
+     <y>141</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>656</x>
+     <y>204</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_3</sender>
+   <signal>clicked()</signal>
+   <receiver>Form</receiver>
+   <slot>automazione_PosPannello()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>260</x>
+     <y>163</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>433</x>
+     <y>169</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_4</sender>
+   <signal>clicked()</signal>
+   <receiver>Form</receiver>
+   <slot>automazione_pannello_Completa()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>286</x>
+     <y>144</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>423</x>
+     <y>132</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_5</sender>
+   <signal>clicked()</signal>
+   <receiver>Form</receiver>
+   <slot>automazione_pannello_MoveToSelectedAruco()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>329</x>
+     <y>200</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>467</x>
+     <y>198</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_6</sender>
+   <signal>clicked()</signal>
+   <receiver>Form</receiver>
+   <slot>automazione_pannello_nextAruco()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>355</x>
+     <y>235</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>485</x>
+     <y>236</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>prova()</slot>
+  <slot>pub()</slot>
+  <slot>service()</slot>
+  <slot>pB_esegui()</slot>
+  <slot>spegni_console()</slot>
+  <slot>fRandomOrientationcheck()</slot>
+  <slot>pB_setJoints()</slot>
+  <slot>goToJoystick()</slot>
+  <slot>joystick_moveJoints()</slot>
+  <slot>goToManualPose()</slot>
+  <slot>goToAutomazione()</slot>
+  <slot>goToMainMenu()</slot>
+  <slot>automazione_PosPannello()</slot>
+  <slot>automazione_pannello_Completa()</slot>
+  <slot>automazione_pannello_MoveToSelectedAruco()</slot>
+  <slot>automazione_pannello_nextAruco()</slot>
+ </slots>
+</ui>

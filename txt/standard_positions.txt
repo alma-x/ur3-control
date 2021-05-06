@@ -1,0 +1,7 @@
+posizione_testa_alta joint 0 0 0 0 0 0
+posizione_up joint 0 -90 0 0 90 0
+posizione_testa_bassa rpy 0 -270 0
+posizione_testa_alta rpy 0 -90 0
+posizione_adatta_rotazione joint 0 -96 93 -105 -90 0
+posizione_centrifuga joint 53 -19 4 -79 -89 0
+posizione_pannello joint 73 -149 114 -128 -84 180

@@ -11,13 +11,15 @@
 using namespace std;
 ur3_control::cv_to_bridge msg_from_cv;
 ros::ServiceClient client;
-
 bool bool_md_bpa=false;
+bool bool_exit=false;
 void stampa_cv_msg(const ur3_control::cv_to_bridge msg){
 ROS_INFO("Message received:\n x:%f \n y:%f \n z:%f \n success:%s",msg.x,msg.y,msg.z,(msg.success)? "success":"not success");
 }
 void cv_callback(const ur3_control::cv_to_bridge& msg){
+
   msg_from_cv=msg;
+
 
   if(bool_md_bpa && msg_from_cv.success){
 
@@ -52,16 +54,26 @@ bool callback_modality(ur3_control::aruco_service::Request &req, ur3_control::ar
       res.moreTargets=cv_service_msg.response.moreTargets;
       ROS_INFO("targets remaining:%d",res.moreTargets);
   }
-
+  if("exit"==req.modality){
+      bool_exit=true;
+      ur3_control::cv_server cv_service_msg;
+      cv_service_msg.request.message="exit";
+      client.call(cv_service_msg);
+  }
   res.aruco_found=msg_from_cv.success;
   res.x=msg_from_cv.x;
   res.y=msg_from_cv.y;
   res.z=msg_from_cv.z;
+  res.vector=msg_from_cv.vector;
 
   return true;
 }
 int main(int argc, char** argv){
   ros::init(argc, argv, "bridge");
+
+
+  static ros::AsyncSpinner spinner(1);
+
   ros::Subscriber sub;
   ros::NodeHandle n;
   ros::ServiceServer serv;
@@ -73,6 +85,8 @@ int main(int argc, char** argv){
   robot=&move_group;
   msg_from_cv.success=false;
   bool_md_bpa=false;
-
-  ros::spin();
+  while(ros::ok && !bool_exit){
+  ros::spinOnce();
+  }
+  return 0;
 }

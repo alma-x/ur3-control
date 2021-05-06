@@ -73,6 +73,7 @@ project(ur3_control)
  #Generate services in the 'srv' folder
  add_service_files(
    FILES
+   UserInterface.srv
    aruco_service.srv
    cv_server.srv
  )
@@ -88,6 +89,7 @@ project(ur3_control)
  generate_messages(
    DEPENDENCIES
    std_msgs  # Or other packages containing msgs
+   geometry_msgs
  )
 
 ################################################
@@ -192,6 +194,7 @@ add_dependencies(ERC ${catkin_EXPORTED_TARGETS})
 ## in contrast to setup.py, you can choose the destination
  catkin_install_python(PROGRAMS
    scripts/prova.py
+   QT/user_interface.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 

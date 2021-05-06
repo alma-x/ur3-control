@@ -1,6 +1,8 @@
 #include <ros/ros.h>
+#include <ros/package.h>
 #include "ros/service.h"
 #include "ur3_control/aruco_service.h"
+#include "ur3_control/UserInterface.h"
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <iostream>
@@ -63,6 +65,8 @@ string nome_oggetto;
 char input_char;
 bool joystick_ready;
 
+int std_planning_time=4;
+
 string str_md_stop_bpa="md_stop_blocca_al_primo_aruco";
 string str_md_bpa="md_blocca_al_primo_aruco";
 string str_md_rd="md_richiesta_dati";
@@ -108,6 +112,7 @@ bool callback_service_aruco_found(ur3_control::aruco_service::Request &req,ur3_c
 bool individua_aruco(Pose *aruco_pose);
 bool move_to_aruco();
 ur3_control::aruco_serviceResponse bridge_service(string s);
+bool function_pose_aruco(ur3_control::aruco_serviceResponse msg_from_bridge);
 
 void pick(string name_object){
   Pose pose;
@@ -852,32 +857,60 @@ void ruota_e_cerca_aruco(){
 
 */
 }
+
 void trasformazioni(){
   Pose pose_robot=robot->getCurrentPose().pose;
-  Affine3d T_actual;
-  tf::Pose pose_robot_tf;
+
+  ROS_INFO("Traslazione:");
+  ROS_INFO("x: %f\n y:%f\n z:%f\n ",pose_robot.position.x,pose_robot.position.y,pose_robot.position.z);
+
+  ROS_INFO("Rotazione:");
+  ROS_INFO("x: %f\n y:%f\n z:%f\n w:%f\n",pose_robot.orientation.x,pose_robot.orientation.y,pose_robot.orientation.z,pose_robot.orientation.w);
+
+  Pose pose_robot_target;
+  Affine3d T_0_tool,T_tool_camera,T_0_camera;
+  tf::Pose pose_robot_tf,pose_target_tf;
   tf::poseMsgToTF(pose_robot,pose_robot_tf);
-  tf::poseTFToEigen(pose_robot_tf,T_actual);
+  tf::poseTFToEigen(pose_robot_tf,T_0_tool);
 
-  Matrix3d R_0_w3,R_0_cam,R_w3_cam,R_cam_aruco,R_0_aruco;
-  R_0_w3=T_actual.rotation();
-  R_0_cam=R_0_w3*R_w3_cam;
-  R_0_aruco=R_0_cam*R_cam_aruco;
+  cout<<"T_0_tool translation:"<<endl<<T_0_tool.translation()<<endl;
+  cout<<"T_0_tool rotation:"<<endl<<T_0_tool.rotation()<<endl;
+
+  /*
+   *
+   *    tra ee_link e camera_realsense_gazebo
+        A=np.array([[0,1,0,0.4569],[1,0,0,0.19425],[0,0,-1,0.6655],[0,0,0,1]])
+        B=np.array([[0,0,1,0.025],[1,0,0,0],[0,1,0,0],[0,0,0,1]])
+        p=np.array([[0],[0],[0],[1]])
+        T=A.dot(B)
+        result=T.dot(p)
+*/
+  Vector3d translation_tool_camera(0.025,0,0);
+  Matrix3d rotation_tool_camera;
+  Vector3d xvec_des(0,1,0),yvec_des(0,0,1),zvec_des(1,0,0);
+  rotation_tool_camera.col(0)=xvec_des;
+  rotation_tool_camera.col(1)=yvec_des;
+  rotation_tool_camera.col(2)=zvec_des;
 
 
-  tf::Matrix3x3 M;
-  /// Converts an Eigen Quaternion into a tf Matrix3x3
-  matrixEigenToTF(R_0_aruco, M);
+  T_tool_camera.translation()=translation_tool_camera;
+  T_tool_camera.linear()=rotation_tool_camera;
+  cout<<"T_tool_camera translation:"<<endl<<T_tool_camera.translation()<<endl;
+  cout<<"T_tool_camera rotation:"<<endl<<T_tool_camera.rotation()<<endl;
+  //ROS_INFO("T_tool_camera: %f %f %f",T_tool_camera.translation().x(),T_tool_camera.translation().y(),T_tool_camera.translation().z());
 
-  double r0, p0, y0;
-  M.getRPY(r0, p0, y0);
-  tf2::Quaternion quat;
-  quat.setRPY(r0,p0,y0);
-  Pose p;
-  p.orientation.x=quat.getX();
-  p.orientation.y=quat.getY();
-  p.orientation.z=quat.getZ();
-  p.orientation.w=quat.getW();
+
+  T_0_camera=T_0_tool*T_tool_camera;
+
+  tf::poseEigenToTF(T_0_camera,pose_target_tf);
+  tf::poseTFToMsg(pose_target_tf,pose_robot_target);
+
+  ROS_INFO("Traslazione:");
+  ROS_INFO("x: %f\n y:%f\n z:%f\n ",pose_robot_target.position.x,pose_robot_target.position.y,pose_robot_target.position.z);
+
+  ROS_INFO("Rotazione:");
+  ROS_INFO("x: %f\n y:%f\n z:%f\n w:%f\n",pose_robot_target.orientation.x,pose_robot_target.orientation.y,pose_robot_target.orientation.z,pose_robot_target.orientation.w);
+
 }
 void reshape(){
     /*
@@ -904,17 +937,6 @@ void reshape(){
   }
   }*/
 }
-ur3_control::aruco_service bridge_server(string modalita){
-  ros::NodeHandle node_handle;
-  ros::ServiceClient client1;
-  client1 = node_handle.serviceClient<ur3_control::aruco_service>("/aruco_modality");
-  ur3_control::aruco_service aruco_srv_msg;
-
-  aruco_srv_msg.request.modality=modalita;
-  client1.call(aruco_srv_msg);
-
-  return aruco_srv_msg;
-}
 void automatizzato(){
 
 
@@ -934,14 +956,12 @@ void automatizzato(){
   bridge_service(str_md_stop_bpa);
 }
 bool individua_aruco(Pose *aruco_pose_solidale){
-
+//
   ur3_control::aruco_serviceResponse aruco_srv_msg_resp=bridge_service(str_md_rd);
-
-  ROS_INFO("Aruco found:%s\nAruco: x=%f y=%f z=%f",(aruco_srv_msg_resp.aruco_found ? "YES":"NO"),aruco_srv_msg_resp.x,aruco_srv_msg_resp.y,aruco_srv_msg_resp.z);
+  ROS_INFO("Aruco found:%s",(aruco_srv_msg_resp.aruco_found ? "YES":"NO"));
+  
   if(aruco_srv_msg_resp.aruco_found){
-    aruco_pose_solidale->position.x=aruco_srv_msg_resp.x;
-    aruco_pose_solidale->position.y=aruco_srv_msg_resp.y;
-    aruco_pose_solidale->position.z=aruco_srv_msg_resp.z;
+    ROS_INFO("ATTENZIONE E' ROTTA");
     return true;
   }
   else{
@@ -951,16 +971,12 @@ bool individua_aruco(Pose *aruco_pose_solidale){
 
 }
 bool move_to_aruco(){
-
   Pose aruco_pose_solidale;
-  Pose target_aruco;
   if(individua_aruco(&aruco_pose_solidale)){
 
-    Vector3d camera_block_vector(aruco_pose_solidale.position.x,aruco_pose_solidale.position.y,aruco_pose_solidale.position.z);
-    target_aruco=pose_traslation_solidale(camera_block_vector);
-    SetPoseOrientationRPY(&target_aruco,0,-270,0);
-
-    move_to_pose(target_aruco,true);
+    robot->setPlanningTime(10);
+    move_to_pose(aruco_pose_solidale,true);
+    robot->setPlanningTime(std_planning_time);
     return true;
   }
   else {
@@ -985,17 +1001,11 @@ void move_to_centrifuga(){
 bool move_to_pannello_aruco(){
 
   Pose aruco_pose_solidale;
-  Pose target_aruco;
   if(individua_aruco(&aruco_pose_solidale)){
 
-    Vector3d camera_block_vector(aruco_pose_solidale.position.x,aruco_pose_solidale.position.y,aruco_pose_solidale.position.z);
-    target_aruco=pose_traslation_solidale(camera_block_vector);
-
-    target_aruco.position.y-=0.15;//sennò non ci arriva al pannello
-
-    SetPoseOrientationRPY(&target_aruco,0,90,0);
-
-    move_to_pose(target_aruco,true);
+    robot->setPlanningTime(10);
+    move_to_pose(aruco_pose_solidale,true);
+    robot->setPlanningTime(std_planning_time);
     return true;
   }
   else {
@@ -1009,7 +1019,9 @@ void aruco_pannello(){
   while(continua_){
 
     PosizioniBase(str_pannello);
-    move_to_pannello_aruco();
+    
+    function_pose_aruco(bridge_service(str_md_rd));
+
     if(bridge_service(str_md_next_aruco).moreTargets<=0){
         continua_=false;
     }
@@ -1037,8 +1049,11 @@ void load_parameters()
 
     ifstream inFile;
     string nome,tipo;
-
-    inFile.open("src/ur3-control/src/txt/standard_positions.txt");
+    string pkgpath = ros::package::getPath("ur3_control");
+    string path_txt="/txt/standard_positions.txt";
+    string path_total=pkgpath + path_txt;
+    cout<<"percorso txt: "<<path_total<<endl<<endl;
+    inFile.open(path_total);
     if (!inFile) {
         cerr << "Unable to open file datafile.txt";
         exit(1);   // call system to stop
@@ -1119,4 +1134,78 @@ void load_parameters()
     }
 
     inFile.close();
+}
+bool function_pose_aruco(ur3_control::aruco_serviceResponse msg_from_bridge){
+
+  robot->setPlanningTime(10);
+  if(msg_from_bridge.aruco_found){
+
+    Pose pose_robot=robot->getCurrentPose().pose;
+
+    Pose pose_robot_target,pose_finalpos;
+    Affine3d T_0_tool,T_tool_camera,T_0_camera,T_camera_aruco,T_0_aruco,T_aruco_finalpos,T_0_finalpos;
+    tf::Pose pose_robot_tf,pose_target_tf,pose_finalpos_tf;
+    tf::poseMsgToTF(pose_robot,pose_robot_tf);
+    tf::poseTFToEigen(pose_robot_tf,T_0_tool);
+    //In questo punto ho T_0_tool
+
+
+    Vector3d translation_tool_camera(0.025,0,0);
+    Matrix3d rotation_tool_camera;
+    Vector3d xvec_des(0,1,0),yvec_des(0,0,1),zvec_des(1,0,0);
+    rotation_tool_camera.col(0)=xvec_des;
+    rotation_tool_camera.col(1)=yvec_des;
+    rotation_tool_camera.col(2)=zvec_des;
+
+    T_tool_camera.translation()=translation_tool_camera;
+    T_tool_camera.linear()=rotation_tool_camera;
+
+    T_0_camera=T_0_tool*T_tool_camera;
+    //In questo punto ho T_0_camera
+
+    
+    Vector3d translation_camera_aruco(msg_from_bridge.x,msg_from_bridge.y,msg_from_bridge.z);
+    Matrix3d rotation_camera_aruco;
+    Vector3d xct(msg_from_bridge.vector[0],msg_from_bridge.vector[1],msg_from_bridge.vector[2]),yct(msg_from_bridge.vector[3],msg_from_bridge.vector[4],msg_from_bridge.vector[5]),zct(msg_from_bridge.vector[6],msg_from_bridge.vector[7],msg_from_bridge.vector[8]);
+    rotation_camera_aruco.row(0)=xct;
+    rotation_camera_aruco.row(1)=yct;
+    rotation_camera_aruco.row(2)=zct;
+    T_camera_aruco.translation()=translation_camera_aruco;
+    T_camera_aruco.linear()=rotation_camera_aruco;
+
+    T_0_aruco=T_0_camera*T_camera_aruco;
+    //In questo punto ho T_0_aruco
+
+
+    Matrix3d rotation_aruco_final_pos;
+    Vector3d xaf(0,0,1),yaf(0,1,0),zaf(-1,0,0),trans_aruco_finalpos(0,0,0.07);
+    rotation_aruco_final_pos.row(0)=xaf;
+    rotation_aruco_final_pos.row(1)=yaf;
+    rotation_aruco_final_pos.row(2)=zaf;
+
+    T_aruco_finalpos.linear()=rotation_aruco_final_pos;
+    T_aruco_finalpos.translation()=trans_aruco_finalpos;
+
+    T_0_finalpos=T_0_aruco*T_aruco_finalpos;
+    //In questo punto ho T_0_final
+
+
+    tf::poseEigenToTF(T_0_finalpos,pose_finalpos_tf);
+    tf::poseTFToMsg(pose_finalpos_tf,pose_finalpos);
+
+
+    //cout<<"T_0_final_pos translation:"<<endl<<T_tool_camera.translation()<<endl;
+    //cout<<"T_0_final_pos rotation:"<<endl<<T_tool_camera.rotation()<<endl;
+    
+    stampa_Pose(pose_finalpos);
+    move_to_pose(pose_finalpos,true);
+    robot->setPlanningTime(std_planning_time);
+    return true;
+
+  }
+  else{
+    ROS_INFO("No aruco detected, no return??");
+    return false;
+  }
+
 }

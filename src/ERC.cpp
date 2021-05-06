@@ -1,5 +1,7 @@
 //Piacere, Federico
 #include "library.h"
+
+
 void MenuDiSceltaGiunti();
 void MenudDiSceltaEndEffectorAssi();
 void MenudDiSceltaEndEffectorTarget();
@@ -13,11 +15,68 @@ void Interazione_Environment();
 void Menu_Di_Scelta_Prove();
 void MenuDiSceltaOpzioni();
 
+bool bool_exit=false;
+
+bool callback_modality(ur3_control::UserInterface::Request &req, ur3_control::UserInterface::Response &res){
+
+  bool_exit=false;
+  ROS_INFO("Chiamata ricevuta:\nModalita:%s\n\n",req.modality.c_str());
+  if(req.modality=="pose"){
+      move_to_pose(req.target_pose,true);
+  }
+  if(req.modality=="pose_randomOrientation"){
+      move_to_pose(req.target_pose,false);
+  }
+  if(req.modality=="joints"){
+      vector<double> joint_group_positions=robot->getCurrentJointValues();
+      joint_group_positions[0]=grad_to_rad(req.target_joints[0]);
+      joint_group_positions[1]=grad_to_rad(req.target_joints[1]);
+      joint_group_positions[2]=grad_to_rad(req.target_joints[2]);
+      joint_group_positions[3]=grad_to_rad(req.target_joints[3]);
+      joint_group_positions[4]=grad_to_rad(req.target_joints[4]);
+      joint_group_positions[5]=grad_to_rad(req.target_joints[5]);
+      robot->setJointValueTarget(joint_group_positions);
+      success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
+      ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+      robot->move();
+  }
+  if(req.modality=="exit"){
+      bridge_service("exit");
+      bool_exit=true;
+  }
+  if(req.modality=="joystick_Joints"){
+      vector<double> joint_group_positions=robot->getCurrentJointValues();
+      joint_group_positions[0]=joint_group_positions[0]+grad_to_rad(req.target_joints[0]);
+      joint_group_positions[1]=joint_group_positions[1]+grad_to_rad(req.target_joints[1]);
+      joint_group_positions[2]=joint_group_positions[2]+grad_to_rad(req.target_joints[2]);
+      joint_group_positions[3]=joint_group_positions[3]+grad_to_rad(req.target_joints[3]);
+      joint_group_positions[4]=joint_group_positions[4]+grad_to_rad(req.target_joints[4]);
+      joint_group_positions[5]=joint_group_positions[5]+grad_to_rad(req.target_joints[5]);
+      robot->setJointValueTarget(joint_group_positions);
+      success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
+      ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+      robot->move();
+  }
+  if(req.modality=="automazione_pannello_posizioneCorretta"){
+
+      PosizioniBase(str_pannello);
+  }
+  if(req.modality=="automazione_pannello_Completa"){
+      aruco_pannello();
+  }
+  if(req.modality=="automazione_pannello_MoveToSelectedAruco"){
+      function_pose_aruco(bridge_service(str_md_rd));
+  }
+  if(req.modality=="automazione_pannello_nextAruco"){
+      bridge_service(str_md_next_aruco);
+  }
+  return true;
+}
 int main(int argc, char** argv)
 {
   // Initialize the ROS Node "roscpp_hello_world"
   ros::init(argc, argv, "simulation");
-  ros::AsyncSpinner spinner(1);
+  static ros::AsyncSpinner spinner(1);
   spinner.start();
   ros::WallDuration(1.0).sleep();
   ros::NodeHandle node_handle,node_service_aruco;
@@ -29,18 +88,18 @@ int main(int argc, char** argv)
   visual_tools.deleteAllMarkers();
 
   robot->setPlannerId("RRTConnectkConfigDefault");
-  robot->setPlanningTime(3);
+  robot->setPlanningTime(5);
   gazebo_model_state_pub = node_handle.advertise<gazebo_msgs::ModelState>("/gazebo/set_model_state", 100);
   pose_object_client = node_handle.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
 
-
+  ros::ServiceServer serv=node_handle.advertiseService("/user_interface_serv", callback_modality);
 
   load_parameters();
-  Start();
+  while(ros::ok && !bool_exit){
+  ros::spinOnce();
+  }
+  //Start();
 
-
-
-  ros::shutdown();
   return 0;
 }
 
@@ -554,7 +613,7 @@ void MenuDiSceltaOpzioni(){
   }while(comando!=0);
 }
 void Start(){
-  unsigned int comando;
+  int comando;
   do{
       cout<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl;
       cout<<endl<<"0)Esci"<<endl<<"1)Menu Di Scelta"<<endl<<"2)Joystick"<<endl<<"3)Interagisci con Environment"<<endl<<"4)Menu Prove"<<endl<<"5)Opzioni"<<endl<<"Scelta:";
@@ -587,7 +646,7 @@ void Start(){
           break;
 
         }
-      case 5:{
+        case 5:{
         MenuDiSceltaOpzioni();
         break;
       }

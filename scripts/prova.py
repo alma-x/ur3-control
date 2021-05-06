@@ -1,26 +1,22 @@
 #!/usr/bin/env python3
 
 
+
+from __future__ import print_function
+
+from beginner_tutorials.srv import AddTwoInts,AddTwoIntsResponse
 import rospy
-from ur3_control.srv import *
-from ur3_control.msg import cv_to_bridge as bridge_msg
+
+def handle_add_two_ints(req):
+    print("Returning [%s + %s = %s]"%(req.a, req.b, (req.a + req.b)))
+    return AddTwoIntsResponse(req.a + req.b)
+
 def add_two_ints_server():
-
     rospy.init_node('add_two_ints_server')
-    r = rospy.Rate(10) #10hz
-    pub = rospy.Publisher('aruco_bridge_opencv', bridge_msg, queue_size=10)
-    
-    msg=bridge_msg()
-    msg.success=True
-    pub.publish(msg)
-
-    while not rospy.is_shutdown():
-        rospy.loginfo(msg)
-        pub.publish(msg)
-        r.sleep()
-
+    s = rospy.Service('add_two_ints', AddTwoInts, handle_add_two_ints)
+    print("Ready to add two ints.")
+    rospy.spin()
 
 if __name__ == "__main__":
-    print("provaa")
     add_two_ints_server()
 
