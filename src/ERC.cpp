@@ -39,6 +39,7 @@ bool callback_modality(ur3_control::UserInterface::Request &req, ur3_control::Us
       success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
       ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
       robot->move();
+
   }
   if(req.modality=="exit"){
       bridge_service("exit");
@@ -56,6 +57,7 @@ bool callback_modality(ur3_control::UserInterface::Request &req, ur3_control::Us
       success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
       ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
       robot->move();
+      stampa_giunti();
   }
   if(req.modality=="automazione_pannello_posizioneCorretta"){
 

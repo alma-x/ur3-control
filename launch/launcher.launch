@@ -2,11 +2,11 @@
 
 <node name="bridge" pkg="ur3_control" type="bridge" respawn="false" output="screen">
   </node>
-  <node name="arucoPanel3" pkg="simulation-cv" type="arucoPanel3.py" respawn="false" output="screen">
+  <node name="arucoPanel" pkg="simulation-cv" type="arucoPanel.py" respawn="false" output="screen">
   </node>
   
   <!--
-  <node name="panoramic3" pkg="simulation-cv" type="panoramic3.py" respawn="false" output="screen">
+  <node name="panoramic3" pkg="simulation-cv" type="panoramic.py" respawn="false" output="screen">
   </node>
   -->
   

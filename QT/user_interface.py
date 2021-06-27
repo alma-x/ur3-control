@@ -1,10 +1,11 @@
+#!/usr/bin/env python3
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton
 from PyQt5 import uic, QtWidgets,QtGui
 import rospy
 from std_msgs.msg import String
 from ur3_control.srv import UserInterface,UserInterfaceRequest
 from geometry_msgs.msg import Pose
-from tf import transformations
+#from tf import transformations
 import rospkg
 
 rospack = rospkg.RosPack()
@@ -263,7 +264,6 @@ def main_code():
     widget.show()
     app.exec()
 
-   
 
 if __name__ == '__main__':
     try:

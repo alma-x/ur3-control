@@ -37,7 +37,7 @@ void cv_callback(const ur3_control::cv_to_bridge& msg){
 bool callback_modality(ur3_control::aruco_service::Request &req, ur3_control::aruco_service::Response &res){
 
 
-  ROS_INFO("Chiamata ricevuta:\nModalita:%s\n\n",req.modality.c_str());
+  ROS_INFO("Bridge:Chiamata ricevuta:\nModalita:%s\n\n",req.modality.c_str());
 
   if(str_md_bpa==req.modality){
     bool_md_bpa=true;
