@@ -62,8 +62,8 @@ add_executable(bridge src/bridge.cpp)
 add_executable(ERC src/ERC.cpp)
 add_executable(prova_cpp src/prova_cpp.cpp)
 
-add_dependencies(bridge ${catkin_EXPORTED_TARGETS})
-add_dependencies(prova_cpp ${catkin_EXPORTED_TARGETS})
+add_dependencies(bridge ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(prova_cpp ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 add_dependencies(ERC ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(bridge ${catkin_LIBRARIES} ${Boost_LIBRARIES})
