@@ -246,7 +246,7 @@ void stampa_Pose(Pose po)
   tf::Matrix3x3 m(q);
   double r0, p0, y0;
   m.getRPY(r0, p0, y0);
-  cout<<"r0:"<<rad_to_grad(r0)<<" p0:"<<rad_to_grad(p0)<<" y0:"<<rad_to_grad(y0);
+  cout<<"r0:"<<rad_to_grad(r0)<<" p0:"<<rad_to_grad(p0)<<" y0:"<<rad_to_grad(y0)<<endl<<endl;
 }
 void stampa_giunti()
 {
@@ -1142,9 +1142,9 @@ bool function_pose_aruco(ur3_control::aruco_serviceResponse msg_from_bridge){
 
     Pose pose_robot=robot->getCurrentPose().pose;
 
-    Pose pose_robot_target,pose_finalpos;
+    Pose pose_robot_target,pose_finalpos,pose_aruco;
     Affine3d T_0_tool,T_tool_camera,T_0_camera,T_camera_aruco,T_0_aruco,T_aruco_finalpos,T_0_finalpos;
-    tf::Pose pose_robot_tf,pose_target_tf,pose_finalpos_tf;
+    tf::Pose pose_robot_tf,pose_target_tf,pose_finalpos_tf,pose_aruco_tf;
     tf::poseMsgToTF(pose_robot,pose_robot_tf);
     tf::poseTFToEigen(pose_robot_tf,T_0_tool);
     //In questo punto ho T_0_tool
@@ -1174,11 +1174,16 @@ bool function_pose_aruco(ur3_control::aruco_serviceResponse msg_from_bridge){
     T_camera_aruco.linear()=rotation_camera_aruco;
 
     T_0_aruco=T_0_camera*T_camera_aruco;
+    tf::poseEigenToTF(T_0_aruco,pose_aruco_tf);
+    tf::poseTFToMsg(pose_aruco_tf,pose_aruco);
     //In questo punto ho T_0_aruco
 
 
     Matrix3d rotation_aruco_final_pos;
-    Vector3d xaf(0,0,1),yaf(0,1,0),zaf(-1,0,0),trans_aruco_finalpos(0,0,0.07);
+    Vector3d xaf(0,0,1),yaf(0,1,0),zaf(-1,0,0),trans_aruco_finalpos(0,0,0.22);//con il gripper che punta sull'aruco
+    //Vector3d xaf(0,0,1),yaf(0,1,0),zaf(0,0,-1),trans_aruco_finalpos(0,0,0.15);
+
+
     rotation_aruco_final_pos.row(0)=xaf;
     rotation_aruco_final_pos.row(1)=yaf;
     rotation_aruco_final_pos.row(2)=zaf;
@@ -1196,7 +1201,11 @@ bool function_pose_aruco(ur3_control::aruco_serviceResponse msg_from_bridge){
 
     //cout<<"T_0_final_pos translation:"<<endl<<T_tool_camera.translation()<<endl;
     //cout<<"T_0_final_pos rotation:"<<endl<<T_tool_camera.rotation()<<endl;
-    
+
+    cout<<"aruco pose:"<<endl;
+    stampa_Pose(pose_aruco);
+
+    cout<<"final pose:"<<endl;
     stampa_Pose(pose_finalpos);
     move_to_pose(pose_finalpos,true);
     robot->setPlanningTime(std_planning_time);
