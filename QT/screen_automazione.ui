@@ -19,7 +19,7 @@
   <property name="windowTitle">
    <string>Screen_Automazione</string>
   </property>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
      <x>540</x>
@@ -48,13 +48,13 @@
   <widget class="QWidget" name="">
    <property name="geometry">
     <rect>
-     <x>150</x>
-     <y>100</y>
-     <width>237</width>
-     <height>168</height>
+     <x>151</x>
+     <y>101</y>
+     <width>215</width>
+     <height>156</height>
     </rect>
    </property>
-   <layout class="QVBoxLayout" name="verticalLayout_3">
+   <layout class="QVBoxLayout" name="verticalLayout_2">
     <item>
      <widget class="QLabel" name="label">
       <property name="text">
@@ -73,45 +73,52 @@
      </widget>
     </item>
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
-      <item>
-       <widget class="QPushButton" name="pushButton_3">
-        <property name="text">
-         <string>Posizione vista pannello</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="pushButton_5">
-        <property name="text">
-         <string>Muoviti fino all'aruco selezionato</string>
-        </property>
-       </widget>
-      </item>
+     <widget class="QPushButton" name="pushButton_3">
+      <property name="text">
+       <string>Posizione vista pannello</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="pushButton_5">
+      <property name="text">
+       <string>Muoviti fino all'aruco selezionato</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
        <widget class="QPushButton" name="pushButton_6">
         <property name="text">
-         <string>Next Aruco</string>
+         <string>Select Aruco</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QLabel" name="l_comunicazione">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>30</height>
-         </size>
-        </property>
+       <widget class="QLineEdit" name="select_aruco_value">
         <property name="text">
-         <string>COMMUNICATION LABLE</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
+         <string>0</string>
         </property>
        </widget>
       </item>
      </layout>
+    </item>
+    <item>
+     <widget class="QLabel" name="l_comunicazione">
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>30</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>COMMUNICATION LABLE</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>

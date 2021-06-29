@@ -1,4 +1,5 @@
 string modality
+string second_information
 ---
 bool aruco_found
 float32 x

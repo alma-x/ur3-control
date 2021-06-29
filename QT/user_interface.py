@@ -46,9 +46,10 @@ class Manual_pose(QWidget):
         target_pose.orientation.y = quaternion[1]
         target_pose.orientation.z = quaternion[2]
         target_pose.orientation.w = quaternion[3]
+        second_information='null'
 
         try:
-            msg=UserInterfaceRequest(modality,target_pose,target_joints)
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
         except rospy.ServiceException as e:
             self.l_comunicazione.setText('Errore:'+ e)
@@ -59,7 +60,8 @@ class Manual_pose(QWidget):
             modality='exit'
             target_pose=Pose()
             target_joints=[0,0,0,0,0,0]
-            msg=UserInterfaceRequest(modality,target_pose,target_joints)
+            second_information='null'
+            msg=equest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
         except rospy.ServiceException as e:
             self.l_comunicazione.setText('Errore:'+ e)
@@ -75,9 +77,10 @@ class Manual_pose(QWidget):
     def pB_setJoints(self):
         try:
             modality='joints'
+            second_information='null'
             target_pose=Pose()
             target_joints=[float(self.mpJ_1.text()),float(self.mpJ_2.text()),float(self.mpJ_3.text()),float(self.mpJ_4.text()),float(self.mpJ_5.text()),float(self.mpJ_6.text())]
-            msg=UserInterfaceRequest(modality,target_pose,target_joints)
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
         except rospy.ServiceException as e:
             self.l_comunicazione.setText('Errore:'+ e)
@@ -102,7 +105,8 @@ class Screen_Joystick(QWidget):
             modality='exit'
             target_pose=Pose()
             target_joints=[0,0,0,0,0,0]
-            msg=UserInterfaceRequest(modality,target_pose,target_joints)
+            second_information='null'
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
         except rospy.ServiceException as e:
             self.l_comunicazione.setText('Errore:'+ e)
@@ -115,6 +119,7 @@ class Screen_Joystick(QWidget):
         target_joints=[0,0,0,0,0,0]
         target_pose=Pose()
         modality='joystick_Joints'
+        second_information='null'
 
         if self.joystick_check_sensoRotazione.isChecked():
             if self.joystick_check_Joint1.isChecked():
@@ -144,7 +149,7 @@ class Screen_Joystick(QWidget):
                 target_joints[5]=step      
         self.l_comunicazione.setText(str(target_joints[0])+ ' '+ str(target_joints[1])+ ' '+  str(target_joints[2])+ ' '+  str(target_joints[3])+ ' '+  str(target_joints[4])+ ' '+  str(target_joints[5]))
         try:
-            msg=UserInterfaceRequest(modality,target_pose,target_joints)
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
         except rospy.ServiceException as e:
             self.l_comunicazione.setText('Errore:'+ e)
@@ -169,7 +174,8 @@ class Screen_Main(QWidget):
             modality='exit'
             target_pose=Pose()
             target_joints=[0,0,0,0,0,0]
-            msg=UserInterfaceRequest(modality,target_pose,target_joints)
+            second_information='null'
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
         except rospy.ServiceException as e:
             self.l_comunicazione.setText('Errore:'+ e)
@@ -195,7 +201,8 @@ class Screen_Automazione(QWidget):
             modality='exit'
             target_pose=Pose()
             target_joints=[0,0,0,0,0,0]
-            msg=UserInterfaceRequest(modality,target_pose,target_joints)
+            second_information='null'
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
         except rospy.ServiceException as e:
             self.l_comunicazione.setText('Errore:'+ e)
@@ -207,8 +214,9 @@ class Screen_Automazione(QWidget):
         target_joints=[0,0,0,0,0,0] 
         target_pose=Pose()
         modality='automazione_pannello_posizioneCorretta'
+        second_information='null'
         try:
-            msg=UserInterfaceRequest(modality,target_pose,target_joints)
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
         except rospy.ServiceException as e:
             self.l_comunicazione.setText('Errore:'+ e)
@@ -216,8 +224,9 @@ class Screen_Automazione(QWidget):
         target_joints=[0,0,0,0,0,0] 
         target_pose=Pose()
         modality='automazione_pannello_Completa'
+        second_information='null'
         try:
-            msg=UserInterfaceRequest(modality,target_pose,target_joints)
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
         except rospy.ServiceException as e:
             self.l_comunicazione.setText('Errore:'+ e)
@@ -225,8 +234,9 @@ class Screen_Automazione(QWidget):
         target_joints=[0,0,0,0,0,0] 
         target_pose=Pose()
         modality='automazione_pannello_MoveToSelectedAruco'
+        second_information='null'
         try:
-            msg=UserInterfaceRequest(modality,target_pose,target_joints)
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
         except rospy.ServiceException as e:
             self.l_comunicazione.setText('Errore:'+ e)
@@ -234,8 +244,9 @@ class Screen_Automazione(QWidget):
         target_joints=[0,0,0,0,0,0] 
         target_pose=Pose()
         modality='automazione_pannello_nextAruco'
+        second_information=self.select_aruco_value.text()
         try:
-            msg=UserInterfaceRequest(modality,target_pose,target_joints)
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
         except rospy.ServiceException as e:
             self.l_comunicazione.setText('Errore:'+ e)

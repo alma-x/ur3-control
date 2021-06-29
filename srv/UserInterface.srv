@@ -1,5 +1,6 @@
 #Request
 string modality
+string second_information
 geometry_msgs/Pose target_pose
 float32[] target_joints
 ---

@@ -49,6 +49,8 @@ bool callback_modality(ur3_control::aruco_service::Request &req, ur3_control::ar
 
       ur3_control::cv_server cv_service_msg;
       cv_service_msg.request.next_aruco=true;
+      cv_service_msg.request.message="select_next_aruco";
+      cv_service_msg.request.second_information=req.second_information;
       client.call(cv_service_msg);
 
       res.moreTargets=cv_service_msg.response.moreTargets;

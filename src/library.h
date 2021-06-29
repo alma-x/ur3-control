@@ -111,7 +111,7 @@ double rad_to_grad(double rad);
 bool callback_service_aruco_found(ur3_control::aruco_service::Request &req,ur3_control::aruco_service::Response &res);
 bool individua_aruco(Pose *aruco_pose);
 bool move_to_aruco();
-ur3_control::aruco_serviceResponse bridge_service(string s);
+ur3_control::aruco_serviceResponse bridge_service(string modalita,string second_information);
 bool function_pose_aruco(ur3_control::aruco_serviceResponse msg_from_bridge);
 
 void pick(string name_object){
@@ -940,7 +940,7 @@ void reshape(){
 void automatizzato(){
 
 
-  bridge_service(str_md_bpa);
+  bridge_service(str_md_bpa,"");
 
   PosizioniBase(str_r);//si mette in posizione prima di iniziare a ruotare
 
@@ -953,11 +953,11 @@ void automatizzato(){
     }
   }
 
-  bridge_service(str_md_stop_bpa);
+  bridge_service(str_md_stop_bpa,"");
 }
 bool individua_aruco(Pose *aruco_pose_solidale){
 //
-  ur3_control::aruco_serviceResponse aruco_srv_msg_resp=bridge_service(str_md_rd);
+  ur3_control::aruco_serviceResponse aruco_srv_msg_resp=bridge_service(str_md_rd,"");
   ROS_INFO("Aruco found:%s",(aruco_srv_msg_resp.aruco_found ? "YES":"NO"));
   
   if(aruco_srv_msg_resp.aruco_found){
@@ -1020,9 +1020,9 @@ void aruco_pannello(){
 
     PosizioniBase(str_pannello);
     
-    function_pose_aruco(bridge_service(str_md_rd));
+    function_pose_aruco(bridge_service(str_md_rd,""));
 
-    if(bridge_service(str_md_next_aruco).moreTargets<=0){
+    if(bridge_service(str_md_next_aruco,"").moreTargets<=0){
         continua_=false;
     }
 
@@ -1032,14 +1032,15 @@ void aruco_pannello(){
 //cambia aruco. se non c'è next esci
 
 }
-ur3_control::aruco_serviceResponse bridge_service(string s){
+ur3_control::aruco_serviceResponse bridge_service(string modalita,string second_information){
 
     ros::NodeHandle node_handle;
     ros::ServiceClient client1;
     client1 = node_handle.serviceClient<ur3_control::aruco_service>("/aruco_modality");
     ur3_control::aruco_service aruco_srv_msg;
 
-    aruco_srv_msg.request.modality=s;
+    aruco_srv_msg.request.modality=modalita;
+    aruco_srv_msg.request.second_information=second_information;
     client1.call(aruco_srv_msg);
     return aruco_srv_msg.response;
 }

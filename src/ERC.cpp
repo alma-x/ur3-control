@@ -42,7 +42,7 @@ bool callback_modality(ur3_control::UserInterface::Request &req, ur3_control::Us
 
   }
   if(req.modality=="exit"){
-      bridge_service("exit");
+      bridge_service("exit","");
       bool_exit=true;
   }
   if(req.modality=="joystick_Joints"){
@@ -67,10 +67,10 @@ bool callback_modality(ur3_control::UserInterface::Request &req, ur3_control::Us
       aruco_pannello();
   }
   if(req.modality=="automazione_pannello_MoveToSelectedAruco"){
-      function_pose_aruco(bridge_service(str_md_rd));
+      function_pose_aruco(bridge_service(str_md_rd,""));
   }
   if(req.modality=="automazione_pannello_nextAruco"){
-      bridge_service(str_md_next_aruco);
+      bridge_service(str_md_next_aruco,req.second_information);
   }
   return true;
 }
