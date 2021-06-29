@@ -1143,14 +1143,15 @@ bool function_pose_aruco(ur3_control::aruco_serviceResponse msg_from_bridge){
 
     Pose pose_robot=robot->getCurrentPose().pose;
 
-    Pose pose_robot_target,pose_finalpos,pose_aruco;
-    Affine3d T_0_tool,T_tool_camera,T_0_camera,T_camera_aruco,T_0_aruco,T_aruco_finalpos,T_0_finalpos;
-    tf::Pose pose_robot_tf,pose_target_tf,pose_finalpos_tf,pose_aruco_tf;
+    Pose pose_robot_target,pose_finalpos,pose_aruco,pose_camera;
+    Affine3d T_0_tool,T_tool_camera,T_0_camera,T_camera_aruco,T_0_aruco,T_aruco_finalpos,T_0_finalpos,T_0_camera_gazebo,T_camera_camera_gazebo;
+    tf::Pose pose_robot_tf,pose_target_tf,pose_finalpos_tf,pose_aruco_tf,pose_camera_tf;
     tf::poseMsgToTF(pose_robot,pose_robot_tf);
     tf::poseTFToEigen(pose_robot_tf,T_0_tool);
     //In questo punto ho T_0_tool
 
-
+/*
+ * old
     Vector3d translation_tool_camera(0.025,0,0);
     Matrix3d rotation_tool_camera;
     Vector3d xvec_des(0,1,0),yvec_des(0,0,1),zvec_des(1,0,0);
@@ -1163,8 +1164,46 @@ bool function_pose_aruco(ur3_control::aruco_serviceResponse msg_from_bridge){
 
     T_0_camera=T_0_tool*T_tool_camera;
     //In questo punto ho T_0_camera
+*/
+/*
+    0.9848         0    0.1736    0.0081
+   -0.1736         0    0.9848    0.0874
+         0   -1.0000         0         0
+         0         0         0    1.0000
+*/
+    //from tool0 to camera mount        <origin xyz="0.0 0.0 -0.0015" rpy="1.5707 0.0 -1.5707" />
+    //from camera mount to camera_link1 <origin xyz="0 -0.000447 0.08739618542" rpy="0 0 ${pi/2}" />
+    //from camera link1 to camera link  <origin xyz="0.0 0.0 0.0" rpy="0 ${pi/18} 0" />
+    Vector3d translation_tool_camera(0.0081,0.0874,0);
+    Matrix3d rotation_tool_camera;
+    Vector3d xvec_des(0.9848,-0.1736,0),yvec_des(0,0,-1),zvec_des(0.1736,0.9848,0);
+    rotation_tool_camera.col(0)=xvec_des;
+    rotation_tool_camera.col(1)=yvec_des;
+    rotation_tool_camera.col(2)=zvec_des;
 
-    
+    T_tool_camera.translation()=translation_tool_camera;
+    T_tool_camera.linear()=rotation_tool_camera;
+
+    T_0_camera=T_0_tool*T_tool_camera;
+    tf::poseEigenToTF(T_0_camera,pose_camera_tf);
+    tf::poseTFToMsg(pose_camera_tf,pose_camera);
+    //In questo punto ho T_0_camera
+
+
+    Vector3d translation_camera_camera_gazebo(0,0,0);
+    Matrix3d rotation_camera_camera_gazebo;
+    Vector3d xvec_cc(0,0,1),yvec_cc(0,-1,0),zvec_cc(1,0,0);
+    rotation_camera_camera_gazebo.col(0)=xvec_cc;
+    rotation_camera_camera_gazebo.col(1)=yvec_cc;
+    rotation_camera_camera_gazebo.col(2)=zvec_cc;
+
+    T_camera_camera_gazebo.translation()=translation_camera_camera_gazebo;
+    T_camera_camera_gazebo.linear()=rotation_camera_camera_gazebo;
+
+    T_0_camera_gazebo=T_0_camera*T_camera_camera_gazebo;
+    //In questo punto ho T_0_camera_gazebo
+
+
     Vector3d translation_camera_aruco(msg_from_bridge.x,msg_from_bridge.y,msg_from_bridge.z);
     Matrix3d rotation_camera_aruco;
     Vector3d xct(msg_from_bridge.vector[0],msg_from_bridge.vector[1],msg_from_bridge.vector[2]),yct(msg_from_bridge.vector[3],msg_from_bridge.vector[4],msg_from_bridge.vector[5]),zct(msg_from_bridge.vector[6],msg_from_bridge.vector[7],msg_from_bridge.vector[8]);
@@ -1174,7 +1213,7 @@ bool function_pose_aruco(ur3_control::aruco_serviceResponse msg_from_bridge){
     T_camera_aruco.translation()=translation_camera_aruco;
     T_camera_aruco.linear()=rotation_camera_aruco;
 
-    T_0_aruco=T_0_camera*T_camera_aruco;
+    T_0_aruco=T_0_camera_gazebo*T_camera_aruco;
     tf::poseEigenToTF(T_0_aruco,pose_aruco_tf);
     tf::poseTFToMsg(pose_aruco_tf,pose_aruco);
     //In questo punto ho T_0_aruco
@@ -1182,7 +1221,6 @@ bool function_pose_aruco(ur3_control::aruco_serviceResponse msg_from_bridge){
 
     Matrix3d rotation_aruco_final_pos;
     Vector3d xaf(0,0,1),yaf(0,1,0),zaf(-1,0,0),trans_aruco_finalpos(0,0,0.22);//con il gripper che punta sull'aruco
-    //Vector3d xaf(0,0,1),yaf(0,1,0),zaf(0,0,-1),trans_aruco_finalpos(0,0,0.15);
 
 
     rotation_aruco_final_pos.row(0)=xaf;
@@ -1202,6 +1240,12 @@ bool function_pose_aruco(ur3_control::aruco_serviceResponse msg_from_bridge){
 
     //cout<<"T_0_final_pos translation:"<<endl<<T_tool_camera.translation()<<endl;
     //cout<<"T_0_final_pos rotation:"<<endl<<T_tool_camera.rotation()<<endl;
+
+    cout<<"ee pose:"<<endl;
+    stampa_Pose(pose_robot);
+
+    cout<<"camera pose:"<<endl;
+    stampa_Pose(pose_camera);
 
     cout<<"aruco pose:"<<endl;
     stampa_Pose(pose_aruco);
