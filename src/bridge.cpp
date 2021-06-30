@@ -13,6 +13,8 @@ ur3_control::cv_to_bridge msg_from_cv;
 ros::ServiceClient client;
 bool bool_md_bpa=false;
 bool bool_exit=false;
+
+ros::Publisher pub_traj_cancel;
 void stampa_cv_msg(const ur3_control::cv_to_bridge msg){
 ROS_INFO("Message received:\n x:%f \n y:%f \n z:%f \n success:%s",msg.x,msg.y,msg.z,(msg.success)? "success":"not success");
 }
@@ -25,8 +27,6 @@ void cv_callback(const ur3_control::cv_to_bridge& msg){
 
     bool_md_bpa=false;
 
-    ros::NodeHandle n_stop;
-    ros::Publisher pub_traj_cancel = n_stop.advertise<actionlib_msgs::GoalID>("/execute_trajectory/cancel", 100);
     actionlib_msgs::GoalID msg_traj_cancel;
     msg_traj_cancel.id="s";
     pub_traj_cancel.publish(msg_traj_cancel);
@@ -62,6 +62,15 @@ bool callback_modality(ur3_control::aruco_service::Request &req, ur3_control::ar
       cv_service_msg.request.message="exit";
       client.call(cv_service_msg);
   }
+  if("stop_trajectory"==req.modality){
+
+    actionlib_msgs::GoalID msg_traj_cancel;
+    msg_traj_cancel.id="s";
+    pub_traj_cancel.publish(msg_traj_cancel);
+    ROS_INFO("Aruco trovato, traiettoria cancellata");
+    robot->stop();
+
+  }
   res.aruco_found=msg_from_cv.success;
   res.x=msg_from_cv.x;
   res.y=msg_from_cv.y;
@@ -79,6 +88,7 @@ int main(int argc, char** argv){
   ros::Subscriber sub;
   ros::NodeHandle n;
   ros::ServiceServer serv;
+  pub_traj_cancel = n.advertise<actionlib_msgs::GoalID>("/execute_trajectory/cancel", 100);
   sub=n.subscribe("/aruco_bridge_opencv",1,cv_callback);
   serv=n.advertiseService("aruco_modality", callback_modality);
   client = n.serviceClient<ur3_control::cv_server>("/cv_server");

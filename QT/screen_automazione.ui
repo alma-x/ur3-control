@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Form</class>
- <widget class="QWidget" name="Form">
+ <class>stop_traj_button</class>
+ <widget class="QWidget" name="stop_traj_button">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -24,8 +24,8 @@
     <rect>
      <x>540</x>
      <y>93</y>
-     <width>91</width>
-     <height>58</height>
+     <width>114</width>
+     <height>83</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -43,9 +43,16 @@
       </property>
      </widget>
     </item>
+    <item>
+     <widget class="QPushButton" name="pushButton_7">
+      <property name="text">
+       <string>Blocca traiettoria</string>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
      <x>151</x>
@@ -128,7 +135,7 @@
   <connection>
    <sender>pushButton</sender>
    <signal>clicked()</signal>
-   <receiver>Form</receiver>
+   <receiver>stop_traj_button</receiver>
    <slot>spegni_console()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -144,7 +151,7 @@
   <connection>
    <sender>pushButton_2</sender>
    <signal>clicked()</signal>
-   <receiver>Form</receiver>
+   <receiver>stop_traj_button</receiver>
    <slot>goToMainMenu()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -160,7 +167,7 @@
   <connection>
    <sender>pushButton_3</sender>
    <signal>clicked()</signal>
-   <receiver>Form</receiver>
+   <receiver>stop_traj_button</receiver>
    <slot>automazione_PosPannello()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -176,7 +183,7 @@
   <connection>
    <sender>pushButton_4</sender>
    <signal>clicked()</signal>
-   <receiver>Form</receiver>
+   <receiver>stop_traj_button</receiver>
    <slot>automazione_pannello_Completa()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -192,7 +199,7 @@
   <connection>
    <sender>pushButton_5</sender>
    <signal>clicked()</signal>
-   <receiver>Form</receiver>
+   <receiver>stop_traj_button</receiver>
    <slot>automazione_pannello_MoveToSelectedAruco()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -208,16 +215,32 @@
   <connection>
    <sender>pushButton_6</sender>
    <signal>clicked()</signal>
-   <receiver>Form</receiver>
+   <receiver>stop_traj_button</receiver>
    <slot>automazione_pannello_nextAruco()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>355</x>
-     <y>235</y>
+     <x>236</x>
+     <y>233</y>
     </hint>
     <hint type="destinationlabel">
      <x>485</x>
      <y>236</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_7</sender>
+   <signal>clicked()</signal>
+   <receiver>stop_traj_button</receiver>
+   <slot>stop_traj_clicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>635</x>
+     <y>166</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>653</x>
+     <y>307</y>
     </hint>
    </hints>
   </connection>
@@ -239,5 +262,6 @@
   <slot>automazione_pannello_Completa()</slot>
   <slot>automazione_pannello_MoveToSelectedAruco()</slot>
   <slot>automazione_pannello_nextAruco()</slot>
+  <slot>stop_traj_clicked()</slot>
  </slots>
 </ui>

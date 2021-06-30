@@ -15,64 +15,71 @@ void Interazione_Environment();
 void Menu_Di_Scelta_Prove();
 void MenuDiSceltaOpzioni();
 
-bool bool_exit=false;
-
+bool bool_exit=false,msg_to_be_processed=false;
+ur3_control::UserInterface::Request msg_from_interface;
 bool callback_modality(ur3_control::UserInterface::Request &req, ur3_control::UserInterface::Response &res){
-
-  bool_exit=false;
-  ROS_INFO("Chiamata ricevuta:\nModalita:%s\n\n",req.modality.c_str());
-  if(req.modality=="pose"){
-      move_to_pose(req.target_pose,true);
-  }
-  if(req.modality=="pose_randomOrientation"){
-      move_to_pose(req.target_pose,false);
-  }
-  if(req.modality=="joints"){
-      vector<double> joint_group_positions=robot->getCurrentJointValues();
-      joint_group_positions[0]=grad_to_rad(req.target_joints[0]);
-      joint_group_positions[1]=grad_to_rad(req.target_joints[1]);
-      joint_group_positions[2]=grad_to_rad(req.target_joints[2]);
-      joint_group_positions[3]=grad_to_rad(req.target_joints[3]);
-      joint_group_positions[4]=grad_to_rad(req.target_joints[4]);
-      joint_group_positions[5]=grad_to_rad(req.target_joints[5]);
-      robot->setJointValueTarget(joint_group_positions);
-      success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
-      ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
-      robot->move();
-
-  }
-  if(req.modality=="exit"){
-      bridge_service("exit","");
-      bool_exit=true;
-  }
-  if(req.modality=="joystick_Joints"){
-      vector<double> joint_group_positions=robot->getCurrentJointValues();
-      joint_group_positions[0]=joint_group_positions[0]+grad_to_rad(req.target_joints[0]);
-      joint_group_positions[1]=joint_group_positions[1]+grad_to_rad(req.target_joints[1]);
-      joint_group_positions[2]=joint_group_positions[2]+grad_to_rad(req.target_joints[2]);
-      joint_group_positions[3]=joint_group_positions[3]+grad_to_rad(req.target_joints[3]);
-      joint_group_positions[4]=joint_group_positions[4]+grad_to_rad(req.target_joints[4]);
-      joint_group_positions[5]=joint_group_positions[5]+grad_to_rad(req.target_joints[5]);
-      robot->setJointValueTarget(joint_group_positions);
-      success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
-      ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
-      robot->move();
-      stampa_giunti();
-  }
-  if(req.modality=="automazione_pannello_posizioneCorretta"){
-
-      PosizioniBase(str_pannello);
-  }
-  if(req.modality=="automazione_pannello_Completa"){
-      aruco_pannello();
-  }
-  if(req.modality=="automazione_pannello_MoveToSelectedAruco"){
-      function_pose_aruco(bridge_service(str_md_rd,""));
-  }
-  if(req.modality=="automazione_pannello_nextAruco"){
-      bridge_service(str_md_next_aruco,req.second_information);
-  }
+  msg_from_interface=req;
+  msg_to_be_processed=true;
   return true;
+}
+void esegui_msg_from_inteface(){
+  bool_exit=false;
+  if(msg_to_be_processed){
+      ROS_INFO("Chiamata ricevuta:\nModalita:%s\n\n",msg_from_interface.modality.c_str());
+      if(msg_from_interface.modality=="pose"){
+          move_to_pose(msg_from_interface.target_pose,true);
+      }
+      if(msg_from_interface.modality=="pose_randomOrientation"){
+          move_to_pose(msg_from_interface.target_pose,false);
+      }
+      if(msg_from_interface.modality=="joints"){
+          vector<double> joint_group_positions=robot->getCurrentJointValues();
+          joint_group_positions[0]=grad_to_rad(msg_from_interface.target_joints[0]);
+          joint_group_positions[1]=grad_to_rad(msg_from_interface.target_joints[1]);
+          joint_group_positions[2]=grad_to_rad(msg_from_interface.target_joints[2]);
+          joint_group_positions[3]=grad_to_rad(msg_from_interface.target_joints[3]);
+          joint_group_positions[4]=grad_to_rad(msg_from_interface.target_joints[4]);
+          joint_group_positions[5]=grad_to_rad(msg_from_interface.target_joints[5]);
+          robot->setJointValueTarget(joint_group_positions);
+          success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
+          ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+          robot->move();
+
+      }
+      if(msg_from_interface.modality=="exit"){
+          bridge_service("exit","");
+          bool_exit=true;
+      }
+      if(msg_from_interface.modality=="joystick_Joints"){
+          vector<double> joint_group_positions=robot->getCurrentJointValues();
+          joint_group_positions[0]=joint_group_positions[0]+grad_to_rad(msg_from_interface.target_joints[0]);
+          joint_group_positions[1]=joint_group_positions[1]+grad_to_rad(msg_from_interface.target_joints[1]);
+          joint_group_positions[2]=joint_group_positions[2]+grad_to_rad(msg_from_interface.target_joints[2]);
+          joint_group_positions[3]=joint_group_positions[3]+grad_to_rad(msg_from_interface.target_joints[3]);
+          joint_group_positions[4]=joint_group_positions[4]+grad_to_rad(msg_from_interface.target_joints[4]);
+          joint_group_positions[5]=joint_group_positions[5]+grad_to_rad(msg_from_interface.target_joints[5]);
+          robot->setJointValueTarget(joint_group_positions);
+          success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
+          ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+          robot->move();
+          stampa_giunti();
+      }
+      if(msg_from_interface.modality=="automazione_pannello_posizioneCorretta"){
+
+          PosizioniBase(str_pannello);
+      }
+      if(msg_from_interface.modality=="automazione_pannello_Completa"){
+          aruco_pannello();
+      }
+      if(msg_from_interface.modality=="automazione_pannello_MoveToSelectedAruco"){
+          function_pose_aruco(bridge_service(str_md_rd,""));
+      }
+      if(msg_from_interface.modality=="automazione_pannello_nextAruco"){
+      bridge_service(str_md_next_aruco,msg_from_interface.second_information);
+  }
+      msg_to_be_processed=false;
+  }
+
 }
 int main(int argc, char** argv)
 {
@@ -99,6 +106,7 @@ int main(int argc, char** argv)
   load_parameters();
   while(ros::ok && !bool_exit){
   ros::spinOnce();
+  esegui_msg_from_inteface();
   }
   //Start();
 

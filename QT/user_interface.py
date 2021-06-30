@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QPushButton
 from PyQt5 import uic, QtWidgets,QtGui
 import rospy
 from std_msgs.msg import String
-from ur3_control.srv import UserInterface,UserInterfaceRequest
+from ur3_control.srv import UserInterface,UserInterfaceRequest,aruco_service,aruco_serviceRequest
 from geometry_msgs.msg import Pose
 from tf import transformations
 import rospkg
@@ -255,11 +255,20 @@ class Screen_Automazione(QWidget):
 
 
 
+    def stop_traj_clicked(self):
+        modality='stop_trajectory'
+        second_information=''
+        try:
+            msg=aruco_serviceRequest(modality,second_information)
+            resp1 = bridge_serv(msg)
+        except rospy.ServiceException as e:
+            self.l_comunicazione.setText('Errore:'+ e)
+
 def main_code():
-    global widget,window_mp,window_joystick,window_main,serv,app,window_automazione
+    global widget,window_mp,window_joystick,window_main,serv,bridge_serv,app,window_automazione
     rospy.init_node('user_interface', anonymous=True)
     serv = rospy.ServiceProxy('/user_interface_serv', UserInterface)
-    
+    bridge_serv= rospy.ServiceProxy('/aruco_modality', aruco_service)
     app=QApplication([])
 
     widget=QtWidgets.QStackedWidget()
