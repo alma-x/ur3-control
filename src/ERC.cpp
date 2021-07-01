@@ -69,14 +69,24 @@ void esegui_msg_from_inteface(){
           PosizioniBase(str_pannello);
       }
       if(msg_from_interface.modality=="automazione_pannello_Completa"){
-          aruco_pannello();
       }
       if(msg_from_interface.modality=="automazione_pannello_MoveToSelectedAruco"){
-          function_pose_aruco(bridge_service(str_md_rd,""));
+          function_pose_aruco();
       }
       if(msg_from_interface.modality=="automazione_pannello_nextAruco"){
       bridge_service(str_md_next_aruco,msg_from_interface.second_information);
   }
+      if(msg_from_interface.modality=="ruota_e_cerca_aruco"){
+
+        ruota_e_cerca_aruco();
+
+      }
+      if(msg_from_interface.modality=="ruota_e_cerca_pannello"){
+
+        ruota_e_cerca_pannello();
+
+        move_aruco_to_center_of_camera();
+      }
       msg_to_be_processed=false;
   }
 

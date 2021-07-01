@@ -57,8 +57,8 @@
     <rect>
      <x>151</x>
      <y>101</y>
-     <width>215</width>
-     <height>156</height>
+     <width>317</width>
+     <height>185</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -73,9 +73,16 @@
      </widget>
     </item>
     <item>
+     <widget class="QPushButton" name="pushButton_8">
+      <property name="text">
+       <string>Ruota e cerca pannello</string>
+      </property>
+     </widget>
+    </item>
+    <item>
      <widget class="QPushButton" name="pushButton_4">
       <property name="text">
-       <string>Automazione completa</string>
+       <string>Ruota e cerca aruco selezionato tra quelli per terra</string>
       </property>
      </widget>
     </item>
@@ -171,8 +178,8 @@
    <slot>automazione_PosPannello()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>260</x>
-     <y>163</y>
+     <x>261</x>
+     <y>203</y>
     </hint>
     <hint type="destinationlabel">
      <x>433</x>
@@ -184,11 +191,11 @@
    <sender>pushButton_4</sender>
    <signal>clicked()</signal>
    <receiver>stop_traj_button</receiver>
-   <slot>automazione_pannello_Completa()</slot>
+   <slot>ruota_e_cerca_aruco()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>286</x>
-     <y>144</y>
+     <x>287</x>
+     <y>174</y>
     </hint>
     <hint type="destinationlabel">
      <x>423</x>
@@ -203,8 +210,8 @@
    <slot>automazione_pannello_MoveToSelectedAruco()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>329</x>
-     <y>200</y>
+     <x>330</x>
+     <y>232</y>
     </hint>
     <hint type="destinationlabel">
      <x>467</x>
@@ -220,7 +227,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>236</x>
-     <y>233</y>
+     <y>262</y>
     </hint>
     <hint type="destinationlabel">
      <x>485</x>
@@ -244,6 +251,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>pushButton_8</sender>
+   <signal>clicked()</signal>
+   <receiver>stop_traj_button</receiver>
+   <slot>ruota_e_cerca_pannello()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>175</x>
+     <y>138</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>63</x>
+     <y>151</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>prova()</slot>
@@ -263,5 +286,7 @@
   <slot>automazione_pannello_MoveToSelectedAruco()</slot>
   <slot>automazione_pannello_nextAruco()</slot>
   <slot>stop_traj_clicked()</slot>
+  <slot>ruota_e_cerca_pannello()</slot>
+  <slot>ruota_e_cerca_aruco()</slot>
  </slots>
 </ui>

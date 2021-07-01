@@ -220,16 +220,27 @@ class Screen_Automazione(QWidget):
             resp1 = serv(msg)
         except rospy.ServiceException as e:
             self.l_comunicazione.setText('Errore:'+ e)
-    def automazione_pannello_Completa(self):
+    def ruota_e_cerca_pannello(self):
         target_joints=[0,0,0,0,0,0] 
         target_pose=Pose()
-        modality='automazione_pannello_Completa'
+        modality='ruota_e_cerca_pannello'
         second_information='null'
         try:
             msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
         except rospy.ServiceException as e:
             self.l_comunicazione.setText('Errore:'+ e)
+    def ruota_e_cerca_aruco(self):
+        target_joints=[0,0,0,0,0,0]
+        target_pose=Pose()
+        modality='ruota_e_cerca_aruco'
+        second_information='null'
+        try:
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
+            resp1 = serv(msg)
+        except rospy.ServiceException as e:
+            self.l_comunicazione.setText('Errore:'+ e)
+
     def automazione_pannello_MoveToSelectedAruco(self):
         target_joints=[0,0,0,0,0,0] 
         target_pose=Pose()
