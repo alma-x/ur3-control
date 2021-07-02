@@ -71,7 +71,10 @@ void esegui_msg_from_inteface(){
       if(msg_from_interface.modality=="automazione_pannello_Completa"){
       }
       if(msg_from_interface.modality=="automazione_pannello_MoveToSelectedAruco"){
-          function_pose_aruco();
+          Affine_valid T_aruco_valid=homo_0_aruco_elaration();
+          if(T_aruco_valid.valid){
+            pre_grasp(T_aruco_valid.homo_matrix);
+          }
       }
       if(msg_from_interface.modality=="automazione_pannello_nextAruco"){
       bridge_service(str_md_next_aruco,msg_from_interface.second_information);
@@ -79,12 +82,13 @@ void esegui_msg_from_inteface(){
       if(msg_from_interface.modality=="ruota_e_cerca_aruco"){
 
         ruota_e_cerca_aruco();
-
+        usleep(300000);//0.3 sec
+        move_aruco_to_center_of_camera();
       }
       if(msg_from_interface.modality=="ruota_e_cerca_pannello"){
 
         ruota_e_cerca_pannello();
-
+        usleep(300000);//0.3 sec
         move_aruco_to_center_of_camera();
       }
       msg_to_be_processed=false;
@@ -112,7 +116,7 @@ int main(int argc, char** argv)
   pose_object_client = node_handle.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
 
   ros::ServiceServer serv=node_handle.advertiseService("/user_interface_serv", callback_modality);
-
+  set_homo_std_matrix();
   load_parameters();
   while(ros::ok && !bool_exit){
   ros::spinOnce();

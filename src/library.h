@@ -67,6 +67,9 @@ bool joystick_ready;
 
 int std_planning_time=4;
 
+
+Affine3d T_tool_camera,T_camera_camera_gazebo;
+
 string str_md_stop_bpa="md_stop_blocca_al_primo_aruco";
 string str_md_bpa="md_blocca_al_primo_aruco";
 string str_md_rd="md_richiesta_dati";
@@ -114,6 +117,10 @@ bool individua_aruco(Pose *aruco_pose);
 bool move_to_aruco();
 ur3_control::aruco_serviceResponse bridge_service(string modalita,string second_information);
 bool function_pose_aruco();
+Pose homo_to_pose(Affine3d homo);
+
+
+
 
 void pick(string name_object){
   Pose pose;
@@ -789,11 +796,6 @@ void ruota_e_cerca_aruco(){
 
     }
   }
-  if(aruco_individuato()){
-    sleep(1); //se viene bloccata traiettoria, allora ha bisogno di tempo prima di effettuare movimento
-    function_pose_aruco();
-  }
-
 
 
 
@@ -805,7 +807,7 @@ void ruota_e_cerca_pannello(){
 
   bridge_service(str_md_next_aruco,"1");
 
-  usleep(300000);//0.3 secondi
+  usleep(100000);
 
   if(!aruco_individuato()){
 
@@ -1232,6 +1234,11 @@ bool function_pose_aruco(){
   }
 
 }
+struct Affine_valid
+{
+     bool valid;
+     Affine3d homo_matrix;
+};
 bool move_aruco_to_center_of_camera(){
   ur3_control::aruco_serviceResponse msg_from_bridge=bridge_service(str_md_rd,"");
 
@@ -1240,37 +1247,18 @@ bool move_aruco_to_center_of_camera(){
     Pose pose_robot=robot->getCurrentPose().pose;
 
     Pose pose_robot_target,pose_finalpos,pose_aruco,pose_camera;
-    Affine3d T_0_tool,T_tool_camera,T_0_camera,T_camera_aruco,T_camera_aruco_modified,T_0_aruco,T_aruco_finalpos,T_0_finalpos,T_0_camera_gazebo,T_camera_camera_gazebo;
+    Affine3d T_0_tool,T_0_camera,T_camera_aruco,T_camera_aruco_modified,T_0_aruco,T_0_camera_gazebo;
     tf::Pose pose_robot_tf,pose_target_tf,pose_finalpos_tf,pose_aruco_tf,pose_camera_tf;
+
     tf::poseMsgToTF(pose_robot,pose_robot_tf);
     tf::poseTFToEigen(pose_robot_tf,T_0_tool);
     //In questo punto ho T_0_tool
-
-    Vector3d translation_tool_camera(0.0081,0.0874,0);
-    Matrix3d rotation_tool_camera;
-    Vector3d xvec_des(0.9848,-0.1736,0),yvec_des(0,0,-1),zvec_des(0.1736,0.9848,0);
-    rotation_tool_camera.col(0)=xvec_des;
-    rotation_tool_camera.col(1)=yvec_des;
-    rotation_tool_camera.col(2)=zvec_des;
-
-    T_tool_camera.translation()=translation_tool_camera;
-    T_tool_camera.linear()=rotation_tool_camera;
 
     T_0_camera=T_0_tool*T_tool_camera;
     tf::poseEigenToTF(T_0_camera,pose_camera_tf);
     tf::poseTFToMsg(pose_camera_tf,pose_camera);
     //In questo punto ho T_0_camera
 
-
-    Vector3d translation_camera_camera_gazebo(0,0,0);
-    Matrix3d rotation_camera_camera_gazebo;
-    Vector3d xvec_cc(0,0,1),yvec_cc(0,-1,0),zvec_cc(1,0,0);
-    rotation_camera_camera_gazebo.col(0)=xvec_cc;
-    rotation_camera_camera_gazebo.col(1)=yvec_cc;
-    rotation_camera_camera_gazebo.col(2)=zvec_cc;
-
-    T_camera_camera_gazebo.translation()=translation_camera_camera_gazebo;
-    T_camera_camera_gazebo.linear()=rotation_camera_camera_gazebo;
 
     T_0_camera_gazebo=T_0_camera*T_camera_camera_gazebo;
     //In questo punto ho T_0_camera_gazebo
@@ -1290,96 +1278,13 @@ bool move_aruco_to_center_of_camera(){
     tf::poseTFToMsg(pose_aruco_tf,pose_aruco);
     //In questo punto ho T_0_aruco
 
-/*
-    Matrix3d rotation_aruco_final_pos;
-    Vector3d xaf(0,0,1),yaf(0,1,0),zaf(-1,0,0),trans_aruco_finalpos(0,0,0.22);//con il gripper che punta sull'aruco
-
-
-    rotation_aruco_final_pos.row(0)=xaf;
-    rotation_aruco_final_pos.row(1)=yaf;
-    rotation_aruco_final_pos.row(2)=zaf;
-
-    T_aruco_finalpos.linear()=rotation_aruco_final_pos;
-    T_aruco_finalpos.translation()=trans_aruco_finalpos;
-
-    T_0_finalpos=T_0_aruco*T_aruco_finalpos;
-    //In questo punto ho T_0_final
-
-
-    tf::poseEigenToTF(T_0_finalpos,pose_finalpos_tf);
-    tf::poseTFToMsg(pose_finalpos_tf,pose_finalpos);
-*/
-
 
 
     Affine3d T_0_tool_modified,T_tool_ee,T_0_ee_modified,T_0_camera_modified,T_aruco_camera_modified,T_my_rotation,T_my_translation;
     Pose pose_ee_modified,pose_camera_modified;
     tf::Pose pose_ee_modified_tf,pose_cam_mod_tf;
-/*
-    Vector3d trans_camera_aruco_modified(0,0,0);
-    trans_camera_aruco_modified=T_camera_aruco.translation();
-    trans_camera_aruco_modified.x()=trans_camera_aruco_modified.x()*0.4;
-    trans_camera_aruco_modified.y()=trans_camera_aruco_modified.y()*0.4;
 
 
-
-
-    //T_camera_aruco_modified=T_camera_aruco; //ottengo da camera ad aruco ed è ok
-    //T_camera_aruco_modified.translation()=trans_camera_aruco_modified;
-
-
-    //provo un calcolo per invertire la matrice:
-
-    Matrix3d rotation_aruco_camera_modified;
-    Vector3d trans_aruco_camera_modified(0,0,0);
-
-    rotation_aruco_camera_modified=T_camera_aruco_modified.linear().inverse();
-    trans_aruco_camera_modified=-rotation_aruco_camera_modified*T_camera_aruco_modified.translation();
-
-    T_aruco_camera_modified.translation()=trans_aruco_camera_modified;
-    T_aruco_camera_modified.linear()=rotation_aruco_camera_modified;
-    T_0_camera_modified=T_0_aruco*T_aruco_camera_modified*T_camera_camera_gazebo.inverse();
-*/
-
-    //T_0_aruco=T_0_camera_gazebo*my_rotation*my_translation
-    //my_rotation=T_0_camera_gazebINVERSE*T_0_aruco*my_translationINVERSE
-    //my_rotation=T_camera_gaz_0*T_0_aruco*my_translationINVERSE
-    Vector3d x_my_trans(1,0,0),y_my_trans(0,1,0),z_my_trans(0,0,1),trans_my_trans(0,0,0);
-    Matrix3d rotation_my_trans;
-    trans_my_trans=T_camera_aruco.translation();
-    trans_my_trans.x()=0;
-    trans_my_trans.y()=0;
-    rotation_my_trans.col(0)=x_my_trans;
-    rotation_my_trans.col(1)=y_my_trans;
-    rotation_my_trans.col(2)=z_my_trans;
-
-
-    T_my_translation.linear()=rotation_my_trans;
-    T_my_translation.translation()=trans_my_trans;
-
-    //calcolo matrice col solo fine di ottenere il vettore(0,0,0,1)
-
-    Affine3d T_temp;
-    Vector3d x_temp(0,0,0),y_temp(0,0,0),z_temp(0,0,0),trans_temp(0,0,0);
-    Matrix3d rotation_temp;
-
-    T_temp=T_0_aruco;
-
-    rotation_temp.col(0)=x_temp;
-    rotation_temp.col(1)=y_temp;
-    rotation_temp.col(2)=z_temp;
-
-    T_temp.linear()=rotation_temp;
-
-    /*Ho quindi creato:
-     * (0,0,0,x
-     *  0,0,0,y
-     *  0,0,0,z
-     *  0,0,0,1)
-     *  Da (x,y,z,1)*(0;0;0;1)
-     *
-     *
-    */
 
     //calcolo vettore che collega 0_camera_gazebo con aruco
     Vector3d vettore_gazebo_aruco(0,0,0);
@@ -1395,13 +1300,7 @@ bool move_aruco_to_center_of_camera(){
     T_my_rotation.linear()=rotation_my_rot;
 
     Affine3d T_0_camera_gazebo_modified,T_all_orizz,T_all_vert,T_0_camera_gazebo_modified_orizz,T_camera_aruco_modified_orizz,T_all_rotativo;
-    double modulo=sqrt(T_camera_aruco.translation().x()*T_camera_aruco.translation().x()+T_camera_aruco.translation().y()*T_camera_aruco.translation().y()+T_camera_aruco.translation().z()*T_camera_aruco.translation().z());
 
-    double cos_x=T_camera_aruco.translation().x()/modulo;
-    double ang_x=acos(cos_x);
-
-    double cos_y=T_camera_aruco.translation().y()/modulo;
-    double ang_y=acos(cos_y);
 
     //float roll = 0, pitch = 0, yaw = atan(T_camera_aruco.translation().y()/T_camera_aruco.translation().x());
     float roll = 0, pitch = 0, yaw = atan(vettore_gazebo_aruco.y()/vettore_gazebo_aruco.x());
@@ -1471,59 +1370,16 @@ bool move_aruco_to_center_of_camera(){
     cout<<"Rotation with rpy:"<<endl<<T_0_camera_gazebo_modified.linear();
     cout<<"Translation with rpy:"<<endl<<T_0_camera_gazebo_modified.translation();
 
-    //T_my_rotation=T_0_camera_gazebo.inverse()*T_temp*T_my_translation.inverse();
 
-
-    //CHECK
-/*
-    cout<<"T_0_aruco TRANSLATION con le mie matrici"<<endl<<(T_0_camera_gazebo*T_my_rotation*T_my_translation).translation()<<endl;
-
-    cout<<"T_0_aruco ROTATION con le mie matrici"<<endl<<(T_0_camera_gazebo*T_my_rotation*T_my_translation).linear()<<endl;
-
-
-    cout<<"T_0_aruco TRANSLATION classico"<<endl<<T_0_aruco.translation();
-
-    cout<<"T_0_aruco ROTATION classico"<<endl<<T_0_aruco.linear()<<endl;
-
-    //
-*/
-/*
-
-    Vector3d x_cgm(1,0,0),y_cgm(0,1,0),z_cgm(0,0,0);
-    T_0_camera_gazebo_modified=T_0_camera_gazebo;
-
-    T_0_camera_gazebo_modified.linear().col(0)=x_cgm;
-    T_0_camera_gazebo_modified.linear().col(1)=y_cgm;
-    T_0_camera_gazebo_modified.linear().col(2)=vettore_gazebo_aruco;
-*/
-    //DA QUI IN GIÙ SE APPLICO UNA MY ROTATION NULLA RIMANE ESATTAMENTE DOV'ERA PRIMA
-
-    //T_0_camera_modified=T_0_camera_gazebo*T_my_rotation*T_camera_camera_gazebo.inverse();
     T_0_camera_modified=T_0_camera_gazebo_modified*T_camera_camera_gazebo.inverse();
     tf::poseEigenToTF(T_0_camera_modified,pose_cam_mod_tf);
     tf::poseTFToMsg(pose_cam_mod_tf,pose_camera_modified);
 
-    //T_0_tool=0_aruco*aruco_camera_modified*camera_modified_tool
+
     T_0_tool_modified=T_0_camera_modified*T_tool_camera.inverse();
 
-    //ora mi serve T_tool_ee
 
-    Matrix3d rotation_tool_ee;
-    Vector3d xte(0,0,1),yte(-1,0,0),zte(0,-1,0),trans_te(0,0,0);//con il gripper che punta sull'aruco
-
-
-    rotation_tool_ee.col(0)=xte;
-    rotation_tool_ee.col(1)=yte;
-    rotation_tool_ee.col(2)=zte;
-
-    T_tool_ee.linear()=rotation_tool_ee;
-    T_tool_ee.translation()=trans_te;
-
-    //T_0_ee_modified=T_0_tool_modified*T_tool_ee;
-    T_0_ee_modified=T_0_tool_modified;
-
-    tf::poseEigenToTF(T_0_ee_modified,pose_ee_modified_tf);
-    tf::poseTFToMsg(pose_ee_modified_tf,pose_ee_modified);
+    pose_ee_modified=homo_to_pose(T_0_tool_modified);
     bool debug=true;
     if(debug){
       cout<<"ee pose:"<<endl;
@@ -1575,8 +1431,6 @@ bool move_aruco_to_center_of_camera(){
 
     }
 
-    //stampa_Pose(pose_robot);
-    //stampa_Pose(pose_ee_modified);
     move_to_pose(pose_ee_modified,true);
     robot->setPlanningTime(std_planning_time);
     return true;
@@ -1586,5 +1440,137 @@ bool move_aruco_to_center_of_camera(){
     ROS_INFO("No aruco detected, no return??");
     return false;
   }
+
+}
+Pose homo_to_pose(Affine3d homo){
+
+  tf::Pose pose_tf;
+  Pose pose;
+  tf::poseEigenToTF(homo,pose_tf);
+  tf::poseTFToMsg(pose_tf,pose);
+  return pose;
+
+}
+Affine3d pose_to_homo(Pose pose){
+  Affine3d homo;
+  tf::Pose pose_tf;
+  tf::poseMsgToTF(pose,pose_tf);
+  tf::poseTFToEigen(pose_tf,homo);
+  return homo;
+
+}
+Affine_valid homo_0_aruco_elaration(){
+  //elabora la trasformata omogenea da 0 ad aruco
+
+
+  ur3_control::aruco_serviceResponse msg_from_bridge=bridge_service(str_md_rd,"");
+
+  if(msg_from_bridge.aruco_found){
+
+    Pose pose_robot=robot->getCurrentPose().pose;
+
+    Pose pose_robot_target,pose_finalpos,pose_aruco,pose_camera;
+    Affine3d T_0_tool,T_0_camera,T_camera_aruco,T_0_aruco,T_0_camera_gazebo;
+    tf::Pose pose_robot_tf,pose_target_tf,pose_finalpos_tf,pose_aruco_tf,pose_camera_tf;
+    tf::poseMsgToTF(pose_robot,pose_robot_tf);
+    tf::poseTFToEigen(pose_robot_tf,T_0_tool);
+    //In questo punto ho T_0_tool
+
+    T_0_camera=T_0_tool*T_tool_camera;
+    pose_camera=homo_to_pose(T_0_camera);
+    //In questo punto ho T_0_camera
+
+    T_0_camera_gazebo=T_0_camera*T_camera_camera_gazebo;
+    //In questo punto ho T_0_camera_gazebo
+
+
+    Vector3d translation_camera_aruco(msg_from_bridge.x,msg_from_bridge.y,msg_from_bridge.z);
+    Matrix3d rotation_camera_aruco;
+    Vector3d xct(msg_from_bridge.vector[0],msg_from_bridge.vector[1],msg_from_bridge.vector[2]),yct(msg_from_bridge.vector[3],msg_from_bridge.vector[4],msg_from_bridge.vector[5]),zct(msg_from_bridge.vector[6],msg_from_bridge.vector[7],msg_from_bridge.vector[8]);
+    rotation_camera_aruco.row(0)=xct;
+    rotation_camera_aruco.row(1)=yct;
+    rotation_camera_aruco.row(2)=zct;
+    T_camera_aruco.translation()=translation_camera_aruco;
+    T_camera_aruco.linear()=rotation_camera_aruco;
+
+    T_0_aruco=T_0_camera_gazebo*T_camera_aruco;
+    tf::poseEigenToTF(T_0_aruco,pose_aruco_tf);
+    tf::poseTFToMsg(pose_aruco_tf,pose_aruco);
+    //In questo punto ho T_0_aruco
+
+    bool debug=false;
+    if(debug){
+      cout<<"ee pose:"<<endl;
+      stampa_Pose(pose_robot);
+
+      cout<<"camera pose:"<<endl;
+      stampa_Pose(pose_camera);
+
+      cout<<"aruco pose:"<<endl;
+      stampa_Pose(pose_aruco);
+
+      cout<<"final pose:"<<endl;
+
+      stampa_Pose(pose_finalpos);
+    }
+
+
+    Affine_valid return_value;
+    return_value.homo_matrix=T_0_aruco;
+    return_value.valid=true;
+    return return_value;
+
+  }else{
+    ROS_INFO("No aruco detected, no return??");
+    Affine_valid return_value;
+    return_value.valid=false;
+    return return_value;
+
+  }
+
+
+}
+Pose pre_grasp(Affine3d T_0_aruco){
+  Affine3d T_aruco_finalpos,T_0_finalpos;
+  Matrix3d rotation_aruco_final_pos;
+  Vector3d xaf(0,0,1),yaf(0,1,0),zaf(-1,0,0),trans_aruco_finalpos(0,0,0.22);//con il gripper che punta sull'aruco
+
+
+  rotation_aruco_final_pos.row(0)=xaf;
+  rotation_aruco_final_pos.row(1)=yaf;
+  rotation_aruco_final_pos.row(2)=zaf;
+
+  T_aruco_finalpos.linear()=rotation_aruco_final_pos;
+  T_aruco_finalpos.translation()=trans_aruco_finalpos;
+
+  T_0_finalpos=T_0_aruco*T_aruco_finalpos;
+  //In questo punto ho T_0_final
+
+  move_to_pose(homo_to_pose(T_0_finalpos),true);
+}
+void set_homo_std_matrix(){
+
+  //from tool0 to camera mount        <origin xyz="0.0 0.0 -0.0015" rpy="1.5707 0.0 -1.5707" />
+  //from camera mount to camera_link1 <origin xyz="0 -0.000447 0.08739618542" rpy="0 0 ${pi/2}" />
+  //from camera link1 to camera link  <origin xyz="0.0 0.0 0.0" rpy="0 ${pi/18} 0" />
+  Vector3d translation_tool_camera(0.0081,0.0874,0);
+  Matrix3d rotation_tool_camera;
+  Vector3d xvec_des(0.9848,-0.1736,0),yvec_des(0,0,-1),zvec_des(0.1736,0.9848,0);
+  rotation_tool_camera.col(0)=xvec_des;
+  rotation_tool_camera.col(1)=yvec_des;
+  rotation_tool_camera.col(2)=zvec_des;
+  T_tool_camera.translation()=translation_tool_camera;
+  T_tool_camera.linear()=rotation_tool_camera;
+
+
+  Vector3d translation_camera_camera_gazebo(0,0,0);
+  Matrix3d rotation_camera_camera_gazebo;
+  Vector3d xvec_cc(0,0,1),yvec_cc(0,-1,0),zvec_cc(1,0,0);
+  rotation_camera_camera_gazebo.col(0)=xvec_cc;
+  rotation_camera_camera_gazebo.col(1)=yvec_cc;
+  rotation_camera_camera_gazebo.col(2)=zvec_cc;
+  T_camera_camera_gazebo.translation()=translation_camera_camera_gazebo;
+  T_camera_camera_gazebo.linear()=rotation_camera_camera_gazebo;
+
 
 }
