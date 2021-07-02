@@ -1394,7 +1394,7 @@ bool move_aruco_to_center_of_camera(){
     T_my_rotation.translation()=trans_my_rot;
     T_my_rotation.linear()=rotation_my_rot;
 
-    Affine3d T_0_camera_gazebo_modified;
+    Affine3d T_0_camera_gazebo_modified,T_all_orizz,T_all_vert,T_0_camera_gazebo_modified_orizz,T_camera_aruco_modified_orizz,T_all_rotativo;
     double modulo=sqrt(T_camera_aruco.translation().x()*T_camera_aruco.translation().x()+T_camera_aruco.translation().y()*T_camera_aruco.translation().y()+T_camera_aruco.translation().z()*T_camera_aruco.translation().z());
 
     double cos_x=T_camera_aruco.translation().x()/modulo;
@@ -1403,17 +1403,73 @@ bool move_aruco_to_center_of_camera(){
     double cos_y=T_camera_aruco.translation().y()/modulo;
     double ang_y=acos(cos_y);
 
-    float roll = ang_y, pitch = ang_x, yaw = 0;
+    //float roll = 0, pitch = 0, yaw = atan(T_camera_aruco.translation().y()/T_camera_aruco.translation().x());
+    float roll = 0, pitch = 0, yaw = atan(vettore_gazebo_aruco.y()/vettore_gazebo_aruco.x());
+    //
+    //
+
     Quaterniond q;
     q = AngleAxisd(roll, Vector3d::UnitX())
         * AngleAxisd(pitch, Vector3d::UnitY())
         * AngleAxisd(yaw, Vector3d::UnitZ());
-    Matrix3d rot_prova=q.toRotationMatrix();
+    Matrix3d rot_allineamento_orizzontale=q.toRotationMatrix();
+
+    T_all_orizz.translation().x()=0;
+    T_all_orizz.translation().y()=0;
+    T_all_orizz.translation().z()=0;
+    T_all_orizz.linear()=rot_allineamento_orizzontale;
+
+
+    //Applicando la matrice sopra a T_0_camera_gazebo, ottengo che l'asse blu è esattamente sopra all'aruco. se rotazione su asse verde allora perfetto
+    // mi serve la nuova distanza tra la camera e l'aruco sull'asse rosso
+
+    T_0_camera_gazebo_modified_orizz=T_0_camera_gazebo;
+    T_0_camera_gazebo_modified_orizz.linear()=rot_allineamento_orizzontale;
+    T_camera_aruco_modified_orizz=T_0_camera_gazebo_modified_orizz.inverse()*T_0_aruco;
+
+    cout<<"Translation camera aruco modified orizz:"<<endl<<T_camera_aruco_modified_orizz.translation();
+    double dissallineamento_verticale=M_PI/2 - atan(T_camera_aruco_modified_orizz.translation().z()/T_camera_aruco_modified_orizz.translation().x());
+    double sq_dist=sqrt(vettore_gazebo_aruco.x()*vettore_gazebo_aruco.x() +vettore_gazebo_aruco.y()*vettore_gazebo_aruco.y() + vettore_gazebo_aruco.z()*vettore_gazebo_aruco.z());
+    //double dissallineamento_verticale=M_PI/2- asin(vettore_gazebo_aruco.z()/sq_dist);
+
+
+    cout<<"Disallineamento verticale:"<<dissallineamento_verticale<<endl;
+    roll = 0, pitch = dissallineamento_verticale, yaw = 0;
+    Quaterniond q_all_vert;
+    q_all_vert = AngleAxisd(roll, Vector3d::UnitX())
+        * AngleAxisd(pitch, Vector3d::UnitY())
+        * AngleAxisd(yaw, Vector3d::UnitZ());
+    Matrix3d rot_all_vert=q_all_vert.toRotationMatrix();
+
+    T_all_vert.translation().x()=0;
+    T_all_vert.translation().y()=0;
+    T_all_vert.translation().z()=0;
+    T_all_vert.linear()=rot_all_vert;
+
+
+    roll = 0, pitch = 0, yaw = -M_PI/2;
+    Quaterniond q_all_rotativo;
+    q_all_rotativo = AngleAxisd(roll, Vector3d::UnitX())
+        * AngleAxisd(pitch, Vector3d::UnitY())
+        * AngleAxisd(yaw, Vector3d::UnitZ());
+    Matrix3d rot_all_rotativo=q_all_rotativo.toRotationMatrix();
+
+    T_all_rotativo.translation().x()=0;
+    T_all_rotativo.translation().y()=0;
+    T_all_rotativo.translation().z()=0;
+    T_all_rotativo.linear()=rot_all_rotativo;
+
+
+
 
     T_0_camera_gazebo_modified=T_0_camera_gazebo;
-    T_0_camera_gazebo_modified.linear()=rot_prova;
+    T_0_camera_gazebo_modified.linear()=rot_allineamento_orizzontale;
+    T_0_camera_gazebo_modified=T_0_camera_gazebo_modified*T_all_vert*T_all_rotativo;
+
+
 
     cout<<"Rotation with rpy:"<<endl<<T_0_camera_gazebo_modified.linear();
+    cout<<"Translation with rpy:"<<endl<<T_0_camera_gazebo_modified.translation();
 
     //T_my_rotation=T_0_camera_gazebo.inverse()*T_temp*T_my_translation.inverse();
 
