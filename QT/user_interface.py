@@ -274,7 +274,41 @@ class Screen_Automazione(QWidget):
             resp1 = bridge_serv(msg)
         except rospy.ServiceException as e:
             self.l_comunicazione.setText('Errore:'+ e)
+    def centra_aruco(self):
+        target_joints=[0,0,0,0,0,0]
+        target_pose=Pose()
+        modality='centra_aruco'
+        second_information=self.select_aruco_value.text()
+        try:
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
+            resp1 = serv(msg)
+        except rospy.ServiceException as e:
+            self.l_comunicazione.setText('Errore:'+ e)
 
+
+    def centra_aruco_and_zoom_in(self):
+        target_joints=[0,0,0,0,0,0]
+        target_pose=Pose()
+        modality='centra_aruco_and_zoom_in'
+        second_information=self.select_aruco_value.text()
+        try:
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
+            resp1 = serv(msg)
+        except rospy.ServiceException as e:
+            self.l_comunicazione.setText('Errore:'+ e)
+    def centra_aruco_and_zoom_out(self):
+        target_joints=[0,0,0,0,0,0]
+        target_pose=Pose()
+        modality='centra_aruco_and_zoom_out'
+        second_information=self.select_aruco_value.text()
+        try:
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
+            resp1 = serv(msg)
+        except rospy.ServiceException as e:
+            self.l_comunicazione.setText('Errore:'+ e)
+
+
+#MAIN
 def main_code():
     global widget,window_mp,window_joystick,window_main,serv,bridge_serv,app,window_automazione
     rospy.init_node('user_interface', anonymous=True)

@@ -83,14 +83,25 @@ void esegui_msg_from_inteface(){
 
         ruota_e_cerca_aruco();
         usleep(300000);//0.3 sec
-        move_aruco_to_center_of_camera();
+        move_aruco_to_center_of_camera("");
       }
       if(msg_from_interface.modality=="ruota_e_cerca_pannello"){
 
         ruota_e_cerca_pannello();
         usleep(300000);//0.3 sec
-        move_aruco_to_center_of_camera();
       }
+      if(msg_from_interface.modality=="centra_aruco"){
+        move_aruco_to_center_of_camera("");
+      }
+      if(msg_from_interface.modality=="centra_aruco_and_zoom_in"){
+        move_aruco_to_center_of_camera("in");
+      }
+      if(msg_from_interface.modality=="centra_aruco_and_zoom_out"){
+
+        move_aruco_to_center_of_camera("out");
+      }
+
+
       msg_to_be_processed=false;
   }
 

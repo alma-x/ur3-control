@@ -1239,7 +1239,7 @@ struct Affine_valid
      bool valid;
      Affine3d homo_matrix;
 };
-bool move_aruco_to_center_of_camera(){
+bool move_aruco_to_center_of_camera(string zoom){
   ur3_control::aruco_serviceResponse msg_from_bridge=bridge_service(str_md_rd,"");
 
   if(msg_from_bridge.aruco_found){
@@ -1326,13 +1326,10 @@ bool move_aruco_to_center_of_camera(){
     T_0_camera_gazebo_modified_orizz.linear()=rot_allineamento_orizzontale;
     T_camera_aruco_modified_orizz=T_0_camera_gazebo_modified_orizz.inverse()*T_0_aruco;
 
-    cout<<"Translation camera aruco modified orizz:"<<endl<<T_camera_aruco_modified_orizz.translation();
     double dissallineamento_verticale=M_PI/2 - atan(T_camera_aruco_modified_orizz.translation().z()/T_camera_aruco_modified_orizz.translation().x());
     double sq_dist=sqrt(vettore_gazebo_aruco.x()*vettore_gazebo_aruco.x() +vettore_gazebo_aruco.y()*vettore_gazebo_aruco.y() + vettore_gazebo_aruco.z()*vettore_gazebo_aruco.z());
-    //double dissallineamento_verticale=M_PI/2- asin(vettore_gazebo_aruco.z()/sq_dist);
 
 
-    cout<<"Disallineamento verticale:"<<dissallineamento_verticale<<endl;
     roll = 0, pitch = dissallineamento_verticale, yaw = 0;
     Quaterniond q_all_vert;
     q_all_vert = AngleAxisd(roll, Vector3d::UnitX())
@@ -1365,10 +1362,17 @@ bool move_aruco_to_center_of_camera(){
     T_0_camera_gazebo_modified.linear()=rot_allineamento_orizzontale;
     T_0_camera_gazebo_modified=T_0_camera_gazebo_modified*T_all_vert*T_all_rotativo;
 
+    Affine3d T_zoom;
+    T_zoom.linear().setIdentity();
+    if(zoom=="in"){
+      T_zoom.translation().z()=0.05;
+      T_0_camera_gazebo_modified=T_0_camera_gazebo_modified*T_zoom;
+    }
+    else if (zoom=="out") {
+      T_zoom.translation().z()=-0.05;
+      T_0_camera_gazebo_modified=T_0_camera_gazebo_modified*T_zoom;
+    }
 
-
-    cout<<"Rotation with rpy:"<<endl<<T_0_camera_gazebo_modified.linear();
-    cout<<"Translation with rpy:"<<endl<<T_0_camera_gazebo_modified.translation();
 
 
     T_0_camera_modified=T_0_camera_gazebo_modified*T_camera_camera_gazebo.inverse();
@@ -1380,8 +1384,15 @@ bool move_aruco_to_center_of_camera(){
 
 
     pose_ee_modified=homo_to_pose(T_0_tool_modified);
-    bool debug=true;
+    bool debug=false;
     if(debug){
+      cout<<"Translation camera aruco modified orizz:"<<endl<<T_camera_aruco_modified_orizz.translation();
+
+      cout<<"Rotation with rpy:"<<endl<<T_0_camera_gazebo_modified.linear();
+      cout<<"Translation with rpy:"<<endl<<T_0_camera_gazebo_modified.translation();
+
+
+      cout<<"Disallineamento verticale:"<<dissallineamento_verticale<<endl;
       cout<<"ee pose:"<<endl;
       stampa_Pose(pose_robot);
 
@@ -1431,8 +1442,14 @@ bool move_aruco_to_center_of_camera(){
 
     }
 
-    move_to_pose(pose_ee_modified,true);
-    robot->setPlanningTime(std_planning_time);
+
+    std::vector<Pose> waypoints;
+    waypoints.push_back(pose_ee_modified);  // up and left
+    RobotTrajectory trajectory;
+    const double jump_threshold = 0.0;
+    const double eef_step = 0.01;
+    robot->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory);
+    robot->execute(trajectory);
     return true;
 
   }
@@ -1574,3 +1591,4 @@ void set_homo_std_matrix(){
 
 
 }
+

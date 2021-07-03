@@ -58,7 +58,7 @@
      <x>151</x>
      <y>101</y>
      <width>317</width>
-     <height>185</height>
+     <height>187</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -94,14 +94,18 @@
      </widget>
     </item>
     <item>
-     <widget class="QPushButton" name="pushButton_5">
-      <property name="text">
-       <string>Muoviti fino all'aruco selezionato</string>
-      </property>
-     </widget>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QPushButton" name="pushButton_5">
+        <property name="text">
+         <string>Muoviti fino all'aruco selezionato</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout">
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
        <widget class="QPushButton" name="pushButton_6">
         <property name="text">
@@ -131,6 +135,39 @@
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="">
+   <property name="geometry">
+    <rect>
+     <x>460</x>
+     <y>340</y>
+     <width>189</width>
+     <height>83</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout_3">
+    <item>
+     <widget class="QPushButton" name="pushButton_9">
+      <property name="text">
+       <string>CENTRA ARUCO</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="pushButton_10">
+      <property name="text">
+       <string>CENTRA ARUCO E ZOOM IN</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="pushButton_11">
+      <property name="text">
+       <string>CENTRA ARUCO E ZOOM OUT</string>
       </property>
      </widget>
     </item>
@@ -267,6 +304,54 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>pushButton_9</sender>
+   <signal>clicked()</signal>
+   <receiver>stop_traj_button</receiver>
+   <slot>centra_aruco()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>481</x>
+     <y>348</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>437</x>
+     <y>346</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_10</sender>
+   <signal>clicked()</signal>
+   <receiver>stop_traj_button</receiver>
+   <slot>centra_aruco_and_zoom_in()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>471</x>
+     <y>392</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>348</x>
+     <y>380</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_11</sender>
+   <signal>clicked()</signal>
+   <receiver>stop_traj_button</receiver>
+   <slot>centra_aruco_and_zoom_out()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>470</x>
+     <y>411</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>297</x>
+     <y>406</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>prova()</slot>
@@ -288,5 +373,8 @@
   <slot>stop_traj_clicked()</slot>
   <slot>ruota_e_cerca_pannello()</slot>
   <slot>ruota_e_cerca_aruco()</slot>
+  <slot>centra_aruco()</slot>
+  <slot>centra_aruco_and_zoom_in()</slot>
+  <slot>centra_aruco_and_zoom_out()</slot>
  </slots>
 </ui>
