@@ -36,6 +36,7 @@
 #include "Eigen/Geometry"
 #include "tf_conversions/tf_eigen.h"
 #include <fstream>
+#include "control_msgs/GripperCommandActionGoal.h"
 
 using namespace std;
 using namespace geometry_msgs;
@@ -67,6 +68,7 @@ bool joystick_ready;
 
 int std_planning_time=4;
 
+ros::Publisher pub_gripper;
 
 Affine3d T_tool_camera,T_camera_camera_gazebo;
 
@@ -1243,7 +1245,7 @@ bool move_aruco_to_center_of_camera(string zoom){
   ur3_control::aruco_serviceResponse msg_from_bridge=bridge_service(str_md_rd,"");
 
   if(msg_from_bridge.aruco_found){
-
+    ROS_INFO("ERC: centering camera");
     Pose pose_robot=robot->getCurrentPose().pose;
 
     Pose pose_robot_target,pose_finalpos,pose_aruco,pose_camera;
@@ -1448,9 +1450,16 @@ bool move_aruco_to_center_of_camera(string zoom){
     RobotTrajectory trajectory;
     const double jump_threshold = 0.0;
     const double eef_step = 0.01;
-    robot->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory);
-    robot->execute(trajectory);
-    return true;
+    double traj_erro=robot->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory,true);
+    if(traj_erro==1){
+      robot->execute(trajectory);
+
+      return true;
+    }
+    else{
+      ROS_INFO("Traj_failed");
+      return false;
+    }
 
   }
   else{
@@ -1591,4 +1600,51 @@ void set_homo_std_matrix(){
 
 
 }
+Matrix3d from_rpy_to_rotational_matrix(double roll,double pitch,double yaw){
+  Quaterniond q;
+  q = AngleAxisd(roll, Vector3d::UnitX())
+      * AngleAxisd(pitch, Vector3d::UnitY())
+      * AngleAxisd(yaw, Vector3d::UnitZ());
+  return q.toRotationMatrix();
 
+}
+void action_aruco_button(){
+
+  control_msgs::GripperCommandActionGoal gca;
+  gca.goal.command.position=1.3;
+  pub_gripper.publish(gca);
+
+  Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
+  if(T_0_aruco_valid.valid){
+
+    Affine3d T_aruco_finalpos,T_0_finalpos, T_0_aruco;
+    T_0_aruco=T_0_aruco_valid.homo_matrix;
+
+    stampa_Pose(homo_to_pose(T_0_aruco));
+
+
+
+    T_aruco_finalpos.translation().x()=0;
+    T_aruco_finalpos.translation().y()=-0.065;
+    T_aruco_finalpos.translation().z()=0.22;
+    T_aruco_finalpos.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0)*from_rpy_to_rotational_matrix(M_PI/2,0,0);
+
+
+    T_0_finalpos=T_0_aruco*T_aruco_finalpos;
+    //In questo punto ho T_0_final
+    Pose pose_final_pose=homo_to_pose(T_0_finalpos);
+    stampa_Pose(pose_final_pose);
+    std::vector<Pose> waypoints;
+    waypoints.push_back(pose_final_pose);  // up and left
+    RobotTrajectory trajectory;
+    const double jump_threshold = 0.0;
+    const double eef_step = 0.01;
+    double traj_erro=robot->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory,true);
+    if(traj_erro==1){
+      robot->execute(trajectory);
+    }
+    else{
+      ROS_INFO("Traj_failed");
+    }
+  }
+}

@@ -76,6 +76,7 @@ bool callback_modality(ur3_control::aruco_service::Request &req, ur3_control::ar
   res.y=msg_from_cv.y;
   res.z=msg_from_cv.z;
   res.vector=msg_from_cv.vector;
+  res.id_aruco=msg_from_cv.id_aruco;
 
   return true;
 }
