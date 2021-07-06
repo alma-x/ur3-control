@@ -94,6 +94,19 @@ vector<double> pos_joint_centrifuga;
 vector<double> pos_joint_pannello;
 vector<int> pos_rpy_tb;
 vector<int> pos_rpy_ta;
+
+struct Affine_valid
+{
+     bool valid;
+     Affine3d homo_matrix;
+};
+struct Pose_valid
+{
+     bool valid;
+     Pose pose;
+};
+
+Pose_valid pose_pannello_elaborata;
 void pick(string name_object);
 char getch();
 double grad_to_rad(double grad);
@@ -121,7 +134,7 @@ ur3_control::aruco_serviceResponse bridge_service(string modalita,string second_
 bool function_pose_aruco();
 Pose homo_to_pose(Affine3d homo);
 bool move_aruco_to_center_of_camera(double percentual_zoom);
-
+bool ritorno_al_pannello(double percentual);
 
 //OLD FUNCTIONS
 void pick(string name_object){
@@ -517,7 +530,7 @@ return false;
 
 
 
-//NEW FUNCTIONS
+//ACTUAL FUNCTIONS
 double grad_to_rad(double grad)
 {
   return grad*3.1415/180;
@@ -914,7 +927,12 @@ bool PosizioniBase(string str_posizione){
   }
   else
   if(str_posizione==str_pannello){
-    robot->setJointValueTarget(pos_joint_pannello);
+    if(pose_pannello_elaborata.valid)
+      robot->setPoseTarget(pose_pannello_elaborata.pose);
+    else {
+      ROS_INFO("Pannello non ancora individuato");
+      return false;
+    }
   }
   else
   if(str_posizione==str_rotaz_pannello){
@@ -1021,8 +1039,14 @@ void ruota_e_cerca_pannello(){
       }
 }
 }
-  if(move_aruco_to_center_of_camera(0)){
-    pos_joint_pannello=robot->getCurrentJointValues();
+
+  move_aruco_to_center_of_camera(0);
+  move_aruco_to_center_of_camera(-20);
+  move_aruco_to_center_of_camera(-20);
+
+  if(aruco_individuato()){
+    pose_pannello_elaborata.valid=true;
+    pose_pannello_elaborata.pose=robot->getCurrentPose().pose;
     ROS_INFO("Posizione pannello aggiornata");
   }
 
@@ -1262,11 +1286,6 @@ bool function_pose_aruco(){
   }
 
 }
-struct Affine_valid
-{
-     bool valid;
-     Affine3d homo_matrix;
-};
 bool move_aruco_to_center_of_camera(double percentual_zoom){
   ur3_control::aruco_serviceResponse msg_from_bridge=bridge_service(str_md_rd,"");
 
@@ -1660,15 +1679,58 @@ bool action_aruco_button(){
 
     T_0_finalpos=T_0_aruco*T_aruco_finalpos;
     //In questo punto ho T_0_final
+
     Pose pose_final_pose=homo_to_pose(T_0_finalpos);
-    //stampa_Pose(pose_final_pose);
+
+    //Vado al target
     if(move_to_pose_cartesian(pose_final_pose)){
-      PosizioniBase(str_pannello);
+
+      sleep(3);
+
+      //Inizio ritorno verso pannello
+      ritorno_al_pannello(10);
+      ritorno_al_pannello(10);
+      ritorno_al_pannello(20);
+      ritorno_al_pannello(20);
+      ritorno_al_pannello(50);
+      ritorno_al_pannello(50);
+
+      if(move_to_pose_cartesian(pose_pannello_elaborata.pose)){
+        return true;
+      }
+
+      move_to_pose(pose_pannello_elaborata.pose,true);
+      return true;
+
+
     }
-    else
-      return false;
-    }
-  else
+  }
+
+  return false;
+
+}
+void initialize_parameters(){
+
+  robot->setPlannerId("RRTConnectkConfigDefault");
+  robot->setPlanningTime(5);
+  pose_pannello_elaborata.valid=false;
+}
+bool ritorno_al_pannello(double percentual){
+  ROS_INFO("ERC:Starting going back to pannello");
+  Pose actual_pose,pann_pose,final_pose;
+
+  if(!pose_pannello_elaborata.valid)
     return false;
 
+
+  actual_pose=robot->getCurrentPose().pose;
+  pann_pose=pose_pannello_elaborata.pose;
+
+  final_pose=actual_pose;
+
+  final_pose.position.x= final_pose.position.x + (pann_pose.position.x-actual_pose.position.x)*percentual/100;
+  //final_pose.position.y= final_pose.position.y + (pann_pose.position.y-actual_pose.position.y)*percentual/100;
+  //final_pose.position.z= final_pose.position.z + (pann_pose.position.z-actual_pose.position.z)*percentual/100;
+
+  return move_to_pose_cartesian(final_pose);
 }

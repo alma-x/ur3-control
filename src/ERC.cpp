@@ -65,7 +65,6 @@ void esegui_msg_from_inteface(){
           stampa_giunti();
       }
       if(msg_from_interface.modality=="automazione_pannello_posizioneCorretta"){
-
           PosizioniBase(str_pannello);
       }
       if(msg_from_interface.modality=="automazione_pannello_Completa"){
@@ -132,14 +131,12 @@ int main(int argc, char** argv)
   moveit_visual_tools::MoveItVisualTools visual_tools("base_link");
   visual_tools.deleteAllMarkers();
 
-  robot->setPlannerId("RRTConnectkConfigDefault");
-  robot->setPlanningTime(5);
   gazebo_model_state_pub = node_handle.advertise<gazebo_msgs::ModelState>("/gazebo/set_model_state", 100);
   pose_object_client = node_handle.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
 
   ros::ServiceServer serv=node_handle.advertiseService("/user_interface_serv", callback_modality);
   pub_gripper = node_handle.advertise<control_msgs::GripperCommandActionGoal>("/gripper/gripper_cmd/goal", 1);
-
+  initialize_parameters();
   set_homo_std_matrix();
   load_parameters();
   while(ros::ok && !bool_exit){
