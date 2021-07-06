@@ -72,7 +72,6 @@ void esegui_msg_from_inteface(){
       }
       if(msg_from_interface.modality=="automazione_pannello_MoveToSelectedAruco"){
         ur3_control::aruco_serviceResponse msg_from_bridge=bridge_service(str_md_rd,"");
-        if(msg_from_bridge.aruco_found){
 
           if(msg_from_bridge.id_aruco==1){
             action_aruco_button();
@@ -84,10 +83,7 @@ void esegui_msg_from_inteface(){
             }
           }
 
-        }
-        else{
-          ROS_INFO("ERC: Aruco not found");
-        }
+
 
 
       }
@@ -98,7 +94,7 @@ void esegui_msg_from_inteface(){
 
         ruota_e_cerca_aruco();
         usleep(300000);//0.3 sec
-        move_aruco_to_center_of_camera("");
+        move_aruco_to_center_of_camera(0);
       }
       if(msg_from_interface.modality=="ruota_e_cerca_pannello"){
 
@@ -106,14 +102,14 @@ void esegui_msg_from_inteface(){
         usleep(300000);//0.3 sec
       }
       if(msg_from_interface.modality=="centra_aruco"){
-        move_aruco_to_center_of_camera("");
+        move_aruco_to_center_of_camera(0);
       }
       if(msg_from_interface.modality=="centra_aruco_and_zoom_in"){
-        move_aruco_to_center_of_camera("in");
+        move_aruco_to_center_of_camera(20);
       }
       if(msg_from_interface.modality=="centra_aruco_and_zoom_out"){
 
-        move_aruco_to_center_of_camera("out");
+        move_aruco_to_center_of_camera(-20);
       }
 
 

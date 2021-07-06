@@ -120,51 +120,404 @@ bool move_to_aruco();
 ur3_control::aruco_serviceResponse bridge_service(string modalita,string second_information);
 bool function_pose_aruco();
 Pose homo_to_pose(Affine3d homo);
+bool move_aruco_to_center_of_camera(double percentual_zoom);
 
 
-
-
+//OLD FUNCTIONS
 void pick(string name_object){
-  Pose pose;
-  pose.position.x = 0.0;
-  pose.position.y = 0.11;
-  pose.position.z = 0.0;
-  pose.orientation.w = 1;
-  pose.orientation.x = 1;
-  pose.orientation.y = 0;
-  pose.orientation.z = 0;
 
-  gazebo_msgs::ModelState model_state;
-  model_state.model_name = name_object;
-  model_state.pose = pose;
-  model_state.reference_frame =std::string("wrist_3_link");
+//  Pose pose;
+//  pose.position.x = 0.0;
+//  pose.position.y = 0.11;
+//  pose.position.z = 0.0;
+//  pose.orientation.w = 1;
+//  pose.orientation.x = 1;
+//  pose.orientation.y = 0;
+//  pose.orientation.z = 0;
 
-  picked=true;
-  while(picked==true){
-  gazebo_model_state_pub.publish(model_state);
-  usleep(10000);
-  }
+//  gazebo_msgs::ModelState model_state;
+//  model_state.model_name = name_object;
+//  model_state.pose = pose;
+//  model_state.reference_frame =std::string("wrist_3_link");
+
+//  picked=true;
+//  while(picked==true){
+//  gazebo_model_state_pub.publish(model_state);
+//  usleep(10000);
+//  }
 
 }
 char getch() {
-        char buf = 0;
-        struct termios old = {0};
-        if (tcgetattr(0, &old) < 0)
-                perror("tcsetattr()");
-        old.c_lflag &= ~ICANON;
-        old.c_lflag &= ~ECHO;
-        old.c_cc[VMIN] = 1;
-        old.c_cc[VTIME] = 0;
-        if (tcsetattr(0, TCSANOW, &old) < 0)
-                perror("tcsetattr ICANON");
-        if (read(0, &buf, 1) < 0)
-                perror ("read()");
-        old.c_lflag |= ICANON;
-        old.c_lflag |= ECHO;
-        if (tcsetattr(0, TCSADRAIN, &old) < 0)
-                perror ("tcsetattr ~ICANON");
-        return (buf);
+//        char buf = 0;
+//        struct termios old = {0};
+//        if (tcgetattr(0, &old) < 0)
+//                perror("tcsetattr()");
+//        old.c_lflag &= ~ICANON;
+//        old.c_lflag &= ~ECHO;
+//        old.c_cc[VMIN] = 1;
+//        old.c_cc[VTIME] = 0;
+//        if (tcsetattr(0, TCSANOW, &old) < 0)
+//                perror("tcsetattr ICANON");
+//        if (read(0, &buf, 1) < 0)
+//                perror ("read()");
+//        old.c_lflag |= ICANON;
+//        old.c_lflag |= ECHO;
+//        if (tcsetattr(0, TCSADRAIN, &old) < 0)
+//                perror ("tcsetattr ~ICANON");
+//        return (buf);
 }
+void PosizioniBase_old(int posizione){
+//  vector<double> joint_group_positions;
+//  Pose target;
+//  if(posizione<=2){
+//    joint_group_positions=robot->getCurrentJointValues();
+//    for(unsigned int i=0;i<6;i++)
+//      joint_group_positions[i]=0;
+//    if(posizione==2){
+//      joint_group_positions[1]=grad_to_rad(-90);
+//      joint_group_positions[4]=grad_to_rad(90);
+//    }
+//    robot->setJointValueTarget(joint_group_positions);
+//  }
+//  //testa in basso
+//  if(posizione==3)
+//  {
+//    target.position=robot->getCurrentPose().pose.position;
+//    SetPoseOrientationRPY(&target,0,-270,0);
+//    robot->setPoseTarget(target);
+
+//  }
+//  //testa in alto
+//  if(posizione==4)
+//  {
+//    target.position=robot->getCurrentPose().pose.position;
+//    SetPoseOrientationRPY(&target,0,-90,0);
+//    robot->setPoseTarget(target);
+
+//  }
+//  success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
+//  ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+//  //robot->move();
+//  robot->move();
+
+}
+void take_object(){
+//  tf2::Quaternion quat;
+//  Pose target;
+//  gazebo_msgs::GetModelState getmodelstate;
+//  cout<<endl<<"nome oggetto: ";
+//  cin>>nome_oggetto;
+//  getmodelstate.request.model_name=nome_oggetto;
+//  pose_object_client.call(getmodelstate);
+//  cout<<endl<<"posizione di "<<nome_oggetto<<endl;
+//  cout<<"X: "<<getmodelstate.response.pose.position.x<<endl;
+//  cout<<"Y: "<<getmodelstate.response.pose.position.y<<endl;
+//  cout<<"Z: "<<getmodelstate.response.pose.position.z<<endl;
+//  cout<<endl<<"orientazione: "<<endl;
+//  cout<<"X: "<<getmodelstate.response.pose.orientation.x<<endl;
+//  cout<<"Y: "<<getmodelstate.response.pose.orientation.y<<endl;
+//  cout<<"Z: "<<getmodelstate.response.pose.orientation.z<<endl;
+//  cout<<"W: "<<getmodelstate.response.pose.orientation.w<<endl;
+
+// //PosizioniBase(2);
+// //usleep(5000000);
+//  target.position.x=getmodelstate.response.pose.position.x;
+//  target.position.y=getmodelstate.response.pose.position.y;
+//  target.position.z=getmodelstate.response.pose.position.z+0.05;
+//  quat.setRPY(grad_to_rad(0),grad_to_rad(90),grad_to_rad(0));
+//  tf2quat_to_pose(quat,&target);
+//  move_to_pose(target,true);
+}
+Pose pose_traslation_FAKE_solidale(Vector3d translation)
+{
+  Pose pose_robot=robot->getCurrentPose().pose;
+  /*tf2::Quaternion quat1;
+  tf::Quaternion q1(
+        pose_robot.orientation.x,
+        pose_robot.orientation.y,
+        pose_robot.orientation.z,
+        pose_robot.orientation.w);
+  tf::Matrix3x3 m1(q1);
+  double r0_first, p0_first, y0_first;
+  m1.getRPY(r0_first,p0_first,y0_first);
+  quat1.setRPY(0,p0_first,y0_first);
+
+  pose_robot.orientation.x=quat1.getX();
+  pose_robot.orientation.y=quat1.getY();
+  pose_robot.orientation.z=quat1.getZ();
+  pose_robot.orientation.w=quat1.getW();
+
+  Affine3d T_actual;
+  tf::Pose pose_robot_tf;
+  tf::poseMsgToTF(pose_robot,pose_robot_tf);
+  tf::poseTFToEigen(pose_robot_tf,T_actual);
+  T_actual.translate(translation);
+  tf::poseEigenToTF(T_actual,pose_robot_tf);
+  tf::poseTFToMsg(pose_robot_tf,pose_robot);
+
+  tf2::Quaternion quat2;
+  tf::Quaternion q2(
+        pose_robot.orientation.x,
+        pose_robot.orientation.y,
+        pose_robot.orientation.z,
+        pose_robot.orientation.w);
+  tf::Matrix3x3 m2(q2);
+  double r0_second, p0_second, y0_second;
+  m2.getRPY(r0_second,p0_second,y0_second);
+  quat2.setRPY(r0_first,p0_second,y0_second);//r0_first per lasciarlo al vecchio roll
+
+  pose_robot.orientation.x=quat2.getX();
+  pose_robot.orientation.y=quat2.getY();
+  pose_robot.orientation.z=quat2.getZ();
+  pose_robot.orientation.w=quat2.getW();*/
+
+  return pose_robot;
+}
+Pose pose_traslation_solidale(Vector3d translation)
+{
+  Pose pose_robot=robot->getCurrentPose().pose;
+
+
+  Affine3d T_actual;
+  tf::Pose pose_robot_tf;
+  tf::poseMsgToTF(pose_robot,pose_robot_tf);
+  tf::poseTFToEigen(pose_robot_tf,T_actual);
+  T_actual.translate(translation);
+  tf::poseEigenToTF(T_actual,pose_robot_tf);
+  tf::poseTFToMsg(pose_robot_tf,pose_robot);
+
+  return pose_robot;
+}
+void ruota_360_old(){
+//  ROS_INFO("Starting rotating 360");
+
+
+
+
+//  robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
+//  robot_model::RobotModelPtr kinematic_model = robot_model_loader.getModel();
+//  ROS_INFO("Model frame: %s", kinematic_model->getModelFrame().c_str());
+
+//  robot_state::RobotStatePtr kinematic_state(new robot_state::RobotState(kinematic_model));
+//  const robot_state::JointModelGroup* joint_model_group = kinematic_model->getJointModelGroup("manipulator");
+////const std::vector<std::string>& joint_names = joint_model_group->getVariableNames();
+//  ROS_INFO("kinematic model aquired");
+
+//  //rotazione
+
+//  vector<double> joint_positions;
+//  joint_positions=robot->getCurrentJointValues();
+
+
+
+//  double angle_resolution=1;
+//  vector<Pose> waypoints;
+//  for (int i= 0; i< 360/angle_resolution; i++)
+//    {
+//      joint_positions[0] = joint_positions[0]+grad_to_rad(angle_resolution);  // radians
+
+
+//      kinematic_state->setJointGroupPositions(joint_model_group, joint_positions);
+
+
+//      tf::Pose target_tf;
+//      Pose target;
+//      const Eigen::Affine3d& link_pose = kinematic_state->getGlobalLinkTransform("tool0");//forse tool0
+//      tf::poseEigenToTF(link_pose,target_tf);
+//      tf::poseTFToMsg(target_tf,target);
+//      SetPoseOrientationRPY(&target,0,90,0);
+//      waypoints.push_back(target);
+//    }
+
+//      moveit_msgs::RobotTrajectory trajectory;
+//      robot->computeCartesianPath(waypoints,0.0001,0,trajectory);
+
+//      success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
+//      ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+//      my_plan.trajectory_=trajectory;
+//      robot->execute(my_plan);
+
+//      ROS_INFO("Rotazione 360 completata");
+
+}
+void trasformazioni(){
+//  Pose pose_robot=robot->getCurrentPose().pose;
+
+//  ROS_INFO("Traslazione:");
+//  ROS_INFO("x: %f\n y:%f\n z:%f\n ",pose_robot.position.x,pose_robot.position.y,pose_robot.position.z);
+
+//  ROS_INFO("Rotazione:");
+//  ROS_INFO("x: %f\n y:%f\n z:%f\n w:%f\n",pose_robot.orientation.x,pose_robot.orientation.y,pose_robot.orientation.z,pose_robot.orientation.w);
+
+//  Pose pose_robot_target;
+//  Affine3d T_0_tool,T_tool_camera,T_0_camera;
+//  tf::Pose pose_robot_tf,pose_target_tf;
+//  tf::poseMsgToTF(pose_robot,pose_robot_tf);
+//  tf::poseTFToEigen(pose_robot_tf,T_0_tool);
+
+//  cout<<"T_0_tool translation:"<<endl<<T_0_tool.translation()<<endl;
+//  cout<<"T_0_tool rotation:"<<endl<<T_0_tool.rotation()<<endl;
+
+//  /*
+//   *
+//   *    tra ee_link e camera_realsense_gazebo
+//        A=np.array([[0,1,0,0.4569],[1,0,0,0.19425],[0,0,-1,0.6655],[0,0,0,1]])
+//        B=np.array([[0,0,1,0.025],[1,0,0,0],[0,1,0,0],[0,0,0,1]])
+//        p=np.array([[0],[0],[0],[1]])
+//        T=A.dot(B)
+//        result=T.dot(p)
+//*/
+//  Vector3d translation_tool_camera(0.025,0,0);
+//  Matrix3d rotation_tool_camera;
+//  Vector3d xvec_des(0,1,0),yvec_des(0,0,1),zvec_des(1,0,0);
+//  rotation_tool_camera.col(0)=xvec_des;
+//  rotation_tool_camera.col(1)=yvec_des;
+//  rotation_tool_camera.col(2)=zvec_des;
+
+
+//  T_tool_camera.translation()=translation_tool_camera;
+//  T_tool_camera.linear()=rotation_tool_camera;
+//  cout<<"T_tool_camera translation:"<<endl<<T_tool_camera.translation()<<endl;
+//  cout<<"T_tool_camera rotation:"<<endl<<T_tool_camera.rotation()<<endl;
+//  //ROS_INFO("T_tool_camera: %f %f %f",T_tool_camera.translation().x(),T_tool_camera.translation().y(),T_tool_camera.translation().z());
+
+
+//  T_0_camera=T_0_tool*T_tool_camera;
+
+//  tf::poseEigenToTF(T_0_camera,pose_target_tf);
+//  tf::poseTFToMsg(pose_target_tf,pose_robot_target);
+
+//  ROS_INFO("Traslazione:");
+//  ROS_INFO("x: %f\n y:%f\n z:%f\n ",pose_robot_target.position.x,pose_robot_target.position.y,pose_robot_target.position.z);
+
+//  ROS_INFO("Rotazione:");
+//  ROS_INFO("x: %f\n y:%f\n z:%f\n w:%f\n",pose_robot_target.orientation.x,pose_robot_target.orientation.y,pose_robot_target.orientation.z,pose_robot_target.orientation.w);
+
+}
+void reshape(){
+    /*
+  Matrix3d new_vector;
+  {
+  int rows,columns,dimensione,i=0,c=0,r=-1;
+  rows=aruco_srv.response.dim[0];
+  columns=aruco_srv.response.dim[1];
+  dimensione=rows*columns;
+  do{
+    if(c%columns==0){
+      c=0;
+      r++;
+    }
+    new_vector=aruco_srv.response.vector[i];
+    c++;
+    i++;
+  }while(i!=dimensione);
+  for(r=0;r<rows;r++){
+    for(c=0;c<rows;c++){
+      printf("%f ",new_vector[r][c]);
+    }
+    printf("\n");
+  }
+  }*/
+}
+void automatizzato(){
+
+//  /*Non funzionante*/
+
+//  bridge_service(str_md_bpa,"");
+
+//  PosizioniBase(str_r);//si mette in posizione prima di iniziare a ruotare
+
+//  if(!move_to_aruco())//controlla se nell'attuale posizione c'è un aruco e nel caso lo piglia
+//  {
+//    ruota_360();
+//    if(!move_to_aruco())//controlla se nell'attuale posizione c'è un aruco e nel caso lo piglia
+//    {
+//      ROS_INFO("Aruco non trovato :(");
+//    }
+//  }
+
+//  bridge_service(str_md_stop_bpa,"");
+}
+bool move_to_aruco(){
+//  Pose aruco_pose_solidale;
+//  if(individua_aruco(&aruco_pose_solidale)){
+
+//    robot->setPlanningTime(10);
+//    move_to_pose(aruco_pose_solidale,true);
+//    robot->setPlanningTime(std_planning_time);
+//    return true;
+//  }
+//  else {
+//    return false;
+//  }
+}
+void move_near_to_centrifuga(){
+
+
+// PosizioniBase(str_r);
+// PosizioniBase(str_near_centrifuga);
+
+
+
+}
+void move_to_centrifuga(){
+
+//  move_near_to_centrifuga();
+//  PosizioniBase(str_centrifuga);
+
+}
+bool move_to_pannello_aruco(){
+
+//  Pose aruco_pose_solidale;
+//  if(individua_aruco(&aruco_pose_solidale)){
+
+//    robot->setPlanningTime(10);
+//    move_to_pose(aruco_pose_solidale,true);
+//    robot->setPlanningTime(std_planning_time);
+//    return true;
+//  }
+//  else {
+//    return false;
+//  }
+}
+void aruco_pannello(){
+//  bool continua_=true;
+//  Pose temp;
+
+//  while(continua_){
+
+//    PosizioniBase(str_pannello);
+    
+//    function_pose_aruco();
+
+//    if(bridge_service(str_md_next_aruco,"").moreTargets<=0){
+//        continua_=false;
+//    }
+
+//  }
+////muoviti sul primo aruco
+////ritorna in un buon punto
+////cambia aruco. se non c'è next esci
+
+}
+bool individua_aruco(Pose *aruco_pose_solidale){
+////
+//  ur3_control::aruco_serviceResponse aruco_srv_msg_resp=bridge_service(str_md_rd,"");
+//  ROS_INFO("Aruco found:%s",(aruco_srv_msg_resp.aruco_found ? "YES":"NO"));
+
+//  if(aruco_srv_msg_resp.aruco_found){
+//    return true;
+//  }
+//  else{
+//    return false;
+//  }
+ROS_INFO("BROKEEN");
+return false;
+}
+
+
+
+//NEW FUNCTIONS
 double grad_to_rad(double grad)
 {
   return grad*3.1415/180;
@@ -233,6 +586,23 @@ void set_angolo(unsigned int giunto,int angolo)
   ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
   robot->move();
 }
+bool move_to_pose_cartesian(geometry_msgs::Pose pose){
+  std::vector<Pose> waypoints;
+  waypoints.push_back(pose);  // up and left
+  RobotTrajectory trajectory;
+  const double jump_threshold = 0.0;
+  const double eef_step = 0.01;
+  double traj_erro=robot->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory,true);
+  if(traj_erro==1){
+    robot->execute(trajectory);
+    return true;
+  }
+  else{
+    ROS_INFO("Traj_failed");
+    return false;
+  }
+
+}
 void move_to_pose(geometry_msgs::Pose pt, bool Orientamento){
 
   if(!Orientamento)
@@ -275,107 +645,6 @@ void stampa_giunti()
   for(int i=0;i<joint_group_positions.size();i++){
     cout<<i<<":"<<joint_group_positions[i]<<" xxx "<<rad_to_grad(joint_group_positions[i])<<endl;
   }
-}
-void PosizioniBase_old(int posizione){
-  vector<double> joint_group_positions;
-  Pose target;
-  if(posizione<=2){
-    joint_group_positions=robot->getCurrentJointValues();
-    for(unsigned int i=0;i<6;i++)
-      joint_group_positions[i]=0;
-    if(posizione==2){
-      joint_group_positions[1]=grad_to_rad(-90);
-      joint_group_positions[4]=grad_to_rad(90);
-    }
-    robot->setJointValueTarget(joint_group_positions);
-  }
-  //testa in basso
-  if(posizione==3)
-  {
-    target.position=robot->getCurrentPose().pose.position;
-    SetPoseOrientationRPY(&target,0,-270,0);
-    robot->setPoseTarget(target);
-
-  }
-  //testa in alto
-  if(posizione==4)
-  {
-    target.position=robot->getCurrentPose().pose.position;
-    SetPoseOrientationRPY(&target,0,-90,0);
-    robot->setPoseTarget(target);
-
-  }
-  success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
-  ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
-  //robot->move();
-  robot->move();
-
-}
-bool PosizioniBase(string str_posizione){
-  vector<double> joint_group_positions=robot->getCurrentJointValues();
-  Pose target=robot->getCurrentPose().pose;
-  if(str_posizione==str_home)
-  {
-    robot->setJointValueTarget(pos_joint_home);
-  }
-  else
-  if(str_posizione==str_up)
-  {
-    robot->setJointValueTarget(pos_joint_up);
-  }
-  else
-  if(str_posizione==str_ta)
-  {
-
-    SetPoseOrientationRPY(&target,pos_rpy_ta[0],pos_rpy_ta[1],pos_rpy_ta[2]);
-    robot->setPoseTarget(target);
-  }
-  else
-  if(str_posizione==str_tb)
-  {
-
-    SetPoseOrientationRPY(&target,pos_rpy_tb[0],pos_rpy_tb[1],pos_rpy_tb[2]);
-    robot->setPoseTarget(target);
-  }
-  else
-  if(str_posizione==str_r)
-  {
-
-    joint_group_positions[1] = pos_joint_r[1];
-    joint_group_positions[2] = pos_joint_r[2];
-    joint_group_positions[3] = pos_joint_r[3];
-    joint_group_positions[4] = pos_joint_r[4];
-
-    robot->setJointValueTarget(joint_group_positions);
-  }
-  else
-  if(str_posizione==str_near_centrifuga){
-    joint_group_positions[0] = pos_joint_centrifuga[0];  // radians
-    robot->setJointValueTarget(joint_group_positions);
-  }
-  else
-  if(str_posizione==str_centrifuga){
-    robot->setJointValueTarget(pos_joint_centrifuga);
-  }
-  else
-  if(str_posizione==str_pannello){
-    robot->setJointValueTarget(pos_joint_pannello);
-  }
-  else
-  if(str_posizione==str_rotaz_pannello){
-    vector<double> pos_joint_rotaz_pannello=pos_joint_pannello;
-    pos_joint_rotaz_pannello[0]=robot->getCurrentJointValues().at(0);//il primo giunto non viene fissato, rimane uguale a quello corrente
-    robot->setJointValueTarget(pos_joint_rotaz_pannello);
-  }
-  else{
-    ROS_INFO("Posizione non presente tra quelle base");
-    return false;
-  }
-
-  success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
-  ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
-  robot->move();
-  return true;
 }
 void controlla(int key_int){
     Vector3d translation(0,0,0);
@@ -597,144 +866,71 @@ void publish_joystick_info(){
 
   ROS_INFO("\n\nPremi h, per info.Da qui in poi inserisci i comandi:");
 }
-void take_object(){
-  tf2::Quaternion quat;
-  Pose target;
-  gazebo_msgs::GetModelState getmodelstate;
-  cout<<endl<<"nome oggetto: ";
-  cin>>nome_oggetto;
-  getmodelstate.request.model_name=nome_oggetto;
-  pose_object_client.call(getmodelstate);
-  cout<<endl<<"posizione di "<<nome_oggetto<<endl;
-  cout<<"X: "<<getmodelstate.response.pose.position.x<<endl;
-  cout<<"Y: "<<getmodelstate.response.pose.position.y<<endl;
-  cout<<"Z: "<<getmodelstate.response.pose.position.z<<endl;
-  cout<<endl<<"orientazione: "<<endl;
-  cout<<"X: "<<getmodelstate.response.pose.orientation.x<<endl;
-  cout<<"Y: "<<getmodelstate.response.pose.orientation.y<<endl;
-  cout<<"Z: "<<getmodelstate.response.pose.orientation.z<<endl;
-  cout<<"W: "<<getmodelstate.response.pose.orientation.w<<endl;
+bool PosizioniBase(string str_posizione){
+  vector<double> joint_group_positions=robot->getCurrentJointValues();
+  Pose target=robot->getCurrentPose().pose;
+  if(str_posizione==str_home)
+  {
+    robot->setJointValueTarget(pos_joint_home);
+  }
+  else
+  if(str_posizione==str_up)
+  {
+    robot->setJointValueTarget(pos_joint_up);
+  }
+  else
+  if(str_posizione==str_ta)
+  {
 
- //PosizioniBase(2);
- //usleep(5000000);
-  target.position.x=getmodelstate.response.pose.position.x;
-  target.position.y=getmodelstate.response.pose.position.y;
-  target.position.z=getmodelstate.response.pose.position.z+0.05;
-  quat.setRPY(grad_to_rad(0),grad_to_rad(90),grad_to_rad(0));
-  tf2quat_to_pose(quat,&target);
-  move_to_pose(target,true);
-}
-Pose pose_traslation_FAKE_solidale(Vector3d translation)
-{
-  Pose pose_robot=robot->getCurrentPose().pose;
-  tf2::Quaternion quat1;
-  tf::Quaternion q1(
-        pose_robot.orientation.x,
-        pose_robot.orientation.y,
-        pose_robot.orientation.z,
-        pose_robot.orientation.w);
-  tf::Matrix3x3 m1(q1);
-  double r0_first, p0_first, y0_first;
-  m1.getRPY(r0_first,p0_first,y0_first);
-  quat1.setRPY(0,p0_first,y0_first);
+    SetPoseOrientationRPY(&target,pos_rpy_ta[0],pos_rpy_ta[1],pos_rpy_ta[2]);
+    robot->setPoseTarget(target);
+  }
+  else
+  if(str_posizione==str_tb)
+  {
 
-  pose_robot.orientation.x=quat1.getX();
-  pose_robot.orientation.y=quat1.getY();
-  pose_robot.orientation.z=quat1.getZ();
-  pose_robot.orientation.w=quat1.getW();
+    SetPoseOrientationRPY(&target,pos_rpy_tb[0],pos_rpy_tb[1],pos_rpy_tb[2]);
+    robot->setPoseTarget(target);
+  }
+  else
+  if(str_posizione==str_r)
+  {
 
-  Affine3d T_actual;
-  tf::Pose pose_robot_tf;
-  tf::poseMsgToTF(pose_robot,pose_robot_tf);
-  tf::poseTFToEigen(pose_robot_tf,T_actual);
-  T_actual.translate(translation);
-  tf::poseEigenToTF(T_actual,pose_robot_tf);
-  tf::poseTFToMsg(pose_robot_tf,pose_robot);
+    joint_group_positions[1] = pos_joint_r[1];
+    joint_group_positions[2] = pos_joint_r[2];
+    joint_group_positions[3] = pos_joint_r[3];
+    joint_group_positions[4] = pos_joint_r[4];
 
-  tf2::Quaternion quat2;
-  tf::Quaternion q2(
-        pose_robot.orientation.x,
-        pose_robot.orientation.y,
-        pose_robot.orientation.z,
-        pose_robot.orientation.w);
-  tf::Matrix3x3 m2(q2);
-  double r0_second, p0_second, y0_second;
-  m2.getRPY(r0_second,p0_second,y0_second);
-  quat2.setRPY(r0_first,p0_second,y0_second);//r0_first per lasciarlo al vecchio roll
+    robot->setJointValueTarget(joint_group_positions);
+  }
+  else
+  if(str_posizione==str_near_centrifuga){
+    joint_group_positions[0] = pos_joint_centrifuga[0];  // radians
+    robot->setJointValueTarget(joint_group_positions);
+  }
+  else
+  if(str_posizione==str_centrifuga){
+    robot->setJointValueTarget(pos_joint_centrifuga);
+  }
+  else
+  if(str_posizione==str_pannello){
+    robot->setJointValueTarget(pos_joint_pannello);
+  }
+  else
+  if(str_posizione==str_rotaz_pannello){
+    vector<double> pos_joint_rotaz_pannello=pos_joint_pannello;
+    pos_joint_rotaz_pannello[0]=robot->getCurrentJointValues().at(0);//il primo giunto non viene fissato, rimane uguale a quello corrente
+    robot->setJointValueTarget(pos_joint_rotaz_pannello);
+  }
+  else{
+    ROS_INFO("Posizione non presente tra quelle base");
+    return false;
+  }
 
-  pose_robot.orientation.x=quat2.getX();
-  pose_robot.orientation.y=quat2.getY();
-  pose_robot.orientation.z=quat2.getZ();
-  pose_robot.orientation.w=quat2.getW();
-
-  return pose_robot;
-}
-Pose pose_traslation_solidale(Vector3d translation)
-{
-  Pose pose_robot=robot->getCurrentPose().pose;
-
-
-  Affine3d T_actual;
-  tf::Pose pose_robot_tf;
-  tf::poseMsgToTF(pose_robot,pose_robot_tf);
-  tf::poseTFToEigen(pose_robot_tf,T_actual);
-  T_actual.translate(translation);
-  tf::poseEigenToTF(T_actual,pose_robot_tf);
-  tf::poseTFToMsg(pose_robot_tf,pose_robot);
-
-  return pose_robot;
-}
-void ruota_360_old(){
-  ROS_INFO("Starting rotating 360");
-
-
-
-
-  robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
-  robot_model::RobotModelPtr kinematic_model = robot_model_loader.getModel();
-  ROS_INFO("Model frame: %s", kinematic_model->getModelFrame().c_str());
-
-  robot_state::RobotStatePtr kinematic_state(new robot_state::RobotState(kinematic_model));
-  const robot_state::JointModelGroup* joint_model_group = kinematic_model->getJointModelGroup("manipulator");
-//const std::vector<std::string>& joint_names = joint_model_group->getVariableNames();
-  ROS_INFO("kinematic model aquired");
-
-  //rotazione
-
-  vector<double> joint_positions;
-  joint_positions=robot->getCurrentJointValues();
-
-
-
-  double angle_resolution=1;
-  vector<Pose> waypoints;
-  for (int i= 0; i< 360/angle_resolution; i++)
-    {
-      joint_positions[0] = joint_positions[0]+grad_to_rad(angle_resolution);  // radians
-
-
-      kinematic_state->setJointGroupPositions(joint_model_group, joint_positions);
-
-
-      tf::Pose target_tf;
-      Pose target;
-      const Eigen::Affine3d& link_pose = kinematic_state->getGlobalLinkTransform("tool0");//forse tool0
-      tf::poseEigenToTF(link_pose,target_tf);
-      tf::poseTFToMsg(target_tf,target);
-      SetPoseOrientationRPY(&target,0,90,0);
-      waypoints.push_back(target);
-    }
-
-      moveit_msgs::RobotTrajectory trajectory;
-      robot->computeCartesianPath(waypoints,0.0001,0,trajectory);
-
-      success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
-      ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
-      my_plan.trajectory_=trajectory;
-      robot->execute(my_plan);
-
-      ROS_INFO("Rotazione 360 completata");
-
+  success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
+  ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+  robot->move();
+  return true;
 }
 void ruota_360(){
   ROS_INFO("Starting rotating 360");
@@ -813,193 +1009,23 @@ void ruota_e_cerca_pannello(){
 
   if(!aruco_individuato()){
 
-    bridge_service(str_md_bpa,"");
-
     PosizioniBase(str_rotaz_pannello);
 
+
     if(!aruco_individuato()){
-        ruota_360();
-        if(!aruco_individuato()){
-          ROS_INFO("GIRO COMPLETATO SENZA AVER TROVATO IL PANNELLO");
-        }
+      bridge_service(str_md_bpa,"");
 
-    }
-  }
-
+      ruota_360();
+      if(!aruco_individuato()){
+        ROS_INFO("GIRO COMPLETATO SENZA AVER TROVATO IL PANNELLO");
+      }
 }
-void trasformazioni(){
-  Pose pose_robot=robot->getCurrentPose().pose;
-
-  ROS_INFO("Traslazione:");
-  ROS_INFO("x: %f\n y:%f\n z:%f\n ",pose_robot.position.x,pose_robot.position.y,pose_robot.position.z);
-
-  ROS_INFO("Rotazione:");
-  ROS_INFO("x: %f\n y:%f\n z:%f\n w:%f\n",pose_robot.orientation.x,pose_robot.orientation.y,pose_robot.orientation.z,pose_robot.orientation.w);
-
-  Pose pose_robot_target;
-  Affine3d T_0_tool,T_tool_camera,T_0_camera;
-  tf::Pose pose_robot_tf,pose_target_tf;
-  tf::poseMsgToTF(pose_robot,pose_robot_tf);
-  tf::poseTFToEigen(pose_robot_tf,T_0_tool);
-
-  cout<<"T_0_tool translation:"<<endl<<T_0_tool.translation()<<endl;
-  cout<<"T_0_tool rotation:"<<endl<<T_0_tool.rotation()<<endl;
-
-  /*
-   *
-   *    tra ee_link e camera_realsense_gazebo
-        A=np.array([[0,1,0,0.4569],[1,0,0,0.19425],[0,0,-1,0.6655],[0,0,0,1]])
-        B=np.array([[0,0,1,0.025],[1,0,0,0],[0,1,0,0],[0,0,0,1]])
-        p=np.array([[0],[0],[0],[1]])
-        T=A.dot(B)
-        result=T.dot(p)
-*/
-  Vector3d translation_tool_camera(0.025,0,0);
-  Matrix3d rotation_tool_camera;
-  Vector3d xvec_des(0,1,0),yvec_des(0,0,1),zvec_des(1,0,0);
-  rotation_tool_camera.col(0)=xvec_des;
-  rotation_tool_camera.col(1)=yvec_des;
-  rotation_tool_camera.col(2)=zvec_des;
-
-
-  T_tool_camera.translation()=translation_tool_camera;
-  T_tool_camera.linear()=rotation_tool_camera;
-  cout<<"T_tool_camera translation:"<<endl<<T_tool_camera.translation()<<endl;
-  cout<<"T_tool_camera rotation:"<<endl<<T_tool_camera.rotation()<<endl;
-  //ROS_INFO("T_tool_camera: %f %f %f",T_tool_camera.translation().x(),T_tool_camera.translation().y(),T_tool_camera.translation().z());
-
-
-  T_0_camera=T_0_tool*T_tool_camera;
-
-  tf::poseEigenToTF(T_0_camera,pose_target_tf);
-  tf::poseTFToMsg(pose_target_tf,pose_robot_target);
-
-  ROS_INFO("Traslazione:");
-  ROS_INFO("x: %f\n y:%f\n z:%f\n ",pose_robot_target.position.x,pose_robot_target.position.y,pose_robot_target.position.z);
-
-  ROS_INFO("Rotazione:");
-  ROS_INFO("x: %f\n y:%f\n z:%f\n w:%f\n",pose_robot_target.orientation.x,pose_robot_target.orientation.y,pose_robot_target.orientation.z,pose_robot_target.orientation.w);
-
 }
-void reshape(){
-    /*
-  Matrix3d new_vector;
-  {
-  int rows,columns,dimensione,i=0,c=0,r=-1;
-  rows=aruco_srv.response.dim[0];
-  columns=aruco_srv.response.dim[1];
-  dimensione=rows*columns;
-  do{
-    if(c%columns==0){
-      c=0;
-      r++;
-    }
-    new_vector=aruco_srv.response.vector[i];
-    c++;
-    i++;
-  }while(i!=dimensione);
-  for(r=0;r<rows;r++){
-    for(c=0;c<rows;c++){
-      printf("%f ",new_vector[r][c]);
-    }
-    printf("\n");
-  }
-  }*/
-}
-void automatizzato(){
-
-  /*Non funzionante*/
-
-  bridge_service(str_md_bpa,"");
-
-  PosizioniBase(str_r);//si mette in posizione prima di iniziare a ruotare
-
-  if(!move_to_aruco())//controlla se nell'attuale posizione c'è un aruco e nel caso lo piglia
-  {
-    ruota_360();
-    if(!move_to_aruco())//controlla se nell'attuale posizione c'è un aruco e nel caso lo piglia
-    {
-      ROS_INFO("Aruco non trovato :(");
-    }
+  if(move_aruco_to_center_of_camera(0)){
+    pos_joint_pannello=robot->getCurrentJointValues();
+    ROS_INFO("Posizione pannello aggiornata");
   }
 
-  bridge_service(str_md_stop_bpa,"");
-}
-bool individua_aruco(Pose *aruco_pose_solidale){
-//
-  ur3_control::aruco_serviceResponse aruco_srv_msg_resp=bridge_service(str_md_rd,"");
-  ROS_INFO("Aruco found:%s",(aruco_srv_msg_resp.aruco_found ? "YES":"NO"));
-  
-  if(aruco_srv_msg_resp.aruco_found){
-    return true;
-  }
-  else{
-    return false;
-  }
-
-
-}
-
-bool move_to_aruco(){
-  Pose aruco_pose_solidale;
-  if(individua_aruco(&aruco_pose_solidale)){
-
-    robot->setPlanningTime(10);
-    move_to_pose(aruco_pose_solidale,true);
-    robot->setPlanningTime(std_planning_time);
-    return true;
-  }
-  else {
-    return false;
-  }
-}
-void move_near_to_centrifuga(){
-
-
- PosizioniBase(str_r);
- PosizioniBase(str_near_centrifuga);
-
-
-
-}
-void move_to_centrifuga(){
-
-  move_near_to_centrifuga();
-  PosizioniBase(str_centrifuga);
-
-}
-bool move_to_pannello_aruco(){
-
-  Pose aruco_pose_solidale;
-  if(individua_aruco(&aruco_pose_solidale)){
-
-    robot->setPlanningTime(10);
-    move_to_pose(aruco_pose_solidale,true);
-    robot->setPlanningTime(std_planning_time);
-    return true;
-  }
-  else {
-    return false;
-  }
-}
-void aruco_pannello(){
-  bool continua_=true;
-  Pose temp;
-
-  while(continua_){
-
-    PosizioniBase(str_pannello);
-    
-    function_pose_aruco();
-
-    if(bridge_service(str_md_next_aruco,"").moreTargets<=0){
-        continua_=false;
-    }
-
-  }
-//muoviti sul primo aruco
-//ritorna in un buon punto
-//cambia aruco. se non c'è next esci
 
 }
 ur3_control::aruco_serviceResponse bridge_service(string modalita,string second_information){
@@ -1241,7 +1267,7 @@ struct Affine_valid
      bool valid;
      Affine3d homo_matrix;
 };
-bool move_aruco_to_center_of_camera(string zoom){
+bool move_aruco_to_center_of_camera(double percentual_zoom){
   ur3_control::aruco_serviceResponse msg_from_bridge=bridge_service(str_md_rd,"");
 
   if(msg_from_bridge.aruco_found){
@@ -1364,16 +1390,16 @@ bool move_aruco_to_center_of_camera(string zoom){
     T_0_camera_gazebo_modified.linear()=rot_allineamento_orizzontale;
     T_0_camera_gazebo_modified=T_0_camera_gazebo_modified*T_all_vert*T_all_rotativo;
 
+    //ZOOM
+    //T_0_camera*T_camera_aruco_mod=T_0_aruco
+    T_camera_aruco_modified=T_0_camera_gazebo_modified.inverse()*T_0_aruco;
+    double distance_camera_aruco_z=T_camera_aruco_modified.translation().z();
+
     Affine3d T_zoom;
     T_zoom.linear().setIdentity();
-    if(zoom=="in"){
-      T_zoom.translation().z()=0.05;
-      T_0_camera_gazebo_modified=T_0_camera_gazebo_modified*T_zoom;
-    }
-    else if (zoom=="out") {
-      T_zoom.translation().z()=-0.05;
-      T_0_camera_gazebo_modified=T_0_camera_gazebo_modified*T_zoom;
-    }
+    T_zoom.translation().z()=percentual_zoom*distance_camera_aruco_z/100;
+    T_0_camera_gazebo_modified=T_0_camera_gazebo_modified*T_zoom;
+
 
 
 
@@ -1445,21 +1471,9 @@ bool move_aruco_to_center_of_camera(string zoom){
     }
 
 
-    std::vector<Pose> waypoints;
-    waypoints.push_back(pose_ee_modified);  // up and left
-    RobotTrajectory trajectory;
-    const double jump_threshold = 0.0;
-    const double eef_step = 0.01;
-    double traj_erro=robot->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory,true);
-    if(traj_erro==1){
-      robot->execute(trajectory);
-
-      return true;
-    }
-    else{
-      ROS_INFO("Traj_failed");
-      return false;
-    }
+//      move_to_pose(pose_ee_modified,true);
+//      return true;
+    return move_to_pose_cartesian(pose_ee_modified);
 
   }
   else{
@@ -1608,11 +1622,25 @@ Matrix3d from_rpy_to_rotational_matrix(double roll,double pitch,double yaw){
   return q.toRotationMatrix();
 
 }
-void action_aruco_button(){
+void chiudi_gripper(){
 
   control_msgs::GripperCommandActionGoal gca;
   gca.goal.command.position=1.3;
   pub_gripper.publish(gca);
+
+}
+bool action_aruco_button(){
+
+  //if pannello non trovato
+  ruota_e_cerca_pannello();
+
+  chiudi_gripper();
+
+  move_aruco_to_center_of_camera(0);
+
+  move_aruco_to_center_of_camera(20);
+  move_aruco_to_center_of_camera(20);
+  move_aruco_to_center_of_camera(20);
 
   Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
   if(T_0_aruco_valid.valid){
@@ -1633,18 +1661,14 @@ void action_aruco_button(){
     T_0_finalpos=T_0_aruco*T_aruco_finalpos;
     //In questo punto ho T_0_final
     Pose pose_final_pose=homo_to_pose(T_0_finalpos);
-    stampa_Pose(pose_final_pose);
-    std::vector<Pose> waypoints;
-    waypoints.push_back(pose_final_pose);  // up and left
-    RobotTrajectory trajectory;
-    const double jump_threshold = 0.0;
-    const double eef_step = 0.01;
-    double traj_erro=robot->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory,true);
-    if(traj_erro==1){
-      robot->execute(trajectory);
+    //stampa_Pose(pose_final_pose);
+    if(move_to_pose_cartesian(pose_final_pose)){
+      PosizioniBase(str_pannello);
     }
-    else{
-      ROS_INFO("Traj_failed");
+    else
+      return false;
     }
-  }
+  else
+    return false;
+
 }
