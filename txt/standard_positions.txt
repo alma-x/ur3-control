@@ -5,3 +5,5 @@ posizione_testa_alta rpy 0 -90 0
 posizione_adatta_rotazione joint 0 -96 93 -105 -90 0
 posizione_centrifuga joint 53 -19 4 -79 -89 0
 posizione_pannello joint -20 -149 54 -58 -84 173
+posizione_iniziale joint 0 -120 100 20 90 90
+debug joint 28 -170 25 0 0 0

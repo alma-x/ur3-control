@@ -306,8 +306,36 @@ class Screen_Automazione(QWidget):
             resp1 = serv(msg)
         except rospy.ServiceException as e:
             self.l_comunicazione.setText('Errore:'+ e)
-
-
+    def automazione_go_pos_iniziale(self):
+        target_joints=[0,0,0,0,0,0]
+        target_pose=Pose()
+        modality='automazione_go_pos_iniziale'
+        second_information=''
+        try:
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
+            resp1 = serv(msg)
+        except rospy.ServiceException as e:
+            self.l_comunicazione.setText('Errore:'+ e)
+    def automazione_debug1(self):
+        target_joints=[0,0,0,0,0,0]
+        target_pose=Pose()
+        modality='automazione_debug1'
+        second_information=''
+        try:
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
+            resp1 = serv(msg)
+        except rospy.ServiceException as e:
+            self.l_comunicazione.setText('Errore:'+ e)
+    def automazione_debug2(self):
+        target_joints=[0,0,0,0,0,0]
+        target_pose=Pose()
+        modality='automazione_debug2'
+        second_information=''
+        try:
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
+            resp1 = serv(msg)
+        except rospy.ServiceException as e:
+            self.l_comunicazione.setText('Errore:'+ e)
 #MAIN
 def main_code():
     global widget,window_mp,window_joystick,window_main,serv,bridge_serv,app,window_automazione

@@ -86,12 +86,15 @@ string str_near_centrifuga="posizione_near_centrifuga";
 string str_centrifuga="posizione_centrifuga";
 string str_pannello="posizione_pannello";
 string str_rotaz_pannello="posizione_rotazione_ricerca_pannello";
+string str_pos_iniziale="posizione_iniziale";
 
 vector<double> pos_joint_home;
 vector<double> pos_joint_up;
 vector<double> pos_joint_r;
 vector<double> pos_joint_centrifuga;
 vector<double> pos_joint_pannello;
+vector<double> pos_joint_iniziale;
+vector<double> debug;
 vector<int> pos_rpy_tb;
 vector<int> pos_rpy_ta;
 
@@ -135,6 +138,8 @@ bool function_pose_aruco();
 Pose homo_to_pose(Affine3d homo);
 bool move_aruco_to_center_of_camera(double percentual_zoom);
 bool ritorno_al_pannello(double percentual);
+
+
 
 //OLD FUNCTIONS
 void pick(string name_object){
@@ -939,7 +944,13 @@ bool PosizioniBase(string str_posizione){
     vector<double> pos_joint_rotaz_pannello=pos_joint_pannello;
     pos_joint_rotaz_pannello[0]=robot->getCurrentJointValues().at(0);//il primo giunto non viene fissato, rimane uguale a quello corrente
     robot->setJointValueTarget(pos_joint_rotaz_pannello);
+
   }
+  else
+  if(str_posizione==str_pos_iniziale){
+    joint_group_positions=pos_joint_iniziale;
+    robot->setJointValueTarget(joint_group_positions);
+    }
   else{
     ROS_INFO("Posizione non presente tra quelle base");
     return false;
@@ -957,28 +968,28 @@ void ruota_360(){
 
   vector<double> joint_positions;
   joint_positions=robot->getCurrentJointValues();
-  joint_positions[0] = joint_positions[0]+grad_to_rad(360);  // radians
+  joint_positions[0] = joint_positions[0]-grad_to_rad(360);  // radians
   robot->setJointValueTarget(joint_positions);
   success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
 
   if(!success){
 
     joint_positions=robot->getCurrentJointValues();
-    joint_positions[0] = joint_positions[0]+grad_to_rad(270);  // radians
+    joint_positions[0] = joint_positions[0]+grad_to_rad(-270);  // radians
     robot->setJointValueTarget(joint_positions);
     success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
 
     if(!success){
 
       joint_positions=robot->getCurrentJointValues();
-      joint_positions[0] = joint_positions[0]+grad_to_rad(180);  // radians
+      joint_positions[0] = joint_positions[0]+grad_to_rad(-180);  // radians
       robot->setJointValueTarget(joint_positions);
       success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
 
       if(!success){
 
         joint_positions=robot->getCurrentJointValues();
-        joint_positions[0] = joint_positions[0]+grad_to_rad(90);  // radians
+        joint_positions[0] = joint_positions[0]+grad_to_rad(-90);  // radians
         robot->setJointValueTarget(joint_positions);
         success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
       }
@@ -1002,13 +1013,9 @@ void ruota_e_cerca_aruco(){
 
     bridge_service(str_md_bpa,"");
 
-    PosizioniBase(str_r);
-
+    ruota_360();
     if(!aruco_individuato()){
-        ruota_360();
-        if(!aruco_individuato()){
-          ROS_INFO("GIRO COMPLETATO SENZA ARUCO");
-        }
+      ROS_INFO("GIRO COMPLETATO SENZA ARUCO");
 
     }
   }
@@ -1085,6 +1092,8 @@ void load_parameters()
     pos_joint_r=robot->getCurrentJointValues();
     pos_joint_centrifuga=robot->getCurrentJointValues();
     pos_joint_pannello=robot->getCurrentJointValues();
+    pos_joint_iniziale=robot->getCurrentJointValues();
+    debug=robot->getCurrentJointValues();
     if(pos_rpy_ta.size()==0){
 
         pos_rpy_ta.push_back(0);
@@ -1131,6 +1140,16 @@ void load_parameters()
                     pos_joint_pannello[i]=grad_to_rad(j[i]);
                 }
             }
+            if(nome==str_pos_iniziale){
+              for (int i=0;i<6;i++) {
+                  pos_joint_iniziale[i]=grad_to_rad(j[i]);
+              }
+          }
+            if(nome=="debug"){
+              for (int i=0;i<6;i++) {
+                  debug[i]=(double)j[i]/1000;
+              }
+          }
 
         }
         if(tipo=="rpy"){
@@ -1152,6 +1171,7 @@ void load_parameters()
                 }
 
         }
+
     }
 
     inFile.close();
@@ -1641,72 +1661,56 @@ Matrix3d from_rpy_to_rotational_matrix(double roll,double pitch,double yaw){
   return q.toRotationMatrix();
 
 }
-void chiudi_gripper(){
+void action_gripper(string input){
 
-  control_msgs::GripperCommandActionGoal gca;
-  gca.goal.command.position=1.3;
-  pub_gripper.publish(gca);
+  std_msgs::String gs;
+  gs.data=input;
+  pub_gripper.publish(gs);
+  sleep(5);
 
 }
 bool action_aruco_button(){
 
+
+  bridge_service(str_md_next_aruco,"1");
+
   //if pannello non trovato
-  ruota_e_cerca_pannello();
+  PosizioniBase(str_pos_iniziale);
 
-  chiudi_gripper();
-
-  move_aruco_to_center_of_camera(0);
-
-  move_aruco_to_center_of_camera(20);
-  move_aruco_to_center_of_camera(20);
-  move_aruco_to_center_of_camera(20);
+  action_gripper("close");
 
   Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
-  if(T_0_aruco_valid.valid){
 
-    Affine3d T_aruco_finalpos,T_0_finalpos, T_0_aruco;
-    T_0_aruco=T_0_aruco_valid.homo_matrix;
+  if(! T_0_aruco_valid.valid){
+    //Devo cambiare posizione
 
-    stampa_Pose(homo_to_pose(T_0_aruco));
-
-
-
-    T_aruco_finalpos.translation().x()=0;
-    T_aruco_finalpos.translation().y()=-0.065;
-    T_aruco_finalpos.translation().z()=0.22;
-    T_aruco_finalpos.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0)*from_rpy_to_rotational_matrix(M_PI/2,0,0);
-
-
-    T_0_finalpos=T_0_aruco*T_aruco_finalpos;
-    //In questo punto ho T_0_final
-
-    Pose pose_final_pose=homo_to_pose(T_0_finalpos);
-
-    //Vado al target
-    if(move_to_pose_cartesian(pose_final_pose)){
-
-      sleep(3);
-
-      //Inizio ritorno verso pannello
-      ritorno_al_pannello(10);
-      ritorno_al_pannello(10);
-      ritorno_al_pannello(20);
-      ritorno_al_pannello(20);
-      ritorno_al_pannello(50);
-      ritorno_al_pannello(50);
-
-      if(move_to_pose_cartesian(pose_pannello_elaborata.pose)){
-        return true;
-      }
-
-      move_to_pose(pose_pannello_elaborata.pose,true);
-      return true;
-
-
-    }
+    return false;
   }
 
-  return false;
+  Affine3d T_aruco_finalpos,T_0_finalpos, T_0_aruco;
+  T_0_aruco=T_0_aruco_valid.homo_matrix;
+
+  //stampa_Pose(homo_to_pose(T_0_aruco));
+
+
+  //questi valori vanno risettati
+  T_aruco_finalpos.translation().x()=0;
+  T_aruco_finalpos.translation().y()=-0.065;
+  T_aruco_finalpos.translation().z()=0.22;
+  T_aruco_finalpos.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0)*from_rpy_to_rotational_matrix(M_PI,0,0);
+
+
+  T_0_finalpos=T_0_aruco*T_aruco_finalpos;
+  //In questo punto ho T_0_final
+
+  Pose pose_final_pose=homo_to_pose(T_0_finalpos);
+
+  if(!move_to_pose_cartesian(pose_final_pose))
+    return false;
+
+  PosizioniBase(str_pos_iniziale);
+  action_gripper("open");
+
 
 }
 void initialize_parameters(){
@@ -1733,4 +1737,72 @@ bool ritorno_al_pannello(double percentual){
   //final_pose.position.z= final_pose.position.z + (pann_pose.position.z-actual_pose.position.z)*percentual/100;
 
   return move_to_pose_cartesian(final_pose);
+}
+bool right_panel(){
+  //PosizioniBase(str_pos_iniziale);
+  action_gripper("semi_open");
+
+  //Posizione pre rotazione
+
+  {
+    vector<double> joint_group_positions=pos_joint_iniziale;
+    joint_group_positions[5] = grad_to_rad(-90);  // radians
+    joint_group_positions[3] = grad_to_rad(50);  // radians
+    robot->setJointValueTarget(joint_group_positions);
+    success = (robot->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+    ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+    robot->move();
+  }
+
+  ruota_e_cerca_aruco();
+  sleep(2);//ATTENTO UNO SLEEP, CREDO SIA UTILE PERCHÈ SENNÒ IL BLOCCO SULLA ROTAZIONE INFLUISCE SUL PROSSIMO MOVIMENTO
+
+  Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
+
+  if(! T_0_aruco_valid.valid){
+    //Devo cambiare posizione
+
+    return false;
+  }
+
+  Affine3d T_aruco_finalpos,T_0_finalpos, T_0_aruco;
+  T_0_aruco=T_0_aruco_valid.homo_matrix;
+
+  //questi valori vanno risettati
+  T_aruco_finalpos.translation().x()=0.033;
+  T_aruco_finalpos.translation().y()=-0.17;
+  T_aruco_finalpos.translation().z()=0.025;
+  T_aruco_finalpos.linear()=from_rpy_to_rotational_matrix(0,0,M_PI/2)*from_rpy_to_rotational_matrix(M_PI/2,0,0);
+
+  cout<<"T_aruco_final_pos"<<endl<<T_aruco_finalpos.translation();
+
+  T_0_finalpos=T_0_aruco*T_aruco_finalpos;
+  //In questo punto ho T_0_final
+
+  Pose pose_final_pose=homo_to_pose(T_0_finalpos);
+  stampa_Pose(pose_final_pose);
+  move_to_pose(pose_final_pose,true);
+
+
+
+  T_aruco_finalpos.translation().y()=-0.13;
+
+
+  T_0_finalpos=T_0_aruco*T_aruco_finalpos;
+  //In questo punto ho T_0_final
+
+  pose_final_pose=homo_to_pose(T_0_finalpos);
+  stampa_Pose(pose_final_pose);
+  move_to_pose(pose_final_pose,true);
+  action_gripper("semi_close");
+
+  sleep(3);
+
+//  PosizioniBase(str_pos_iniziale);
+//  action_gripper("open");
+
+
+
+  return true;
+
 }

@@ -75,6 +75,9 @@ void esegui_msg_from_inteface(){
           if(msg_from_bridge.id_aruco==1){
             action_aruco_button();
           }
+          else if(msg_from_bridge.id_aruco==13){
+            right_panel();
+          }
           else{
             Affine_valid T_aruco_valid=homo_0_aruco_elaration();
             if(T_aruco_valid.valid){
@@ -110,6 +113,20 @@ void esegui_msg_from_inteface(){
 
         move_aruco_to_center_of_camera(-20);
       }
+      if(msg_from_interface.modality=="automazione_go_pos_iniziale"){
+
+        PosizioniBase(str_pos_iniziale);
+
+      }
+      if(msg_from_interface.modality=="automazione_debug1"){
+        ROS_INFO("Debug1");
+        load_parameters();
+      }
+      if(msg_from_interface.modality=="automazione_debug2"){
+
+        ROS_INFO("Debug2");
+
+      }
 
 
       msg_to_be_processed=false;
@@ -135,7 +152,7 @@ int main(int argc, char** argv)
   pose_object_client = node_handle.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
 
   ros::ServiceServer serv=node_handle.advertiseService("/user_interface_serv", callback_modality);
-  pub_gripper = node_handle.advertise<control_msgs::GripperCommandActionGoal>("/gripper/gripper_cmd/goal", 1);
+  pub_gripper = node_handle.advertise<std_msgs::String>("/gripper_command", 1);
   initialize_parameters();
   set_homo_std_matrix();
   load_parameters();

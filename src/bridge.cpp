@@ -27,10 +27,10 @@ void cv_callback(const ur3_control::cv_to_bridge& msg){
 
     bool_md_bpa=false;
 
-    actionlib_msgs::GoalID msg_traj_cancel;
-    msg_traj_cancel.id="s";
-    pub_traj_cancel.publish(msg_traj_cancel);
-    ROS_INFO("Aruco trovato, traiettoria cancellata");
+//    actionlib_msgs::GoalID msg_traj_cancel;
+//    msg_traj_cancel.id="s";
+//    pub_traj_cancel.publish(msg_traj_cancel);
+//    ROS_INFO("Aruco trovato, traiettoria cancellata");
     robot->stop();
   }
 }

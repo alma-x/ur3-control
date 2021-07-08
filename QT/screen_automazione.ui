@@ -58,7 +58,7 @@
      <x>151</x>
      <y>101</y>
      <width>317</width>
-     <height>187</height>
+     <height>216</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -69,6 +69,13 @@
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="pushButton_12">
+      <property name="text">
+       <string>Vai alla posizione iniziale</string>
       </property>
      </widget>
     </item>
@@ -140,7 +147,7 @@
     </item>
    </layout>
   </widget>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
      <x>460</x>
@@ -168,6 +175,32 @@
      <widget class="QPushButton" name="pushButton_11">
       <property name="text">
        <string>CENTRA ARUCO E ZOOM OUT</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>440</y>
+     <width>82</width>
+     <height>54</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout_4">
+    <item>
+     <widget class="QPushButton" name="pushButton_13">
+      <property name="text">
+       <string>Debug1</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="pushButton_14">
+      <property name="text">
+       <string>Debug2</string>
       </property>
      </widget>
     </item>
@@ -215,8 +248,8 @@
    <slot>automazione_PosPannello()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>261</x>
-     <y>203</y>
+     <x>262</x>
+     <y>232</y>
     </hint>
     <hint type="destinationlabel">
      <x>433</x>
@@ -231,8 +264,8 @@
    <slot>ruota_e_cerca_aruco()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>287</x>
-     <y>174</y>
+     <x>288</x>
+     <y>203</y>
     </hint>
     <hint type="destinationlabel">
      <x>423</x>
@@ -247,8 +280,8 @@
    <slot>automazione_pannello_MoveToSelectedAruco()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>330</x>
-     <y>232</y>
+     <x>332</x>
+     <y>262</y>
     </hint>
     <hint type="destinationlabel">
      <x>467</x>
@@ -264,7 +297,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>236</x>
-     <y>262</y>
+     <y>293</y>
     </hint>
     <hint type="destinationlabel">
      <x>485</x>
@@ -295,8 +328,8 @@
    <slot>ruota_e_cerca_pannello()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>175</x>
-     <y>138</y>
+     <x>176</x>
+     <y>174</y>
     </hint>
     <hint type="destinationlabel">
      <x>63</x>
@@ -352,6 +385,54 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>pushButton_12</sender>
+   <signal>clicked()</signal>
+   <receiver>stop_traj_button</receiver>
+   <slot>automazione_go_pos_iniziale()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>208</x>
+     <y>128</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>37</x>
+     <y>110</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_13</sender>
+   <signal>clicked()</signal>
+   <receiver>stop_traj_button</receiver>
+   <slot>automazione_debug1()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>99</x>
+     <y>450</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>130</x>
+     <y>451</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_14</sender>
+   <signal>clicked()</signal>
+   <receiver>stop_traj_button</receiver>
+   <slot>automazione_debug2()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>84</x>
+     <y>474</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>146</x>
+     <y>491</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>prova()</slot>
@@ -376,5 +457,8 @@
   <slot>centra_aruco()</slot>
   <slot>centra_aruco_and_zoom_in()</slot>
   <slot>centra_aruco_and_zoom_out()</slot>
+  <slot>automazione_go_pos_iniziale()</slot>
+  <slot>automazione_debug1()</slot>
+  <slot>automazione_debug2()</slot>
  </slots>
 </ui>
