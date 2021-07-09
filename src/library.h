@@ -610,14 +610,33 @@ bool move_to_pose_cartesian(geometry_msgs::Pose pose){
   RobotTrajectory trajectory;
   const double jump_threshold = 0.0;
   const double eef_step = 0.01;
+  double traj_threshold=1;
   double traj_erro=robot->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory,true);
-  if(traj_erro==1){
+  if(traj_erro>=traj_threshold){
     robot->execute(trajectory);
     return true;
   }
   else{
-    ROS_INFO("Traj_failed");
-    return false;
+    ROS_INFO("Traj error:%f",traj_erro);
+    traj_erro=robot->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory,true);
+    if(traj_erro>=traj_threshold){
+      robot->execute(trajectory);
+      return true;
+    }
+    else{
+      ROS_INFO("Traj error:%f",traj_erro);
+
+      traj_erro=robot->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory,true);
+      if(traj_erro>=traj_threshold){
+        robot->execute(trajectory);
+        return true;
+      }
+      else{
+        ROS_INFO("Traj error:%f",traj_erro);
+
+        return false;
+      }
+    }
   }
 
 }
@@ -1175,6 +1194,10 @@ void load_parameters()
     }
 
     inFile.close();
+}
+void stampa_homo(Affine3d homo){
+  cout<<"Translation: "<<endl<<homo.translation()<<endl;
+  cout<<"Rotation: "<<endl<<homo.linear()<<endl;
 }
 bool function_pose_aruco(){
   ur3_control::aruco_serviceResponse msg_from_bridge=bridge_service(str_md_rd,"");
@@ -1740,14 +1763,15 @@ bool ritorno_al_pannello(double percentual){
 }
 bool right_panel(){
   //PosizioniBase(str_pos_iniziale);
+  Pose pose_final_pose_panel,pose_final_pose_ground;
   action_gripper("semi_open");
 
   //Posizione pre rotazione
 
   {
     vector<double> joint_group_positions=pos_joint_iniziale;
-    joint_group_positions[5] = grad_to_rad(-90);  // radians
     joint_group_positions[3] = grad_to_rad(50);  // radians
+    joint_group_positions[5] = grad_to_rad(-90);  // radians
     robot->setJointValueTarget(joint_group_positions);
     success = (robot->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
     ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
@@ -1757,49 +1781,106 @@ bool right_panel(){
   ruota_e_cerca_aruco();
   sleep(2);//ATTENTO UNO SLEEP, CREDO SIA UTILE PERCHÈ SENNÒ IL BLOCCO SULLA ROTAZIONE INFLUISCE SUL PROSSIMO MOVIMENTO
 
-  Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
+  Affine_valid T_0_aruco_valid_panel=homo_0_aruco_elaration();
 
-  if(! T_0_aruco_valid.valid){
+  if(! T_0_aruco_valid_panel.valid){
     //Devo cambiare posizione
 
     return false;
   }
 
-  Affine3d T_aruco_finalpos,T_0_finalpos, T_0_aruco;
-  T_0_aruco=T_0_aruco_valid.homo_matrix;
-
-  //questi valori vanno risettati
-  T_aruco_finalpos.translation().x()=0.033;
-  T_aruco_finalpos.translation().y()=-0.17;
-  T_aruco_finalpos.translation().z()=0.025;
-  T_aruco_finalpos.linear()=from_rpy_to_rotational_matrix(0,0,M_PI/2)*from_rpy_to_rotational_matrix(M_PI/2,0,0);
-
-  cout<<"T_aruco_final_pos"<<endl<<T_aruco_finalpos.translation();
-
-  T_0_finalpos=T_0_aruco*T_aruco_finalpos;
-  //In questo punto ho T_0_final
-
-  Pose pose_final_pose=homo_to_pose(T_0_finalpos);
-  stampa_Pose(pose_final_pose);
-  move_to_pose(pose_final_pose,true);
+  Affine3d T_aruco_finalpos_panel,T_0_finalpos_panel, T_0_aruco_panel;
+  T_0_aruco_panel=T_0_aruco_valid_panel.homo_matrix;
 
 
+  T_aruco_finalpos_panel.translation().x()=0.037;
+  T_aruco_finalpos_panel.translation().y()=-0.17;
+  T_aruco_finalpos_panel.translation().z()=0.025;
+  T_aruco_finalpos_panel.linear()=from_rpy_to_rotational_matrix(0,0,M_PI/2)*from_rpy_to_rotational_matrix(-M_PI/2,0,0);
+  T_0_finalpos_panel=T_0_aruco_panel*T_aruco_finalpos_panel;
+  pose_final_pose_panel=homo_to_pose(T_0_finalpos_panel);
+  stampa_Pose(pose_final_pose_panel);
 
-  T_aruco_finalpos.translation().y()=-0.13;
+  //before moving to pose, I set the sixth joint in the right position
+  ruotagiunto(5,+180);
+
+  if(!move_to_pose_cartesian(pose_final_pose_panel)){
+    move_to_pose(pose_final_pose_panel,true);
+  }
 
 
-  T_0_finalpos=T_0_aruco*T_aruco_finalpos;
-  //In questo punto ho T_0_final
+  T_aruco_finalpos_panel.translation().y()=-0.13;
+  T_0_finalpos_panel=T_0_aruco_panel*T_aruco_finalpos_panel;
+  pose_final_pose_panel=homo_to_pose(T_0_finalpos_panel);
+  stampa_Pose(pose_final_pose_panel);
+  move_to_pose_cartesian(pose_final_pose_panel);
 
-  pose_final_pose=homo_to_pose(T_0_finalpos);
-  stampa_Pose(pose_final_pose);
-  move_to_pose(pose_final_pose,true);
+
   action_gripper("semi_close");
+
+
+  T_aruco_finalpos_panel.translation().z()=0.06;
+  T_0_finalpos_panel=T_0_aruco_panel*T_aruco_finalpos_panel;
+  pose_final_pose_panel=homo_to_pose(T_0_finalpos_panel);
+  stampa_Pose(pose_final_pose_panel);
+  move_to_pose_cartesian(pose_final_pose_panel);
+
+
+  T_aruco_finalpos_panel.translation().y()=-0.17;
+  T_0_finalpos_panel=T_0_aruco_panel*T_aruco_finalpos_panel;
+  pose_final_pose_panel=homo_to_pose(T_0_finalpos_panel);
+  stampa_Pose(pose_final_pose_panel);
+  move_to_pose_cartesian(pose_final_pose_panel);
+
+  //PRE ROTAZIONE
+
+  {
+    vector<double> joint_group_positions=pos_joint_iniziale;
+    joint_group_positions[0] = robot->getCurrentJointValues()[0];  // radians
+    joint_group_positions[3] = grad_to_rad(70);  // radians
+    joint_group_positions[5] = grad_to_rad(0);  // radians
+    robot->setJointValueTarget(joint_group_positions);
+    success = (robot->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+    ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+    robot->move();
+  }
+  bridge_service(str_md_next_aruco,"14");
+  sleep(2);
+
+  ruota_e_cerca_aruco();
+  sleep(2);//ATTENTO UNO SLEEP, CREDO SIA UTILE PERCHÈ SENNÒ IL BLOCCO SULLA ROTAZIONE INFLUISCE SUL PROSSIMO MOVIMENTO
+
+
+  Affine_valid T_0_aruco_valid_ground=homo_0_aruco_elaration();
+  if(! T_0_aruco_valid_ground.valid){
+    //Devo cambiare posizione
+
+    return false;
+  }
+
+  Affine3d T_aruco_finalpos_ground,T_0_finalpos_ground, T_0_aruco_ground;
+  T_0_aruco_ground=T_0_aruco_valid_ground.homo_matrix;
+
+
+  T_aruco_finalpos_ground.translation().x()=0;
+  T_aruco_finalpos_ground.translation().y()=0;
+  T_aruco_finalpos_ground.translation().z()=0.1;
+  T_aruco_finalpos_ground.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0)*from_rpy_to_rotational_matrix(M_PI,0,0);
+  T_0_finalpos_ground=T_0_aruco_ground*T_aruco_finalpos_ground;
+  pose_final_pose_ground=homo_to_pose(T_0_finalpos_ground);
+  stampa_Pose(pose_final_pose_ground);
+  stampa_homo(T_aruco_finalpos_ground);
+
+  if(!move_to_pose_cartesian(pose_final_pose_ground)){
+    move_to_pose(pose_final_pose_ground,true);
+  }
 
   sleep(3);
 
-//  PosizioniBase(str_pos_iniziale);
-//  action_gripper("open");
+
+
+  PosizioniBase(str_pos_iniziale);
+  action_gripper("open");
 
 
 
