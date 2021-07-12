@@ -64,7 +64,7 @@ add_executable(prova_cpp src/prova_cpp.cpp)
 
 add_dependencies(bridge ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 add_dependencies(prova_cpp ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
-add_dependencies(ERC ${catkin_EXPORTED_TARGETS})
+add_dependencies(ERC ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 target_link_libraries(bridge ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(ERC ${catkin_LIBRARIES} ${Boost_LIBRARIES})
