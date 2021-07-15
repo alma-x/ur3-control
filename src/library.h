@@ -1864,7 +1864,7 @@ bool right_panel(){
 
   T_aruco_finalpos_ground.translation().x()=0;
   T_aruco_finalpos_ground.translation().y()=0;
-  T_aruco_finalpos_ground.translation().z()=0.1;
+  T_aruco_finalpos_ground.translation().z()=0.2;
   T_aruco_finalpos_ground.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0)*from_rpy_to_rotational_matrix(M_PI,0,0);
   T_0_finalpos_ground=T_0_aruco_ground*T_aruco_finalpos_ground;
   pose_final_pose_ground=homo_to_pose(T_0_finalpos_ground);
