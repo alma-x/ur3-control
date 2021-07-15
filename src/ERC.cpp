@@ -127,7 +127,9 @@ void esegui_msg_from_inteface(){
         ROS_INFO("Debug2");
 
       }
-
+      if(msg_from_interface.modality=="controlla_gripper"){
+        action_gripper(msg_from_interface.second_information);
+      }
 
       msg_to_be_processed=false;
   }

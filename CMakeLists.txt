@@ -64,14 +64,14 @@ add_executable(prova_cpp src/prova_cpp.cpp)
 
 add_dependencies(bridge ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 add_dependencies(prova_cpp ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
-add_dependencies(ERC ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(ERC ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(bridge ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(ERC ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(prova_cpp ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
  catkin_install_python(PROGRAMS
-   scripts/prova.py
+   scripts/UI_gara.py
    QT/user_interface.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
