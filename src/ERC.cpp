@@ -11,6 +11,7 @@ void MenuMovimentiBase();
 void MenuDiScelta();
 void joystick();
 void Start();
+void Controller();
 void Interazione_Environment();
 void Menu_Di_Scelta_Prove();
 void MenuDiSceltaOpzioni();
@@ -130,7 +131,12 @@ void esegui_msg_from_inteface(){
       if(msg_from_interface.modality=="controlla_gripper"){
         action_gripper(msg_from_interface.second_information);
       }
+      if(msg_from_interface.modality=="joystick"){
 
+        robot->setPlanningTime(0);
+        robot->setNumPlanningAttempts(0);
+        Controller();
+      }
       msg_to_be_processed=false;
   }
 

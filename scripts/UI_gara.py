@@ -18,6 +18,7 @@ def menu():
         print("2) change target aruco")
         print("3) reach target")
         print("4) gripper")
+        print("4) joystick")
 
         choice=input("choice: ")
 
@@ -76,6 +77,17 @@ def menu():
             modality='controlla_gripper'
             msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
+
+        elif(choice==5):
+            modality='joystick'
+            target_pose=Pose()
+            target_joints=[0,0,0,0,0,0]
+            second_information='null'
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
+            resp1 = serv(msg)
+            print('Attenzione, modalita joystick attiva. Il controllo e sull altro terminale')
+            print('Prima di lanciare un altro comando, uscire dalla modalita joystick dall altro terminale')
+
 
 def init():
     print("initialization")
