@@ -7,7 +7,7 @@ https://github.com/PUT-UGV-Team/ur3_erc_docker
 3) roslaunch ur3_control launcher_gara.launch
 4) rosrun ur3_control UI_gara.py
 
-
+# ALTRO
 Questo è il catkin_pkg da scaricare dentro workspace/src
 
 Come minimizzare il codice in Qt(unfold all):
