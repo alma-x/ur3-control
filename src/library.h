@@ -683,12 +683,11 @@ void stampa_giunti()
     cout<<i<<":"<<joint_group_positions[i]<<" xxx "<<rad_to_grad(joint_group_positions[i])<<endl;
   }
 }
-void controlla(int key_int){
+void controlla(char key){
     Vector3d translation(0,0,0);
     string k;
     Pose targ,pose_robot=robot->getCurrentPose().pose;
     targ=pose_robot;
-    char key=key_int;
     unsigned int giunto=0;
     int angolo_base=3;
     bool bool_joint=false,bool_ee=false;
@@ -777,7 +776,7 @@ void controlla(int key_int){
       SDR_SOLIDALE=!SDR_SOLIDALE;
       ROS_INFO("Cambio sistema di riferimento\n Ora:%s\n",(SDR_SOLIDALE)?"SRD_SOLIDALE":"SDR non solidale");
     }
-    /*case 'h':{
+    case 'h':{
 
 
 
@@ -796,7 +795,7 @@ void controlla(int key_int){
     cout<<"m:ee rotate along -yaw"<<endl;
     cout<<"e:EXIT"<<endl;
     break;
-    }*/
+    }
 
 
 

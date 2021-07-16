@@ -132,10 +132,9 @@ void esegui_msg_from_inteface(){
         action_gripper(msg_from_interface.second_information);
       }
       if(msg_from_interface.modality=="joystick"){
-
         robot->setPlanningTime(0);
         robot->setNumPlanningAttempts(0);
-        Controller();
+        controlla(msg_from_interface.second_information[0]);
       }
       msg_to_be_processed=false;
   }

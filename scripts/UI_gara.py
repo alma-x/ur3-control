@@ -8,6 +8,7 @@ from geometry_msgs.msg import Pose
 from tf import transformations
 import rospkg
 import time
+import getch
 
 def menu():
     choice=-1
@@ -18,7 +19,7 @@ def menu():
         print("2) change target aruco")
         print("3) reach target")
         print("4) gripper")
-        print("4) joystick")
+        print("5) joystick")
 
         choice=input("choice: ")
 
@@ -79,14 +80,21 @@ def menu():
             resp1 = serv(msg)
 
         elif(choice==5):
-            modality='joystick'
-            target_pose=Pose()
-            target_joints=[0,0,0,0,0,0]
-            second_information='null'
-            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
-            resp1 = serv(msg)
-            print('Attenzione, modalita joystick attiva. Il controllo e sull altro terminale')
-            print('Prima di lanciare un altro comando, uscire dalla modalita joystick dall altro terminale')
+            input_char='0'
+            close_char='e'
+            print('COMMAND: ')
+            while(input_char!=close_char):
+                #input_char=raw_input("Joystick command:")
+
+                input_char=getch.getch()
+                #print(input_char)
+                modality='joystick'
+                target_pose=Pose()
+                target_joints=[0,0,0,0,0,0]
+                second_information=input_char
+                msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
+                resp1 = serv(msg)
+
 
 
 def init():
