@@ -1,6 +1,13 @@
 # ur3-control package
 https://github.com/PUT-UGV-Team/ur3_erc_docker
 
+# RUN CODE GARA
+1) Devi avere tutte e tre le repo scaricate: almasim, ur3-control, simulation-cv
+2) roslaunch simulation simulator_small.launch      oppure      roslaunch simulation simulator.launch
+3) roslaunch ur3_control launcher_gara.launch
+4) rosrun ur3_control UI_gara.py
+
+
 Questo è il catkin_pkg da scaricare dentro workspace/src
 
 Come minimizzare il codice in Qt(unfold all):
