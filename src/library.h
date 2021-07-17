@@ -1718,7 +1718,7 @@ bool action_aruco_button(){
   //questi valori vanno risettati
   T_aruco_finalpos.translation().x()=0;
   T_aruco_finalpos.translation().y()=-0.065; //-0.055 per la gara
-  T_aruco_finalpos.translation().z()=0.22;
+  T_aruco_finalpos.translation().z()=0.22; //
   T_aruco_finalpos.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0)*from_rpy_to_rotational_matrix(M_PI,0,0);
 
 

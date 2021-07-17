@@ -12,7 +12,7 @@ import getch
 
 def menu():
     choice=-1
-    while(choice!=0):
+    while(choice!='0'):
         print("select the action:")
         print("0) shut down")
         print("1) base position")
@@ -22,9 +22,9 @@ def menu():
         print("5) joystick")
         print("6) ruota e cerca aruco")
 
-        choice=input("choice: ")
+        choice=raw_input("choice: ")
 
-        if(choice==0):
+        if(choice=='0'):
             modality='exit'
             target_pose=Pose()
             target_joints=[0,0,0,0,0,0]
@@ -32,7 +32,7 @@ def menu():
             msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
 
-        elif(choice==1):
+        elif(choice=='1'):
             target_joints=[0,0,0,0,0,0]
             target_pose=Pose()
             modality='automazione_go_pos_iniziale'
@@ -40,7 +40,7 @@ def menu():
             msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
 
-        elif(choice==2):
+        elif(choice=='2'):
             target_joints=[0,0,0,0,0,0]
             target_pose=Pose()
             modality='automazione_pannello_nextAruco'
@@ -48,7 +48,7 @@ def menu():
             msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
 
-        elif(choice==3):
+        elif(choice=='3'):
             target_joints=[0,0,0,0,0,0]
             target_pose=Pose()
             modality='automazione_pannello_MoveToSelectedAruco'
@@ -56,7 +56,7 @@ def menu():
             msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
 
-        elif(choice==4):
+        elif(choice=='4'):
             print("choose gripper position: ")
             print("1) open")
             print("2) semi_open")
@@ -80,7 +80,7 @@ def menu():
             msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
 
-        elif(choice==5):
+        elif(choice=='5'):
             input_char='0'
             close_char='e'
             print("press 'e' for exit from joystick")
@@ -97,13 +97,22 @@ def menu():
                 msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
                 resp1 = serv(msg)
 
-        elif(choice==6):
+        elif(choice=='6'):
             target_joints=[0,0,0,0,0,0]
             target_pose=Pose()
             modality='ruota_e_cerca_aruco'
             second_information='null'
             msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
+        else:
+            print('COMMAND NOT KNOWN')
+
+        print('')
+        print('')
+        print('')
+        print('')
+
+
 
 def init():
     print("initialization")
