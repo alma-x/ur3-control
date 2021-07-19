@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<launch>
+	<param name="objective" type="int" value="8" />
+</launch>

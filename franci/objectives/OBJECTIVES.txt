@@ -1,0 +1,17 @@
+1	scan panel for components
+
+2	push button sequence: input (string) "ID1 DI2 ID3 ID4"
+
+3	grab eccellerometer
+
+4	attach accelerometer: input (int) ANGLE
+
+5	open inspection window
+
+6	recognize id in inspection window: output (int) ID
+
+7	push relative button: input (int) ID
+
+8	close inspection window
+
+9	drive back to initial position

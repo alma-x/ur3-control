@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<launch>
+  	<arg name="lite" default="true" />
+
+	<!-- CONTROLLER LAUNCHER-->
+	<node name="ERC" pkg="ur3_control" type="ERC" respawn="false" output="screen"></node>
+
+	<!-- CV LAUNCHER-->
+	<node name="bridge" pkg="ur3_control" type="bridge" respawn="false" output="screen"></node>
+
+  	<node name="arucoPanel" pkg="simulation-cv" type="arucoPanel.py" respawn="false" output="screen"></node>
+
+	<!-- rviz-->
+	<group unless="$(arg lite)">
+		<include file="$(find ur3_moveit_config)/launch/moveit_rviz.launch">
+		  	<arg name="config" default="true"/>
+		</include> 
+	 </group>
+
+</launch>

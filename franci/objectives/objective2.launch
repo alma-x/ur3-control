@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+	<arg name="input"/>
+	<param name="buttons_sequence" type="str" value="$(arg input)" />
+	<param name="objective" type="int" value="2" />
+</launch>

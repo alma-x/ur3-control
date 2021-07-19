@@ -73,11 +73,16 @@ void esegui_msg_from_inteface(){
       if(msg_from_interface.modality=="automazione_pannello_MoveToSelectedAruco"){
         ur3_control::aruco_serviceResponse msg_from_bridge=bridge_service(str_md_rd,"");
 
-          if(msg_from_bridge.id_aruco==1){
+          if(msg_from_bridge.id_aruco==1 || msg_from_bridge.id_aruco==2 || msg_from_bridge.id_aruco==3 ||
+             msg_from_bridge.id_aruco==4 || msg_from_bridge.id_aruco==5 || msg_from_bridge.id_aruco==6 ||
+             msg_from_bridge.id_aruco==7 || msg_from_bridge.id_aruco==8 || msg_from_bridge.id_aruco==9 ){
             action_aruco_button();
           }
           else if(msg_from_bridge.id_aruco==13){
             right_panel();
+          }
+          else if(msg_from_bridge.id_aruco==10){
+            left_panel();
           }
           else{
             Affine_valid T_aruco_valid=homo_0_aruco_elaration();
@@ -136,10 +141,149 @@ void esegui_msg_from_inteface(){
         controlla(msg_from_interface.second_information[0]);
         robot->setPlanningTime(4);
       }
+      if(msg_from_interface.modality=="Stampa_pose_robot"){
+        stampa_Pose(robot->getCurrentPose().pose);
+        stampa_giunti();
+      }
       msg_to_be_processed=false;
   }
 
 }
+void param_control(){
+
+  int current_objective=0;
+
+  ros::NodeHandle start_node;
+  start_node.getParam("objective",current_objective);
+
+  switch(current_objective){
+  case 1:{
+    PosizioniBase(str_pos_iniziale);
+    start_node.setParam("objective",0);
+    break;}
+  case 2:{
+    // button sequence
+    ROS_INFO("Aruco buttons:");
+    string buttons_string;
+    //get button sequence
+    start_node.getParam("buttons_sequence",buttons_string);
+    //remove spaces, split elements
+
+    string button1,button2,button3,button4;
+    button1=buttons_string[0];
+    button2=buttons_string[2];
+    button3=buttons_string[4];
+    button4=buttons_string[6];
+    cout<<"Button_string:"<<buttons_string<<endl;
+    cout<<"Aruco id:"<<button1<<button2<<button3<<button4<<endl;
+    ROS_INFO(".");
+    bridge_service(str_md_next_aruco,button1);
+    sleep(1);
+    action_aruco_button();
+
+    sleep(2);
+
+
+    bridge_service(str_md_next_aruco,button2);
+    sleep(1);
+    action_aruco_button();
+
+    sleep(2);
+
+
+    bridge_service(str_md_next_aruco,button3);
+    sleep(1);
+    action_aruco_button();
+
+    sleep(2);
+
+
+    bridge_service(str_md_next_aruco,button4);
+    sleep(1);
+    action_aruco_button();
+
+    sleep(2);
+
+    start_node.deleteParam("button_sequence");
+    sleep(3);
+    start_node.setParam("objective",0);
+    break;}
+  case 3:{
+
+    left_panel();
+
+    start_node.setParam("objective",0);
+    break;}
+  case 4:{
+    // place imu
+    double imu_angle;
+    // get imu angle
+    start_node.getParam("imu_angle",imu_angle);
+    //pass imu angle as orientan, degrees
+    ROS_INFO_STREAM( "imu angle  " << imu_angle);
+
+
+    //left_panel();
+
+    start_node.deleteParam("imu_angle");
+    start_node.setParam("objective",0);
+    sleep(4);
+    break;}
+  case 5:{
+    // open inspection window
+
+    right_panel();
+
+    current_objective=0;
+    break;
+  }
+  case 6:{
+    // inspect window
+
+    start_node.setParam("objective",0);
+    break;
+  }
+  case 7:{
+    // push button of hidden id
+    int hidden_id;
+    start_node.getParam("hidden_id",hidden_id);
+
+    // pass hidded_id as id of aruco to press
+
+    ROS_INFO_STREAM( "hidden id " << hidden_id);
+
+    start_node.deleteParam("hidden_id");
+    start_node.setParam("objective",0);
+    sleep(4);
+    break;
+  }
+  case 8:{
+    // place cover back
+
+    start_node.setParam("objective",0);
+    break;
+  }
+  case 9:{
+    // go initial position
+
+    start_node.setParam("objective",0);
+    break;
+  }
+  case 42:{
+    bridge_service("exit","");
+    bool_exit=true;
+
+    start_node.deleteParam("objective");
+    break;
+  }
+  default:{
+    //wait
+    break;
+  }
+  }
+}
+
+
 int main(int argc, char** argv)
 {
   // Initialize the ROS Node "roscpp_hello_world"
@@ -163,10 +307,16 @@ int main(int argc, char** argv)
   initialize_parameters();
   set_homo_std_matrix();
   load_parameters();
+
   while(ros::ok && !bool_exit){
+    param_control();
+  }
+  /*while(ros::ok && !bool_exit){
   ros::spinOnce();
   esegui_msg_from_inteface();
   }
+  */
+
   //Start();
 
   return 0;

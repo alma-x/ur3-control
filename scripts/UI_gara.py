@@ -21,6 +21,8 @@ def menu():
         print("4) gripper")
         print("5) joystick")
         print("6) ruota e cerca aruco")
+        print("7) Stampa pose")
+        print("8) Freno a mano")
 
         choice=raw_input("choice: ")
 
@@ -104,13 +106,24 @@ def menu():
             second_information='null'
             msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
+        elif(choice=='7'):
+
+            target_joints=[0,0,0,0,0,0]
+            target_pose=Pose()
+            modality='Stampa_pose_robot'
+            second_information='null'
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
+            resp1 = serv(msg)
+        elif(choice=='8'):
+            modality='stop_trajectory'
+            second_information=''
+            msg=aruco_serviceRequest(modality,second_information)
+            resp1 = bridge_serv(msg)
+
         else:
             print('COMMAND NOT KNOWN')
 
-        print('')
-        print('')
-        print('')
-        print('')
+        print('\n \n \n \n')
 
 
 
