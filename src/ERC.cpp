@@ -16,7 +16,7 @@ void Interazione_Environment();
 void Menu_Di_Scelta_Prove();
 void MenuDiSceltaOpzioni();
 
-bool bool_exit=false,msg_to_be_processed=false;
+bool msg_to_be_processed=false;
 ur3_control::UserInterface::Request msg_from_interface;
 bool callback_modality(ur3_control::UserInterface::Request &req, ur3_control::UserInterface::Response &res){
   msg_from_interface=req;
@@ -283,10 +283,11 @@ void param_control(){
   }
 }
 
-
 int main(int argc, char** argv)
 {
   // Initialize the ROS Node "roscpp_hello_world"
+
+  signal(SIGINT, signal_callback_handler);
   ros::init(argc, argv, "simulation");
   static ros::AsyncSpinner spinner(1);
   spinner.start();
@@ -308,16 +309,37 @@ int main(int argc, char** argv)
   set_homo_std_matrix();
   load_parameters();
 
-//  while(ros::ok && !bool_exit){
-//    param_control();
-//  }
-  while(ros::ok && !bool_exit){
-  ros::spinOnce();
-  esegui_msg_from_inteface();
+  string scelta_tipologia;
+  do{
+      cout<<"0)Esci"<<endl<<"1) Launcher menu"<<endl<<"2) User_interface menu"<<endl<<"3) Old menu"<<endl<<"Choice:";
+      cin>>scelta_tipologia;
+  }while(!bool_exit && scelta_tipologia!="0" && scelta_tipologia!="1" && scelta_tipologia!="2" && scelta_tipologia!="3");
+
+  if(scelta_tipologia=="1"){
+
+    while(ros::ok() && !bool_exit){
+      param_control();
+    }
+
+  }
+  else if(scelta_tipologia=="2"){
+
+    while(ros::ok() && !bool_exit){
+      ros::spinOnce();
+      esegui_msg_from_inteface();
+    }
+
+  }
+  else if(scelta_tipologia=="3"){
+
+    Start();
+
+  }
+  else if(scelta_tipologia=="0"){
+    bridge_service("exit","");
+    bool_exit=true;
   }
 
-
-  //Start();
 
   return 0;
 }

@@ -12,8 +12,6 @@ using namespace std;
 ur3_control::cv_to_bridge msg_from_cv;
 ros::ServiceClient client;
 bool bool_md_bpa=false;
-bool bool_exit=false;
-
 ros::Publisher pub_traj_cancel;
 void stampa_cv_msg(const ur3_control::cv_to_bridge msg){
 ROS_INFO("Message received:\n x:%f \n y:%f \n z:%f \n success:%s",msg.x,msg.y,msg.z,(msg.success)? "success":"not success");
@@ -81,6 +79,8 @@ bool callback_modality(ur3_control::aruco_service::Request &req, ur3_control::ar
   return true;
 }
 int main(int argc, char** argv){
+
+  signal(SIGINT, signal_callback_handler);
   ros::init(argc, argv, "bridge");
 
 
@@ -98,7 +98,8 @@ int main(int argc, char** argv){
   robot=&move_group;
   msg_from_cv.success=false;
   bool_md_bpa=false;
-  while(ros::ok && !bool_exit){
+
+  while(ros::ok() && !bool_exit){
   ros::spinOnce();
   }
   return 0;

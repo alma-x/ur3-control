@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <ros/ros.h>
 #include <ros/package.h>
 #include "ros/service.h"
@@ -44,6 +45,21 @@ using namespace moveit;
 using namespace planning_interface;
 using namespace moveit_msgs;
 using namespace Eigen;
+
+#define ID_BUTTON_1 1
+#define ID_BUTTON_2 2
+#define ID_BUTTON_3 3
+#define ID_BUTTON_4 4
+#define ID_BUTTON_5 5
+#define ID_BUTTON_6 6
+#define ID_BUTTON_7 7
+#define ID_BUTTON_8 8
+#define ID_BUTTON_9 9
+#define ID_IMU_MODULE 10
+#define ID_IMU_DESTINATION_PLANE 11
+#define ID_INSPECTION_WINDOW 12
+#define ID_INSPECTION_WINDOW_COVER 13
+#define ID_INSPECTION_WINDOW_COVER_STORAGE 14
 
 double tol=0.01;
 bool SDR_SOLIDALE=false;
@@ -107,15 +123,15 @@ struct Affine_valid
 };
 struct Pose_valid
 {
-     bool valid;
+     bool valid=false;
      Pose pose;
 };
 
 Pose_valid pose_pannello_elaborata;
-Pose pose_inspection_cover_storage,pose_IMU_module;
 
-
-
+Pose_valid Aruco_values[20];
+bool bool_exit=false;
+bool gara;
 
 void pick(string name_object);
 char getch();
@@ -125,7 +141,7 @@ void SetPoseOrientationRPY(Pose *p,int x0,int y0,int z0);
 void AddToPoseOrientationRPYInGradi(Pose *p,double roll,double pitch,double yaw);
 void ruotagiunto(unsigned int giunto,int angolo);
 void set_angolo(unsigned int giunto,int angolo);
-void move_to_pose(geometry_msgs::Pose pt, bool Orientamento);
+bool move_to_pose(geometry_msgs::Pose pt, bool Orientamento);
 void stampa_Pose(Pose po);
 void stampa_giunti();
 bool PosizioniBase(string str_posizione);
@@ -543,6 +559,13 @@ return false;
 
 
 //ACTUAL FUNCTIONS
+
+void signal_callback_handler(int signum) {
+   cout << "Caught signal " << signum << endl;
+   // Terminate program
+   bool_exit=true;
+   //exit(signum);
+}
 double grad_to_rad(double grad)
 {
   return grad*3.1415/180;
@@ -649,7 +672,7 @@ bool move_to_pose_cartesian(geometry_msgs::Pose pose){
   }
 
 }
-void move_to_pose(geometry_msgs::Pose pt, bool Orientamento){
+bool move_to_pose(geometry_msgs::Pose pt, bool Orientamento){
 
   if(!Orientamento)
     robot->setPositionTarget(pt.position.x,pt.position.y,pt.position.z);
@@ -663,11 +686,13 @@ void move_to_pose(geometry_msgs::Pose pt, bool Orientamento){
       i=5;
       ROS_INFO_NAMED("tutorial", "Risultato:%s", success ? "SUCCESS" : "FAILED");
       robot->execute(my_plan);
+      return true;
     }
     else{
       //ROS_INFO("%d pianificazione fallita",i);
     }
   }
+  return false;
 }
 void stampa_Pose(Pose po)
 {
@@ -1702,17 +1727,32 @@ Matrix3d from_rpy_to_rotational_matrix(double roll,double pitch,double yaw){
 void action_gripper(string input){
 
   ROS_INFO("TRYING TO SET GRIPPER AS:");
-  cout<<input;
+  cout<<input<<endl;
   std_msgs::String gs;
   gs.data=input;
   pub_gripper.publish(gs);
   sleep(5);
-
   ROS_INFO("FINISH TO SET GRIPPER");
 }
-bool esplorazione_middle_panel(){
+bool esplorazione_middle_panel_per_trovare_aruco(){
 
   PosizioniBase(str_pos_iniziale);
+  int ID_ARUCO_INTERESSATO=0;
+  ur3_control::aruco_serviceResponse msg_response=bridge_service(str_md_rd,"");
+  ID_ARUCO_INTERESSATO=msg_response.id_aruco;
+  if(msg_response.aruco_found){
+    Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
+
+    if(! T_0_aruco_valid.valid){
+      //esplorazione pannello centrale
+      return false;
+    }
+
+    Aruco_values[ID_ARUCO_INTERESSATO].valid=true;
+    Aruco_values[ID_ARUCO_INTERESSATO].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
+
+    return true;
+  }
 
   vector<double> joint_group_positions=robot->getCurrentJointValues();
   joint_group_positions=pos_joint_iniziale;
@@ -1722,7 +1762,19 @@ bool esplorazione_middle_panel(){
   ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
   robot->move();
 
-  if(aruco_individuato()) return true;
+  if(msg_response.aruco_found){
+    Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
+
+    if(! T_0_aruco_valid.valid){
+      //esplorazione pannello centrale
+      return false;
+    }
+
+    Aruco_values[ID_ARUCO_INTERESSATO].valid=true;
+    Aruco_values[ID_ARUCO_INTERESSATO].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
+
+    return true;
+  }
 
   bridge_service(str_md_bpa,"");
 
@@ -1732,8 +1784,21 @@ bool esplorazione_middle_panel(){
   ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
   robot->move();
 
-  sleep(2);
-  if(aruco_individuato()) return true;
+  if(msg_response.aruco_found){
+    sleep(2);
+    Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
+
+    if(! T_0_aruco_valid.valid){
+      //esplorazione pannello centrale
+      return false;
+    }
+
+    Aruco_values[ID_ARUCO_INTERESSATO].valid=true;
+    Aruco_values[ID_ARUCO_INTERESSATO].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
+
+    return true;
+  }
+
 
   joint_group_positions[3]=joint_group_positions[3]-grad_to_rad(90);
   robot->setJointValueTarget(joint_group_positions);
@@ -1741,8 +1806,20 @@ bool esplorazione_middle_panel(){
   ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
   robot->move();
 
-  sleep(2);
-  if(aruco_individuato()) return true;
+  if(msg_response.aruco_found){
+    sleep(2);
+    Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
+
+    if(! T_0_aruco_valid.valid){
+      //esplorazione pannello centrale
+      return false;
+    }
+
+    Aruco_values[ID_ARUCO_INTERESSATO].valid=true;
+    Aruco_values[ID_ARUCO_INTERESSATO].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
+
+    return true;
+  }
 
   return false;
 
@@ -1752,7 +1829,7 @@ bool action_aruco_button(){
   if(!aruco_individuato()){
 
     ROS_INFO("NON VEDO L'ARUCO, PROVO A CERCARLO");
-    if(!esplorazione_middle_panel()){
+    if(!esplorazione_middle_panel_per_trovare_aruco()){
       ROS_INFO("ARUCO NON TROVATO DURANTE ESPLORAZIONE");
 
       return false;
@@ -1791,6 +1868,15 @@ bool action_aruco_button(){
     move_to_pose(pose_final_pose_pregrasp,true);
   }
 
+
+  if(!gara) {
+
+    PosizioniBase(str_pos_iniziale);
+    return true;
+  }
+
+
+
   //POSIZIONE PER PREMERE PULSANTE
   T_aruco_finalpos.translation().x()=0;
   T_aruco_finalpos.translation().y()=-0.055; //-0.055 per la gara
@@ -1817,7 +1903,7 @@ bool action_aruco_button(){
   return true;
 }
 void initialize_parameters(){
-
+  gara=false;
   robot->setPlannerId("RRTConnectkConfigDefault");
   robot->setPlanningTime(5);
   pose_pannello_elaborata.valid=false;
@@ -1865,8 +1951,8 @@ bool esplora_inspection_cover_storage(){
   ruota_360();
 
 
-  sleep(2);
   if(aruco_individuato()) {
+    sleep(2);
     Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
 
     if(! T_0_aruco_valid.valid){
@@ -1874,8 +1960,8 @@ bool esplora_inspection_cover_storage(){
       return false;
     }
 
-
-    pose_inspection_cover_storage=homo_to_pose(T_0_aruco_valid.homo_matrix);
+    Aruco_values[ID_INSPECTION_WINDOW_COVER_STORAGE].valid=true;
+    Aruco_values[ID_INSPECTION_WINDOW_COVER_STORAGE].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
 
     return true;
   }
@@ -1886,55 +1972,80 @@ bool esplora_inspection_cover_storage(){
 
 
 }
-bool right_panel(){
-  action_gripper("open");
-  if(! esplora_inspection_cover_storage()) return false;
-
-  //cerco aruco di inspection
-
-
+bool esplora_inspection_window_cover(){
   bridge_service(str_md_next_aruco,"13");
 
 
   PosizioniBase(str_pos_iniziale_cam_alta);
+  //ROUTINE NUMBER 1:
+  {
+
+    Pose pose_final_pose_panel,pose_final_pose_ground;
 
 
-  Pose pose_final_pose_panel,pose_final_pose_ground;
+    //RUOTO posizionandomi forse davanti all aruco
+
+    set_angolo(5,-90);
 
 
-  //RUOTO posizionandomi forse davanti all aruco
-
-  set_angolo(5,-90);
+    bridge_service(str_md_bpa,"");
 
 
-  bridge_service(str_md_bpa,"");
+    vector<double> joint_group_positions=robot->getCurrentJointValues();
+    joint_group_positions[0] = joint_group_positions[0]- grad_to_rad(35);  // radians
+    robot->setJointValueTarget(joint_group_positions);
+    success = (robot->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+    ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+    robot->move();
+    //mi trovo a 18 gradi
+    if(aruco_individuato()) {
+      sleep(2);
+      Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
 
+      if(! T_0_aruco_valid.valid){
+        //esplorazione pannello centrale
+        return false;
+      }
 
-  vector<double> joint_group_positions=robot->getCurrentJointValues();
-  joint_group_positions[0] = joint_group_positions[0]- grad_to_rad(35);  // radians
-  robot->setJointValueTarget(joint_group_positions);
-  success = (robot->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
-  ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
-  robot->move();
-  //mi trovo a 18 gradi
-  sleep(2);
+      Aruco_values[ID_INSPECTION_WINDOW_COVER].valid=true;
+      Aruco_values[ID_INSPECTION_WINDOW_COVER].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
 
+      return true;
+    }
+    if(!aruco_individuato()){
+
+      bridge_service(str_md_bpa,"");
+
+      //ruoto la testa cercandolo
+
+      joint_group_positions[3]=joint_group_positions[3]+grad_to_rad(45);
+      robot->setJointValueTarget(joint_group_positions);
+      success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
+      ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+      robot->move();
+
+      if(aruco_individuato()) {
+        sleep(2);
+        Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
+
+        if(! T_0_aruco_valid.valid){
+          //esplorazione pannello centrale
+          return false;
+        }
+
+        Aruco_values[ID_INSPECTION_WINDOW_COVER].valid=true;
+        Aruco_values[ID_INSPECTION_WINDOW_COVER].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
+
+        return true;
+      }
+
+    }
+
+    ROS_INFO("The first routine to find inspection window has failed, trying with the next one");
+  }
+
+  //ROUTINE NUMBER 2:
   if(!aruco_individuato()){
-
-  bridge_service(str_md_bpa,"");
-
-  //ruoto la testa cercandolo
-
-  joint_group_positions[3]=joint_group_positions[3]+grad_to_rad(45);
-  robot->setJointValueTarget(joint_group_positions);
-  success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
-  ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
-  robot->move();
-
-  sleep(2);
-
-}
-  if(!aruco_individuato()){// RIPARTE DALL'INZIO
 
     PosizioniBase(str_pos_iniziale_cam_alta);
     //Posizione pre rotazione
@@ -1950,10 +2061,37 @@ bool right_panel(){
     }
 
     ruota_e_cerca_aruco();
-    sleep(2);//ATTENTO UNO SLEEP, CREDO SIA UTILE PERCHÈ SENNÒ IL BLOCCO SULLA ROTAZIONE INFLUISCE SUL PROSSIMO MOVIMENTO
 
+    if(aruco_individuato()) {
+      sleep(2);
+      Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
+
+      if(! T_0_aruco_valid.valid){
+        //esplorazione pannello centrale
+        return false;
+      }
+
+      Aruco_values[ID_INSPECTION_WINDOW_COVER].valid=true;
+      Aruco_values[ID_INSPECTION_WINDOW_COVER].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
+
+      return true;
+    }
 
   }
+
+
+  if(aruco_individuato()) return true;
+  else return false;
+}
+bool right_panel(){
+  action_gripper("open");
+
+  if(! esplora_inspection_cover_storage()) return false;
+
+  //cerco aruco di inspection
+
+  if(!esplora_inspection_window_cover())return false;
+
 
 
 
@@ -1970,6 +2108,7 @@ bool right_panel(){
 
 
   Affine3d T_aruco_finalpos_panel,T_0_finalpos_panel, T_0_aruco_panel;
+  Pose pose_final_pose_panel;
   T_0_aruco_panel=T_0_aruco_valid_panel.homo_matrix;
 
 
@@ -1984,7 +2123,7 @@ bool right_panel(){
 
   //CONOSCO LA MIA POSIZIONE PER RAGGIUNGERE IL BLOCCO
   //CERCO DI AVVICINARMI
-
+  vector<double> joint_group_positions;
   double alpha=atan2(pose_final_pose_panel.position.y,pose_final_pose_panel.position.x);
   joint_group_positions=pos_joint_iniziale_cam_alta;
   joint_group_positions[0] = alpha;  // radians
@@ -2071,7 +2210,8 @@ bool right_panel(){
   T_0_aruco_ground=T_0_aruco_valid_ground.homo_matrix;
 */
   Affine3d T_aruco_finalpos_ground,T_0_finalpos_ground, T_0_aruco_ground;
-  T_0_aruco_ground=pose_to_homo(pose_inspection_cover_storage);
+  Pose pose_final_pose_ground;
+  T_0_aruco_ground=pose_to_homo(Aruco_values[ID_INSPECTION_WINDOW_COVER_STORAGE].pose);
 
   T_aruco_finalpos_ground.translation().x()=0;
   T_aruco_finalpos_ground.translation().y()=0;
@@ -2114,8 +2254,19 @@ bool esplora_cerca_IMU(){
   success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
   ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
   robot->move();
+  if(aruco_individuato()) {
+    Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
 
-  if(aruco_individuato()) return true;
+    if(! T_0_aruco_valid.valid){
+      //esplorazione pannello centrale
+      return false;
+    }
+
+    Aruco_values[ID_IMU_MODULE].valid=true;
+    Aruco_values[ID_IMU_MODULE].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
+
+    return true;
+  }
 
   bridge_service(str_md_bpa,"");
 
@@ -2129,10 +2280,20 @@ bool esplora_cerca_IMU(){
 
 
 
-  sleep(2);
-  if(aruco_individuato()) return true;
+  if(aruco_individuato()) {
+    sleep(2);
+    Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
 
+    if(! T_0_aruco_valid.valid){
+      //esplorazione pannello centrale
+      return false;
+    }
 
+    Aruco_values[ID_IMU_MODULE].valid=true;
+    Aruco_values[ID_IMU_MODULE].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
+
+    return true;
+  }
 
   return false;
 
