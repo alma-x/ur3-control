@@ -308,14 +308,14 @@ int main(int argc, char** argv)
   set_homo_std_matrix();
   load_parameters();
 
+//  while(ros::ok && !bool_exit){
+//    param_control();
+//  }
   while(ros::ok && !bool_exit){
-    param_control();
-  }
-  /*while(ros::ok && !bool_exit){
   ros::spinOnce();
   esegui_msg_from_inteface();
   }
-  */
+
 
   //Start();
 
