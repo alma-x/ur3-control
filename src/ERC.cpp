@@ -310,7 +310,20 @@ int main(int argc, char** argv)
   load_parameters();
 
   string scelta_tipologia;
+  string gara_str;
   node_handle.getParam("interface",scelta_tipologia);
+  node_handle.getParam("gara",gara_str);
+  if(gara_str=="false"){
+    gara=false;
+    ROS_INFO("GARA PARAMETERS NOT SET");
+  }
+  else{
+
+    gara=true;
+    ROS_INFO("GARA PARAMETERS SET");
+
+  }
+
 //  do{
 //      cout<<"0)Esci"<<endl<<"1) Launcher menu"<<endl<<"2) User_interface menu"<<endl<<"3) Old menu"<<endl<<"Choice:";
 //      cin>>scelta_tipologia;

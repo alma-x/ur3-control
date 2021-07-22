@@ -2,8 +2,10 @@
 <launch>
   	<arg name="lite" default="true" />
         <arg name="inter_arg" default="1" />
+        <arg name="gara" default="true" />
 
         <param name="interface" type="str" value="$(arg inter_arg)"/>
+        <param name="gara" type="str" value="$(arg gara)"/>
 	<!-- CONTROLLER LAUNCHER-->
 	<node name="ERC" pkg="ur3_control" type="ERC" respawn="false" output="screen"></node>
 

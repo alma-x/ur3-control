@@ -25,11 +25,11 @@ void cv_callback(const ur3_control::cv_to_bridge& msg){
 
     bool_md_bpa=false;
 
-//    actionlib_msgs::GoalID msg_traj_cancel;
-//    msg_traj_cancel.id="s";
-//    pub_traj_cancel.publish(msg_traj_cancel);
-//    ROS_INFO("Aruco trovato, traiettoria cancellata");
-    robot->stop();
+    actionlib_msgs::GoalID msg_traj_cancel;
+    msg_traj_cancel.id="";
+    pub_traj_cancel.publish(msg_traj_cancel);
+    ROS_INFO("Aruco trovato, traiettoria cancellata");
+//    robot->stop();
   }
 }
 bool callback_modality(ur3_control::aruco_service::Request &req, ur3_control::aruco_service::Response &res){
@@ -64,10 +64,10 @@ bool callback_modality(ur3_control::aruco_service::Request &req, ur3_control::ar
   }
   if("stop_trajectory"==req.modality){
 
-    actionlib_msgs::GoalID msg_traj_cancel;
-    msg_traj_cancel.id="s";
-    pub_traj_cancel.publish(msg_traj_cancel);
-    ROS_INFO("traiettoria cancellata");
+//    actionlib_msgs::GoalID msg_traj_cancel;
+//    msg_traj_cancel.id="s";
+//    pub_traj_cancel.publish(msg_traj_cancel);
+//    ROS_INFO("traiettoria cancellata");
     robot->stop();
 
   }
@@ -91,7 +91,7 @@ int main(int argc, char** argv){
   ros::Subscriber sub;
   ros::NodeHandle n;
   ros::ServiceServer serv;
-  pub_traj_cancel = n.advertise<actionlib_msgs::GoalID>("/execute_trajectory/cancel", 100);
+  pub_traj_cancel = n.advertise<actionlib_msgs::GoalID>("/arm_controller/follow_joint_trajectory/cancel", 100);
   sub=n.subscribe("/aruco_bridge_opencv",1,cv_callback);
   serv=n.advertiseService("aruco_modality", callback_modality);
   client = n.serviceClient<ur3_control::cv_server>("/cv_server");
