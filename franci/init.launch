@@ -1,7 +1,9 @@
 <?xml version="1.0"?>
 <launch>
   	<arg name="lite" default="true" />
+        <arg name="inter_arg" default="1" />
 
+        <param name="interface" type="str" value="$(arg inter_arg)"/>
 	<!-- CONTROLLER LAUNCHER-->
 	<node name="ERC" pkg="ur3_control" type="ERC" respawn="false" output="screen"></node>
 
@@ -15,6 +17,6 @@
 		<include file="$(find ur3_moveit_config)/launch/moveit_rviz.launch">
 		  	<arg name="config" default="true"/>
 		</include> 
-	 </group>
+         </group>
 
 </launch>

@@ -35,7 +35,8 @@ void cv_callback(const ur3_control::cv_to_bridge& msg){
 bool callback_modality(ur3_control::aruco_service::Request &req, ur3_control::aruco_service::Response &res){
 
 
-  ROS_INFO("Bridge:Chiamata ricevuta:\nModalita:%s\n\n",req.modality.c_str());
+  if(show_log)
+     ROS_INFO("Bridge:Chiamata ricevuta:\nModalita:%s\n\n",req.modality.c_str());
 
   if(str_md_bpa==req.modality){
     bool_md_bpa=true;
@@ -52,7 +53,8 @@ bool callback_modality(ur3_control::aruco_service::Request &req, ur3_control::ar
       client.call(cv_service_msg);
 
       res.moreTargets=cv_service_msg.response.moreTargets;
-      ROS_INFO("targets remaining:%d",res.moreTargets);
+      if(show_log)
+        ROS_INFO("targets remaining:%d",res.moreTargets);
   }
   if("exit"==req.modality){
       bool_exit=true;
@@ -65,7 +67,7 @@ bool callback_modality(ur3_control::aruco_service::Request &req, ur3_control::ar
     actionlib_msgs::GoalID msg_traj_cancel;
     msg_traj_cancel.id="s";
     pub_traj_cancel.publish(msg_traj_cancel);
-    ROS_INFO("Aruco trovato, traiettoria cancellata");
+    ROS_INFO("traiettoria cancellata");
     robot->stop();
 
   }

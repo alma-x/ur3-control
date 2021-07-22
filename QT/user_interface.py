@@ -7,7 +7,7 @@ from ur3_control.srv import UserInterface,UserInterfaceRequest,aruco_service,aru
 from geometry_msgs.msg import Pose
 from tf import transformations
 import rospkg
-
+import math
 rospack = rospkg.RosPack()
 
 pathTopkg=rospack.get_path('ur3_control')
@@ -38,7 +38,7 @@ class Manual_pose(QWidget):
         target_joints=[0,0,0,0,0,0]
         target_pose=Pose()
 
-        quaternion = transformations.quaternion_from_euler(float(self.mpRoll.text()), float(self.mpPitch.text()), float(self.mpYaw.text()))
+        quaternion = transformations.quaternion_from_euler(math.radians(float(self.mpRoll.text())), math.radians(float(self.mpPitch.text())), math.radians(float(self.mpYaw.text())))
         target_pose.position.x=float(self.mpX.text())
         target_pose.position.y=float(self.mpY.text())
         target_pose.position.z=float(self.mpZ.text())

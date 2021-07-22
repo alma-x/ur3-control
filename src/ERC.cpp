@@ -310,19 +310,20 @@ int main(int argc, char** argv)
   load_parameters();
 
   string scelta_tipologia;
-  do{
-      cout<<"0)Esci"<<endl<<"1) Launcher menu"<<endl<<"2) User_interface menu"<<endl<<"3) Old menu"<<endl<<"Choice:";
-      cin>>scelta_tipologia;
-  }while(!bool_exit && scelta_tipologia!="0" && scelta_tipologia!="1" && scelta_tipologia!="2" && scelta_tipologia!="3");
+  node_handle.getParam("interface",scelta_tipologia);
+//  do{
+//      cout<<"0)Esci"<<endl<<"1) Launcher menu"<<endl<<"2) User_interface menu"<<endl<<"3) Old menu"<<endl<<"Choice:";
+//      cin>>scelta_tipologia;
+//  }while(!bool_exit && scelta_tipologia!="0" && scelta_tipologia!="1" && scelta_tipologia!="2" && scelta_tipologia!="3");
 
-  if(scelta_tipologia=="1"){
+  if(scelta_tipologia[0]=='1'){
 
     while(ros::ok() && !bool_exit){
       param_control();
     }
 
   }
-  else if(scelta_tipologia=="2"){
+  else if(scelta_tipologia[0]=='2'){
 
     while(ros::ok() && !bool_exit){
       ros::spinOnce();
@@ -330,12 +331,12 @@ int main(int argc, char** argv)
     }
 
   }
-  else if(scelta_tipologia=="3"){
+  else if(scelta_tipologia[0]=='3'){
 
     Start();
 
   }
-  else if(scelta_tipologia=="0"){
+  else if(scelta_tipologia[0]=='0'){
     bridge_service("exit","");
     bool_exit=true;
   }
