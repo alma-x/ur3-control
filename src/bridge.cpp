@@ -10,6 +10,7 @@
 #include "ur3_control/cv_server.h"
 using namespace std;
 ur3_control::cv_to_bridge msg_from_cv;
+sensor_msgs::JointState msg_from_joints;
 ros::ServiceClient client;
 bool bool_md_bpa=false;
 ros::Publisher pub_traj_cancel;
@@ -31,6 +32,10 @@ void cv_callback(const ur3_control::cv_to_bridge& msg){
     ROS_INFO("Aruco trovato, traiettoria cancellata");
 //    robot->stop();
   }
+}
+void joint_callback(const sensor_msgs::JointState& msg){
+
+  msg_from_joints=msg;
 }
 bool callback_modality(ur3_control::aruco_service::Request &req, ur3_control::aruco_service::Response &res){
 
@@ -77,7 +82,7 @@ bool callback_modality(ur3_control::aruco_service::Request &req, ur3_control::ar
   res.z=msg_from_cv.z;
   res.vector=msg_from_cv.vector;
   res.id_aruco=msg_from_cv.id_aruco;
-
+  res.finger_joint=msg_from_joints.position[1];
   return true;
 }
 int main(int argc, char** argv){
@@ -88,11 +93,12 @@ int main(int argc, char** argv){
 
   static ros::AsyncSpinner spinner(1);
 
-  ros::Subscriber sub;
+  ros::Subscriber sub,sub_joint;
   ros::NodeHandle n;
   ros::ServiceServer serv;
   pub_traj_cancel = n.advertise<actionlib_msgs::GoalID>("/arm_controller/follow_joint_trajectory/cancel", 100);
   sub=n.subscribe("/aruco_bridge_opencv",1,cv_callback);
+  sub_joint=n.subscribe("/joint_states",1,joint_callback);
   serv=n.advertiseService("aruco_modality", callback_modality);
   client = n.serviceClient<ur3_control::cv_server>("/cv_server");
   MoveGroupInterface move_group(PLANNING_GROUP);

@@ -1724,14 +1724,21 @@ Matrix3d from_rpy_to_rotational_matrix(double roll,double pitch,double yaw){
   return q.toRotationMatrix();
 
 }
-void action_gripper(string input){
-
+bool action_gripper(string input){
+  ur3_control::aruco_serviceResponse msg=bridge_service(str_md_rd,"");
+  if(input=="open" && msg.finger_joint>-0.2 && msg.finger_joint<0.3){
+    ROS_INFO("Gripper already in the correct position");
+    return true;
+  }
   ROS_INFO("TRYING TO SET GRIPPER AS:");
   cout<<input<<endl;
   std_msgs::String gs;
   gs.data=input;
   pub_gripper.publish(gs);
-  sleep(5);
+  ros::Duration d;
+  d.sec=10;
+  ros::topic::waitForMessage<moveit_msgs::MoveGroupActionResult>("/move_group/result",d);
+  //sleep(5);
   ROS_INFO("FINISH TO SET GRIPPER");
 }
 bool se_aruco_individuato_aggiorna_array(int ID){
@@ -2255,8 +2262,8 @@ bool right_panel(){
 
   if(!solleva_coperchio()) return false;
 
-  Affine3d T_aruco_final_storage,T_0_aruco_storage,T_0_final_storage;
-  Pose pose_final_storage,pose1,pose2,pose_saved1,pose_saved2,pose_saved3;
+  Affine3d T_aruco_final_storage,T_aruco_final_storage_vicino,T_0_aruco_storage,T_0_final_storage,T_0_final_storage_vicino;
+  Pose pose_final_storage,pose1,pose2,pose_saved1,pose_saved2,pose_saved3,pose_final_storage_vicino;
   T_0_aruco_storage=pose_to_homo(Aruco_values[ID_INSPECTION_WINDOW_COVER_STORAGE].pose);
 
 
@@ -2294,23 +2301,20 @@ bool right_panel(){
   }
 
   if(gara){
-    T_aruco_final_storage.translation().x()=0;
-    T_aruco_final_storage.translation().y()=0;
-    T_aruco_final_storage.translation().z()=0.05;
-    T_aruco_final_storage.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0)*from_rpy_to_rotational_matrix(M_PI,0,0);
-    T_0_final_storage=T_0_aruco_storage*T_aruco_final_storage;
-    pose_final_storage=homo_to_pose(T_0_final_storage);
+    T_aruco_final_storage_vicino.translation().x()=0;
+    T_aruco_final_storage_vicino.translation().y()=0;
+    T_aruco_final_storage_vicino.translation().z()=0.05;
+    T_aruco_final_storage_vicino.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0)*from_rpy_to_rotational_matrix(M_PI,0,0);
+    T_0_final_storage_vicino=T_0_aruco_storage*T_aruco_final_storage_vicino;
+    pose_final_storage_vicino=homo_to_pose(T_0_final_storage_vicino);
 
-    if(!move_to_pose_cartesian(pose_final_storage)){
-      if(!move_to_pose(pose1,true)){
+    if(!move_to_pose_cartesian(pose_final_storage_vicino)){
+      if(!move_to_pose(pose_final_storage_vicino,true)){
         return false;
       }
     }
-
-
-    action_gripper("open");
-
   }
+  action_gripper("open");
   //TORNIAMO INDIETRO
   if(!move_to_pose_cartesian(pose2)){
     if(!move_to_pose(pose2,true)){
