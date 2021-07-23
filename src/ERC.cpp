@@ -76,7 +76,7 @@ void esegui_msg_from_inteface(){
           if(msg_from_bridge.id_aruco==1 || msg_from_bridge.id_aruco==2 || msg_from_bridge.id_aruco==3 ||
              msg_from_bridge.id_aruco==4 || msg_from_bridge.id_aruco==5 || msg_from_bridge.id_aruco==6 ||
              msg_from_bridge.id_aruco==7 || msg_from_bridge.id_aruco==8 || msg_from_bridge.id_aruco==9 ){
-            action_aruco_button();
+            action_aruco_button(to_string(msg_from_bridge.id_aruco));
           }
           else if(msg_from_bridge.id_aruco==13){
             right_panel();
@@ -96,7 +96,8 @@ void esegui_msg_from_inteface(){
 
       }
       if(msg_from_interface.modality=="automazione_pannello_nextAruco"){
-      bridge_service(str_md_next_aruco,msg_from_interface.second_information);
+      //bridge_service(str_md_next_aruco,msg_from_interface.second_information);
+      cambia_aruco(msg_from_interface.second_information);
   }
       if(msg_from_interface.modality=="ruota_e_cerca_aruco"){
 
@@ -177,35 +178,31 @@ void param_control(){
     cout<<"Button_string:"<<buttons_string<<endl;
     cout<<"Aruco id:"<<button1<<button2<<button3<<button4<<endl;
     ROS_INFO(".");
-    bridge_service(str_md_next_aruco,button1);
+    cambia_aruco(button1);
+    action_aruco_button(button1);
+
     sleep(1);
-    action_aruco_button();
-
-    sleep(2);
 
 
-    bridge_service(str_md_next_aruco,button2);
+    cambia_aruco(button2);
+    action_aruco_button(button2);
+
     sleep(1);
-    action_aruco_button();
-
-    sleep(2);
 
 
-    bridge_service(str_md_next_aruco,button3);
+    cambia_aruco(button3);
+    action_aruco_button(button3);
+
     sleep(1);
-    action_aruco_button();
-
-    sleep(2);
 
 
-    bridge_service(str_md_next_aruco,button4);
+
+    cambia_aruco(button4);
+    action_aruco_button(button4);
+
     sleep(1);
-    action_aruco_button();
-
-    sleep(2);
 
     start_node.deleteParam("button_sequence");
-    sleep(3);
     start_node.setParam("objective",0);
     break;}
   case 3:{

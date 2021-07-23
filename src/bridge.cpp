@@ -82,7 +82,8 @@ bool callback_modality(ur3_control::aruco_service::Request &req, ur3_control::ar
   res.z=msg_from_cv.z;
   res.vector=msg_from_cv.vector;
   res.id_aruco=msg_from_cv.id_aruco;
-  res.finger_joint=msg_from_joints.position[1];
+  res.finger_joint=float(msg_from_joints.position[1]);
+  res.all_aruco_found=msg_from_cv.aruco_found;
   return true;
 }
 int main(int argc, char** argv){

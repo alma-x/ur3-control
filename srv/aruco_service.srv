@@ -10,3 +10,4 @@ float32[] vector
 int32[] dim#dim[0]=rows; dim[1]=columns
 int32 moreTargets
 float32 finger_joint
+bool[] all_aruco_found

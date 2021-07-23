@@ -38,6 +38,7 @@
 #include "tf_conversions/tf_eigen.h"
 #include <fstream>
 #include "control_msgs/GripperCommandActionGoal.h"
+#include <sstream>
 
 using namespace std;
 using namespace geometry_msgs;
@@ -559,7 +560,23 @@ return false;
 
 
 //ACTUAL FUNCTIONS
-
+bool cambia_aruco(string ID){
+  for(int j=0;j<10;j++){
+    ur3_control::aruco_serviceResponse msg=bridge_service(str_md_next_aruco,ID);
+    if(std::to_string(msg.id_aruco)==ID){
+      return true;
+    }
+    uint milliseconds=500;
+    for(int i=0;i<10;i++){
+      usleep(milliseconds*1000);//from milliseconds to microseconds
+      msg=bridge_service(str_md_next_aruco,ID);
+      if(std::to_string(msg.id_aruco)==ID){
+        return true;
+      }
+    }
+  }
+  return false;
+}
 void signal_callback_handler(int signum) {
    cout << "Caught signal " << signum << endl;
    // Terminate program
@@ -1725,21 +1742,35 @@ Matrix3d from_rpy_to_rotational_matrix(double roll,double pitch,double yaw){
 
 }
 bool action_gripper(string input){
-  ur3_control::aruco_serviceResponse msg=bridge_service(str_md_rd,"");
-  if(input=="open" && msg.finger_joint>-0.2 && msg.finger_joint<0.3){
-    ROS_INFO("Gripper already in the correct position");
+  if(gara){
+
+    ROS_INFO("TRYING TO SET GRIPPER AS:");
+    cout<<input<<endl;
+    std_msgs::String gs;
+    gs.data=input;
+    pub_gripper.publish(gs);
+    sleep(5);
+    ROS_INFO("FINISH TO SET GRIPPER");
     return true;
   }
-  ROS_INFO("TRYING TO SET GRIPPER AS:");
-  cout<<input<<endl;
-  std_msgs::String gs;
-  gs.data=input;
-  pub_gripper.publish(gs);
-  ros::Duration d;
-  d.sec=10;
-  ros::topic::waitForMessage<moveit_msgs::MoveGroupActionResult>("/move_group/result",d);
-  //sleep(5);
-  ROS_INFO("FINISH TO SET GRIPPER");
+  else{
+    ur3_control::aruco_serviceResponse msg=bridge_service(str_md_rd,"");
+    if(input=="open" && msg.finger_joint>-0.2 && msg.finger_joint<0.3){
+      ROS_INFO("Gripper already in the correct position");
+      return true;
+    }
+    ROS_INFO("TRYING TO SET GRIPPER AS:");
+    cout<<input<<endl;
+    std_msgs::String gs;
+    gs.data=input;
+    pub_gripper.publish(gs);
+    ros::Duration d;
+    d.sec=10;
+    ros::topic::waitForMessage<moveit_msgs::MoveGroupActionResult>("/move_group/result",d);
+    ROS_INFO("FINISH TO SET GRIPPER");
+    return true;
+  }
+
 }
 bool se_aruco_individuato_aggiorna_array(int ID){
 
@@ -1760,25 +1791,24 @@ bool se_aruco_individuato_aggiorna_array(int ID){
   }
 return false;
 }
-bool esplorazione_middle_panel_per_trovare_aruco(){
+bool esplorazione_middle_panel_per_trovare_aruco(string ID_str){
+  stringstream ss;
+  int ID_int;
+
+  ss<<ID_str;
+  ss >> ID_int;
+  cambia_aruco(ID_str);
+
+  if(se_aruco_individuato_aggiorna_array(ID_int))
+    return true;
+
+  bridge_service(str_md_bpa,"");
 
   PosizioniBase(str_pos_iniziale);
-  int ID_ARUCO_INTERESSATO=0;
-  ur3_control::aruco_serviceResponse msg_response=bridge_service(str_md_rd,"");
-  ID_ARUCO_INTERESSATO=msg_response.id_aruco;
-  if(msg_response.aruco_found){
-    Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
 
-    if(! T_0_aruco_valid.valid){
-      //esplorazione pannello centrale
-      return false;
-    }
-
-    Aruco_values[ID_ARUCO_INTERESSATO].valid=true;
-    Aruco_values[ID_ARUCO_INTERESSATO].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
-
+  if(se_aruco_individuato_aggiorna_array(ID_int))
     return true;
-  }
+
 
   vector<double> joint_group_positions=robot->getCurrentJointValues();
   joint_group_positions=pos_joint_iniziale;
@@ -1793,21 +1823,8 @@ bool esplorazione_middle_panel_per_trovare_aruco(){
   ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
   robot->move();
 
-  if(msg_response.aruco_found){
-    Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
-
-    if(! T_0_aruco_valid.valid){
-      //esplorazione pannello centrale
-      return false;
-    }
-
-    Aruco_values[ID_ARUCO_INTERESSATO].valid=true;
-    Aruco_values[ID_ARUCO_INTERESSATO].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
-
+  if(se_aruco_individuato_aggiorna_array(ID_int))
     return true;
-  }
-
-  bridge_service(str_md_bpa,"");
 
   double rp=20;
   do{
@@ -1824,21 +1841,9 @@ bool esplorazione_middle_panel_per_trovare_aruco(){
     rp=rp*0.8;
   }while(!success);
 
-  if(msg_response.aruco_found){
-    sleep(2);
-    Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
 
-    if(! T_0_aruco_valid.valid){
-      //esplorazione pannello centrale
-      return false;
-    }
-
-    Aruco_values[ID_ARUCO_INTERESSATO].valid=true;
-    Aruco_values[ID_ARUCO_INTERESSATO].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
-
+  if(se_aruco_individuato_aggiorna_array(ID_int))
     return true;
-  }
-
   rp=20;
   do{
     joint_group_positions[0]=grad_to_rad(0);
@@ -1859,39 +1864,36 @@ bool esplorazione_middle_panel_per_trovare_aruco(){
   ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
   robot->move();
 
-  if(msg_response.aruco_found){
-    sleep(2);
-    Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
 
-    if(! T_0_aruco_valid.valid){
-      //esplorazione pannello centrale
-      return false;
-    }
-
-    Aruco_values[ID_ARUCO_INTERESSATO].valid=true;
-    Aruco_values[ID_ARUCO_INTERESSATO].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
-
+  if(se_aruco_individuato_aggiorna_array(ID_int))
     return true;
-  }
 
   /*Implementare nuova ruotine*/
 
   PosizioniBase(str_pos_iniziale);
 
+  if(se_aruco_individuato_aggiorna_array(ID_int))
+    return true;
+
   return false;
 
 }
-bool action_aruco_button(){
+bool action_aruco_button(string ID_str){
+  stringstream ss;
+  int ID_int;
 
-  if(!aruco_individuato()){
+  ss<<ID_str;
+  ss >> ID_int;
 
-    ROS_INFO("NON VEDO L'ARUCO, PROVO A CERCARLO");
-    if(!esplorazione_middle_panel_per_trovare_aruco()){
-      ROS_INFO("ARUCO NON TROVATO DURANTE ESPLORAZIONE");
-
+  if(!Aruco_values[ID_int].valid){
+    if(!esplorazione_middle_panel_per_trovare_aruco(ID_str)){
+      ROS_INFO("ARUCO NON TROVATO, ID:%d",ID_int);
       return false;
     }
   }
+  ROS_INFO("Aruco trovato, vado a premere il pulsante");
+
+
 
 
   action_gripper("close");
@@ -1986,8 +1988,10 @@ bool ritorno_al_pannello(double percentual){
   return move_to_pose_cartesian(final_pose);
 }
 bool esplora_inspection_cover_storage(){
-  bridge_service(str_md_next_aruco,"14");
-  sleep(1);
+
+
+
+  cambia_aruco(to_string(ID_INSPECTION_WINDOW_COVER_STORAGE));
 
 
   if(se_aruco_individuato_aggiorna_array(ID_INSPECTION_WINDOW_COVER_STORAGE)) {
@@ -2033,28 +2037,32 @@ bool esplora_inspection_cover_storage(){
 
 }
 bool esplora_inspection_window_cover(){
+
+
   ROS_INFO("INIZIO ESPLORAZIONE, POTRESTI LEGGERE QUALCHE ABORTED");
-  bridge_service(str_md_next_aruco,"13");
-  sleep(1);
+  cambia_aruco(to_string(ID_INSPECTION_WINDOW_COVER));
+
+  //TESTO ESPLORAZIONE ELIMINARE RIGA SOTTO
+
+  //cambia_aruco(to_string(2));
+
 
   if(se_aruco_individuato_aggiorna_array(ID_INSPECTION_WINDOW_COVER))
     return true;
 
   bridge_service(str_md_bpa,"");
-  PosizioniBase(str_pos_iniziale_cam_alta);
 
-  if(se_aruco_individuato_aggiorna_array(ID_INSPECTION_WINDOW_COVER))
-    return true;
-
-  //ROUTINE NUMBER 1:
+  //ROUTINE NUMBER 0:
   {
+
+
+    PosizioniBase(str_pos_iniziale_cam_alta);
 
     Pose pose_final_pose_panel,pose_final_pose_ground;
 
 
     //RUOTO posizionandomi forse davanti all aruco
 
-    set_angolo(5,-90);
 
 
 
@@ -2089,38 +2097,89 @@ bool esplora_inspection_window_cover(){
     ROS_INFO("The first routine to find inspection window has failed, trying with the next one");
   }
 
+  //RUOTINE NUMBERO 1:
+  {
+
+    PosizioniBase(str_pos_iniziale);
+    if(se_aruco_individuato_aggiorna_array(ID_INSPECTION_WINDOW_COVER))
+      return true;
+
+    vector<double> joint_group_positions=pos_joint_iniziale;
+
+    joint_group_positions=pos_joint_iniziale;
+    joint_group_positions[0]=grad_to_rad(0);
+    joint_group_positions[1]=grad_to_rad(-110);
+    joint_group_positions[2]=grad_to_rad(90);
+    joint_group_positions[3]=grad_to_rad(-110);
+    joint_group_positions[4]=grad_to_rad(-90);
+    joint_group_positions[5]=grad_to_rad(0);
+    robot->setJointValueTarget(joint_group_positions);
+    success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
+    ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+    robot->move();
+
+
+    if(se_aruco_individuato_aggiorna_array(ID_INSPECTION_WINDOW_COVER))
+      return true;
+
+    joint_group_positions[0]=grad_to_rad(-100);
+    robot->setJointValueTarget(joint_group_positions);
+    success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
+    ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+    robot->move();
+
+    if(se_aruco_individuato_aggiorna_array(ID_INSPECTION_WINDOW_COVER))
+      return true;
+
+
+    joint_group_positions[3]=grad_to_rad(-90);
+    robot->setJointValueTarget(joint_group_positions);
+    success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
+    ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+    robot->move();
+
+    if(se_aruco_individuato_aggiorna_array(ID_INSPECTION_WINDOW_COVER))
+      return true;
+
+    joint_group_positions[0]=grad_to_rad(0);
+    robot->setJointValueTarget(joint_group_positions);
+    success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
+    ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+    robot->move();
+
+    if(se_aruco_individuato_aggiorna_array(ID_INSPECTION_WINDOW_COVER))
+      return true;
+
+
+  }
+
   //ROUTINE NUMBER 2:
-  if(!aruco_individuato()){
+  {
 
     PosizioniBase(str_pos_iniziale_cam_alta);
+
+    if(se_aruco_individuato_aggiorna_array(ID_INSPECTION_WINDOW_COVER))
+      return true;
+
     //Posizione pre rotazione
 
-    {
-      vector<double> joint_group_positions=pos_joint_iniziale;
-      joint_group_positions[3] = grad_to_rad(50);  // radians
-      joint_group_positions[5] = grad_to_rad(-90);  // radians
-      robot->setJointValueTarget(joint_group_positions);
-      success = (robot->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
-      ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
-      robot->move();
-    }
 
-    ruota_e_cerca_aruco();
+    vector<double> joint_group_positions=pos_joint_iniziale;
+    joint_group_positions[3] = grad_to_rad(50);  // radians
+    joint_group_positions[5] = grad_to_rad(-90);  // radians
+    robot->setJointValueTarget(joint_group_positions);
+    success = (robot->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+    ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+    robot->move();
 
-    if(aruco_individuato()) {
-      sleep(2);
-      Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
+    joint_group_positions[0]=joint_group_positions[0]-grad_to_rad(100);
+    robot->setJointValueTarget(joint_group_positions);
+    success = (robot->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+    ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+    robot->move();
 
-      if(! T_0_aruco_valid.valid){
-        //esplorazione pannello centrale
-        return false;
-      }
-
-      Aruco_values[ID_INSPECTION_WINDOW_COVER].valid=true;
-      Aruco_values[ID_INSPECTION_WINDOW_COVER].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
-
+    if(se_aruco_individuato_aggiorna_array(ID_INSPECTION_WINDOW_COVER))
       return true;
-    }
 
   }
 
@@ -2147,8 +2206,6 @@ bool solleva_coperchio(){
     if(!esplora_inspection_window_cover())
       return false;
   }
-  if(!Aruco_values[ID_INSPECTION_WINDOW_COVER].valid) return false;
-
 
   ROS_INFO("ARUCO TROVATO, POSSO ANDARE A PRENDERE LA COVER");
 
@@ -2257,8 +2314,16 @@ bool solleva_coperchio(){
 bool right_panel(){
   action_gripper("open");
 
-  if(! esplora_inspection_cover_storage()) return false;
-  if(! esplora_inspection_window_cover())  return false;
+  //Se necessario fa le esplorazioni
+  if(!Aruco_values[ID_INSPECTION_WINDOW_COVER_STORAGE].valid){
+    if(!esplora_inspection_cover_storage())
+      return false;
+  }
+  if(!Aruco_values[ID_INSPECTION_WINDOW_COVER].valid){
+    if(!esplora_inspection_window_cover())
+      return false;
+  }
+
 
   if(!solleva_coperchio()) return false;
 
@@ -2334,10 +2399,27 @@ bool right_panel(){
     }
   }
 
-  if(gara){
-    //INDIVIDUARE ARUCO MANCANTE
-  }
+  int cont=0;
+  int aruco_nascosto_trovato=-1;
+  ur3_control::aruco_serviceResponse msg=bridge_service(str_md_rd,"");
+  for(int i=0;i<msg.all_aruco_found.size();i++){
+    if(msg.all_aruco_found[i]==true){
+      cont++;
+      if(i>0 && i<10){
+        ROS_INFO("ARUCO NASCOSTO TROVATO, ID: %d",i);
+        aruco_nascosto_trovato=i;
+      }
+    }
+}
+  if(aruco_nascosto_trovato!=-1){
+    //DEVE PRIMA RITORNARE INDIETRO E POI PREMERE IL PULSANTE. MANCA LA PARTE IN CUI TORNA INDIETRO
+    action_aruco_button(to_string(aruco_nascosto_trovato));
 
+  }
+  else{
+    ROS_INFO("Vedo %d elementi ma nessun elemento corrispondente ai pulsanti da premere",cont);
+    //devo cambiare posizione
+  }
   return true;
 
 
