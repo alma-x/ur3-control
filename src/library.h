@@ -39,7 +39,7 @@
 #include <fstream>
 #include "control_msgs/GripperCommandActionGoal.h"
 #include <sstream>
-
+#include <string.h>
 using namespace std;
 using namespace geometry_msgs;
 using namespace moveit;
@@ -86,6 +86,7 @@ bool joystick_ready;
 int std_planning_time=4;
 
 ros::Publisher pub_gripper;
+ros::Publisher pub_traj_cancel;
 
 Affine3d T_tool_camera,T_camera_camera_gazebo;
 
@@ -105,6 +106,8 @@ string str_pannello="posizione_pannello";
 string str_rotaz_pannello="posizione_rotazione_ricerca_pannello";
 string str_pos_iniziale="posizione_iniziale";
 string str_pos_iniziale_cam_alta="str_pos_iniziale_cam_alta";
+
+string posizione_gripper="open";
 
 vector<double> pos_joint_home;
 vector<double> pos_joint_up;
@@ -1742,6 +1745,7 @@ Matrix3d from_rpy_to_rotational_matrix(double roll,double pitch,double yaw){
 
 }
 bool action_gripper(string input){
+  /*
   if(gara){
 
     ROS_INFO("TRYING TO SET GRIPPER AS:");
@@ -1770,6 +1774,129 @@ bool action_gripper(string input){
     ROS_INFO("FINISH TO SET GRIPPER");
     return true;
   }
+*/
+
+
+  moveit_msgs::MoveGroupActionResult msg;
+  moveit_msgs::MoveGroupActionResultConstPtr msg_pointer;
+  std_msgs::String msg_to_pub;
+  ros::Duration d;
+  ROS_INFO("TRYING TO SET GRIPPER AS:");
+  cout<<input<<endl;
+
+  d.sec=6;
+
+
+  if(input==posizione_gripper){
+    ROS_INFO("Gripper already in the correct position(STATE MACHINE)");
+  }
+
+
+  msg_to_pub.data=input;
+  pub_gripper.publish(msg_to_pub);
+  msg_pointer=(ros::topic::waitForMessage<moveit_msgs::MoveGroupActionResult>("/move_group/result",d));
+  if(msg_pointer==NULL){
+
+    ROS_INFO("NO MESSAGES RECEIVED");
+
+    actionlib_msgs::GoalID msg_traj_cancel;
+    msg_traj_cancel.id="";
+    pub_traj_cancel.publish(msg_traj_cancel);
+    return false;
+
+  }
+  msg=*msg_pointer;
+
+  if(msg.status.text=="Requested path and goal constraints are already met.")
+  {
+    ROS_INFO("Gripper already in the correct position");
+    return true;
+  }
+  if(msg.status.text=="Solution was found and executed."){
+
+    ROS_INFO("Gripper solution found and executed");
+    posizione_gripper=input;
+    return true;
+
+  }
+  //ROS_INFO("size: %d",msg.result.planned_trajectory.joint_trajectory.joint_names.size());
+  if(msg.result.planned_trajectory.joint_trajectory.joint_names.size()>0){
+    if(msg.result.planned_trajectory.joint_trajectory.joint_names[0]=="finger_joint"){
+
+      double final_value_gripper=-20;
+      final_value_gripper=msg.result.planned_trajectory.joint_trajectory.points[msg.result.planned_trajectory.joint_trajectory.points.size()-1].positions[0];
+
+      if(final_value_gripper>-0.2 && final_value_gripper<0.2){
+        if(input=="open"){
+
+          ROS_INFO("Gripper in the correct position");
+          posizione_gripper=input;
+          return true;
+
+        }
+        else{
+
+          ROS_INFO("Gripper ERROR??? Final value of gripper:%f",final_value_gripper);
+          return false;
+
+        }
+      }
+      if(final_value_gripper>=0.2 && final_value_gripper<0.85){
+        if(input=="semi_open"){
+
+          ROS_INFO("Gripper in the correct position");
+          posizione_gripper=input;
+
+          return true;
+
+        }
+        else{
+
+          ROS_INFO("Gripper ERROR??? Final value of gripper:%f",final_value_gripper);
+          return false;
+
+        }
+      }
+      if(final_value_gripper>=0.85 && final_value_gripper<1.18){
+        if(input=="semi_close"){
+
+          ROS_INFO("Gripper in the correct position");
+          posizione_gripper=input;
+          return true;
+
+        }
+        else{
+
+          ROS_INFO("Gripper ERROR??? Final value of gripper:%f",final_value_gripper);
+          return false;
+
+        }
+      }
+      if(final_value_gripper>=1.18){
+        if(input=="close"){
+
+          ROS_INFO("Gripper in the correct position");
+          posizione_gripper=input;
+          return true;
+
+        }
+        else{
+
+          ROS_INFO("Gripper ERROR??? Final value of gripper:%f",final_value_gripper);
+          return false;
+
+        }
+      }
+
+      ROS_INFO("finger joint letto, final value: %f",final_value_gripper);
+    }
+
+    ROS_INFO("finger joint non letto");
+  }
+
+  ROS_INFO("RESULT MESSAGE NON ANALIZZATO CORRETTAMENTE");
+
+  return false;
 
 }
 bool se_aruco_individuato_aggiorna_array(int ID){
@@ -2704,4 +2831,7 @@ bool left_panel(){
 
   return true;
 }
-
+bool calibrazione_gripper(){
+  ROS_INFO("Codice della calibrazione non completato");
+  return false;
+}

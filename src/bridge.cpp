@@ -13,7 +13,6 @@ ur3_control::cv_to_bridge msg_from_cv;
 sensor_msgs::JointState msg_from_joints;
 ros::ServiceClient client;
 bool bool_md_bpa=false;
-ros::Publisher pub_traj_cancel;
 void stampa_cv_msg(const ur3_control::cv_to_bridge msg){
 ROS_INFO("Message received:\n x:%f \n y:%f \n z:%f \n success:%s",msg.x,msg.y,msg.z,(msg.success)? "success":"not success");
 }
@@ -26,11 +25,11 @@ void cv_callback(const ur3_control::cv_to_bridge& msg){
 
     bool_md_bpa=false;
 
-    actionlib_msgs::GoalID msg_traj_cancel;
-    msg_traj_cancel.id="";
-    pub_traj_cancel.publish(msg_traj_cancel);
+//    actionlib_msgs::GoalID msg_traj_cancel;
+//    msg_traj_cancel.id="";
+//    pub_traj_cancel.publish(msg_traj_cancel);
     ROS_INFO("Aruco trovato, traiettoria cancellata");
-//    robot->stop();
+    robot->stop();
   }
 }
 void joint_callback(const sensor_msgs::JointState& msg){

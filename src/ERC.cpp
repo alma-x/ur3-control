@@ -302,9 +302,11 @@ int main(int argc, char** argv)
 
   ros::ServiceServer serv=node_handle.advertiseService("/user_interface_serv", callback_modality);
   pub_gripper = node_handle.advertise<std_msgs::String>("/gripper_command", 1);
+  pub_traj_cancel = node_handle.advertise<actionlib_msgs::GoalID>("/move_group/cancel", 1);
   initialize_parameters();
   set_homo_std_matrix();
   load_parameters();
+  calibrazione_gripper();
 
   string scelta_tipologia;
   string gara_str;
