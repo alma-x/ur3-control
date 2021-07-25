@@ -160,6 +160,7 @@ void param_control(){
   switch(current_objective){
   case 1:{
     PosizioniBase(str_pos_iniziale);
+    action_gripper("open");
     start_node.setParam("objective",0);
     break;}
   case 2:{
@@ -171,37 +172,77 @@ void param_control(){
     //remove spaces, split elements
 
     string button1,button2,button3,button4;
-    button1=buttons_string[0];
-    button2=buttons_string[2];
-    button3=buttons_string[4];
-    button4=buttons_string[6];
+    button1="?";button2="?";button3="?";button4="?";
+    if(buttons_string.size()==1){
+      button1=buttons_string[0];
+      ROS_INFO("Sto andando a premere 1 buttone");
+    }
+    if(buttons_string.size()==3){
+      button1=buttons_string[0];
+      button2=buttons_string[2];
+      ROS_INFO("Sto andando a premere 2 buttoni");
+    }
+    if(buttons_string.size()==5){
+      button1=buttons_string[0];
+      button2=buttons_string[2];
+      button3=buttons_string[4];
+      ROS_INFO("Sto andando a premere 3 buttoni");
+    }
+    if(buttons_string.size()==7 || buttons_string.size()==8){
+      button1=buttons_string[0];
+      button2=buttons_string[2];
+      button3=buttons_string[4];
+      button4=buttons_string[6];
+      ROS_INFO("Sto andando a premere 4 buttoni");
+    }
     cout<<"Button_string:"<<buttons_string<<endl;
     cout<<"Aruco id:"<<button1<<button2<<button3<<button4<<endl;
-    ROS_INFO(".");
-    cambia_aruco(button1);
-    action_aruco_button(button1);
 
+    string button_selected;
+    button_selected=button1;
+    if(button_selected>="0" && button_selected<="9"){
+
+    cambia_aruco(button_selected);
+    action_aruco_button(button_selected);
     sleep(1);
 
+    }
+    else{
+      ROS_INFO("First button skipped, charapter not correct");
+    }
+    button_selected=button2;
+    if(button_selected>="0" && button_selected<="9"){
 
-    cambia_aruco(button2);
-    action_aruco_button(button2);
-
+    cambia_aruco(button_selected);
+    action_aruco_button(button_selected);
     sleep(1);
 
+    }
+    else{
+      ROS_INFO("Second button skipped, charapter not correct");
+    }
+    button_selected=button3;
+    if(button_selected>="0" && button_selected<="9"){
 
-    cambia_aruco(button3);
-    action_aruco_button(button3);
-
+    cambia_aruco(button_selected);
+    action_aruco_button(button_selected);
     sleep(1);
 
+    }
+    else{
+      ROS_INFO("Third button skipped, charapter not correct");
+    }
+    button_selected=button4;
+    if(button_selected>="0" && button_selected<="9"){
 
-
-    cambia_aruco(button4);
-    action_aruco_button(button4);
-
+    cambia_aruco(button_selected);
+    action_aruco_button(button_selected);
     sleep(1);
 
+    }
+    else{
+      ROS_INFO("Fourth button skipped, charapter not correct");
+    }
     start_node.deleteParam("button_sequence");
     start_node.setParam("objective",0);
     break;}
@@ -232,6 +273,7 @@ void param_control(){
     right_panel();
 
     current_objective=0;
+    start_node.setParam("objective",0);
     break;
   }
   case 6:{

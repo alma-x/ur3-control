@@ -165,7 +165,7 @@ bool function_pose_aruco();
 Pose homo_to_pose(Affine3d homo);
 bool move_aruco_to_center_of_camera(double percentual_zoom);
 bool ritorno_al_pannello(double percentual);
-
+Affine_valid homo_0_aruco_elaration();
 
 
 //OLD FUNCTIONS
@@ -563,6 +563,48 @@ return false;
 
 
 //ACTUAL FUNCTIONS
+
+
+//Bridge
+ur3_control::aruco_serviceResponse bridge_service(string modalita,string second_information){
+
+    ros::NodeHandle node_handle;
+    ros::ServiceClient client1;
+    client1 = node_handle.serviceClient<ur3_control::aruco_service>("/aruco_modality");
+    ur3_control::aruco_service aruco_srv_msg;
+
+    aruco_srv_msg.request.modality=modalita;
+    aruco_srv_msg.request.second_information=second_information;
+    client1.call(aruco_srv_msg);
+    return aruco_srv_msg.response;
+}
+
+
+//Void comode
+bool aruco_individuato(){
+
+  return bridge_service(str_md_rd,"").aruco_found;
+
+}
+bool se_aruco_individuato_aggiorna_array(int ID){
+
+  if(aruco_individuato()) {
+    ROS_INFO("ARUCO: %d INDIVIDUATO",ID);
+    sleep(2);
+    Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
+
+    if(! T_0_aruco_valid.valid){
+      //esplorazione pannello centrale
+      return false;
+    }
+
+    Aruco_values[ID].valid=true;
+    Aruco_values[ID].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
+
+    return true;
+  }
+return false;
+}
 bool cambia_aruco(string ID){
   for(int j=0;j<10;j++){
     ur3_control::aruco_serviceResponse msg=bridge_service(str_md_next_aruco,ID);
@@ -579,163 +621,6 @@ bool cambia_aruco(string ID){
     }
   }
   return false;
-}
-void signal_callback_handler(int signum) {
-   cout << "Caught signal " << signum << endl;
-   // Terminate program
-   bool_exit=true;
-   //exit(signum);
-}
-double grad_to_rad(double grad)
-{
-  return grad*3.1415/180;
-}
-double rad_to_grad(double rad)
-{
-  return rad*180/3.1415;
-}
-void tf2quat_to_pose(tf2::Quaternion q,Pose *p)
-{
-  p->orientation.x=q.getX();
-  p->orientation.y=q.getY();
-  p->orientation.z=q.getZ();
-  p->orientation.w=q.getW();
-}
-void SetPoseOrientationRPY(Pose *p,int x0,int y0,int z0)
-{
-  tf2::Quaternion quat;
-  quat.setRPY(grad_to_rad(x0),grad_to_rad(y0),grad_to_rad(z0));
-  p->orientation.x=quat.getX();
-  p->orientation.y=quat.getY();
-  p->orientation.z=quat.getZ();
-  p->orientation.w=quat.getW();
-}
-void AddToPoseOrientationRPYInGradi(Pose *p,double roll,double pitch,double yaw)
-{
-  tf2::Quaternion quat;
-  tf::Quaternion q(
-        p->orientation.x,
-        p->orientation.y,
-        p->orientation.z,
-        p->orientation.w);
-  tf::Matrix3x3 m(q);
-  double r0, p0, y0;
-  m.getRPY(r0, p0, y0);
-
-  quat.setRPY(grad_to_rad(roll)+r0,grad_to_rad(pitch)+p0,grad_to_rad(yaw)+y0);
-  p->orientation.x=quat.getX();
-  p->orientation.y=quat.getY();
-  p->orientation.z=quat.getZ();
-  p->orientation.w=quat.getW();
-}
-void ruotagiunto(unsigned int giunto,int angolo){
-
-
-  vector<double> joint_group_positions=robot->getCurrentJointValues();
-  joint_group_positions[giunto] = joint_group_positions[giunto]+grad_to_rad(angolo);  // radians
-  robot->setJointValueTarget(joint_group_positions);
-
-
-  success = (robot->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
-  ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
-  robot->move();
-
-  }
-void set_angolo(unsigned int giunto,int angolo)
-{
-
-
-  vector<double> joint_group_positions=robot->getCurrentJointValues();
-  joint_group_positions[giunto] = grad_to_rad(angolo);
-  robot->setJointValueTarget(joint_group_positions);
-
-
-  success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
-  ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
-  robot->move();
-}
-bool move_to_pose_cartesian(geometry_msgs::Pose pose){
-  std::vector<Pose> waypoints;
-  waypoints.push_back(pose);  // up and left
-  RobotTrajectory trajectory;
-  const double jump_threshold = 0.0;
-  const double eef_step = 0.01;
-  double traj_threshold=1;
-
-  robot->setPlanningTime(std_planning_time);
-  double traj_erro=robot->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory, true);
-  if(traj_erro>=traj_threshold){
-    robot->execute(trajectory);
-    return true;
-  }
-  else{
-    //ROS_INFO("Traj error:%f",traj_erro);
-    traj_erro=robot->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory,true);
-    if(traj_erro>=traj_threshold){
-      robot->execute(trajectory);
-      return true;
-    }
-    else{
-      //ROS_INFO("Traj error:%f",traj_erro);
-
-      traj_erro=robot->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory,true);
-      if(traj_erro>=traj_threshold){
-        robot->execute(trajectory);
-        return true;
-      }
-      else{
-        ROS_INFO("Traj error:%f",traj_erro);
-
-        return false;
-      }
-    }
-  }
-
-}
-bool move_to_pose(geometry_msgs::Pose pt, bool Orientamento){
-
-  if(!Orientamento)
-    robot->setPositionTarget(pt.position.x,pt.position.y,pt.position.z);
-  else
-    robot->setPoseTarget(pt);
-
-  robot->setPlanningTime(std_planning_time);
-  for(int i=0;i<4;i++){
-    success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
-    if(success){
-      i=5;
-      ROS_INFO_NAMED("tutorial", "Risultato:%s", success ? "SUCCESS" : "FAILED");
-      robot->execute(my_plan);
-      return true;
-    }
-    else{
-      //ROS_INFO("%d pianificazione fallita",i);
-    }
-  }
-  return false;
-}
-void stampa_Pose(Pose po)
-{
-  cout<<"Position"<<endl<<"X:"<<po.position.x<<endl<<"Y:"<<po.position.y<<endl<<"Z:"<<po.position.z<<endl;
-  cout<<endl<<"Orientation"<<endl<<"X:"<<po.orientation.x<<endl<<"Y:"<<po.orientation.y<<endl<<"Z:"<<po.orientation.z<<endl<<"W:"<<po.orientation.w<<endl;
-  tf::Quaternion q(
-        po.orientation.x,
-        po.orientation.y,
-        po.orientation.z,
-        po.orientation.w);
-  tf::Matrix3x3 m(q);
-  double r0, p0, y0;
-  m.getRPY(r0, p0, y0);
-  cout<<"r0:"<<rad_to_grad(r0)<<" p0:"<<rad_to_grad(p0)<<" y0:"<<rad_to_grad(y0)<<endl<<endl;
-}
-void stampa_giunti()
-{
-  vector<double> joint_group_positions;
-  joint_group_positions=robot->getCurrentJointValues();
-  cout<<endl<<"Giunti:"<<endl;
-  for(int i=0;i<joint_group_positions.size();i++){
-    cout<<i<<":"<<joint_group_positions[i]<<" xxx "<<rad_to_grad(joint_group_positions[i])<<endl;
-  }
 }
 void controlla(char key){
     Vector3d translation(0,0,0);
@@ -938,6 +823,41 @@ void controlla(char key){
       }
     }
 }
+void signal_callback_handler(int signum) {
+   cout << "Caught signal " << signum << endl;
+   // Terminate program
+   bool_exit=true;
+   //exit(signum);
+}
+
+//Stampa
+void stampa_Pose(Pose po)
+{
+  cout<<"Position"<<endl<<"X:"<<po.position.x<<endl<<"Y:"<<po.position.y<<endl<<"Z:"<<po.position.z<<endl;
+  cout<<endl<<"Orientation"<<endl<<"X:"<<po.orientation.x<<endl<<"Y:"<<po.orientation.y<<endl<<"Z:"<<po.orientation.z<<endl<<"W:"<<po.orientation.w<<endl;
+  tf::Quaternion q(
+        po.orientation.x,
+        po.orientation.y,
+        po.orientation.z,
+        po.orientation.w);
+  tf::Matrix3x3 m(q);
+  double r0, p0, y0;
+  m.getRPY(r0, p0, y0);
+  cout<<"r0:"<<rad_to_grad(r0)<<" p0:"<<rad_to_grad(p0)<<" y0:"<<rad_to_grad(y0)<<endl<<endl;
+}
+void stampa_giunti()
+{
+  vector<double> joint_group_positions;
+  joint_group_positions=robot->getCurrentJointValues();
+  cout<<endl<<"Giunti:"<<endl;
+  for(int i=0;i<joint_group_positions.size();i++){
+    cout<<i<<":"<<joint_group_positions[i]<<" xxx "<<rad_to_grad(joint_group_positions[i])<<endl;
+  }
+}
+void stampa_homo(Affine3d homo){
+  cout<<"Translation: "<<endl<<homo.translation()<<endl;
+  cout<<"Rotation: "<<endl<<homo.linear()<<endl;
+}
 void publish_joystick_info(){
   cout<<endl<<endl<<"Info:"<<endl;
   cout<<"q:ee moves along x"<<endl;
@@ -955,6 +875,324 @@ void publish_joystick_info(){
   cout<<"e:EXIT"<<endl;
 
   ROS_INFO("\n\nPremi h, per info.Da qui in poi inserisci i comandi:");
+}
+
+//Conversioni
+double grad_to_rad(double grad)
+{
+  return grad*3.1415/180;
+}
+double rad_to_grad(double rad)
+{
+  return rad*180/3.1415;
+}
+void tf2quat_to_pose(tf2::Quaternion q,Pose *p)
+{
+  p->orientation.x=q.getX();
+  p->orientation.y=q.getY();
+  p->orientation.z=q.getZ();
+  p->orientation.w=q.getW();
+}
+void AddToPoseOrientationRPYInGradi(Pose *p,double roll,double pitch,double yaw)
+{
+  tf2::Quaternion quat;
+  tf::Quaternion q(
+        p->orientation.x,
+        p->orientation.y,
+        p->orientation.z,
+        p->orientation.w);
+  tf::Matrix3x3 m(q);
+  double r0, p0, y0;
+  m.getRPY(r0, p0, y0);
+
+  quat.setRPY(grad_to_rad(roll)+r0,grad_to_rad(pitch)+p0,grad_to_rad(yaw)+y0);
+  p->orientation.x=quat.getX();
+  p->orientation.y=quat.getY();
+  p->orientation.z=quat.getZ();
+  p->orientation.w=quat.getW();
+}
+void SetPoseOrientationRPY(Pose *p,int x0,int y0,int z0)
+{
+  tf2::Quaternion quat;
+  quat.setRPY(grad_to_rad(x0),grad_to_rad(y0),grad_to_rad(z0));
+  p->orientation.x=quat.getX();
+  p->orientation.y=quat.getY();
+  p->orientation.z=quat.getZ();
+  p->orientation.w=quat.getW();
+}
+Pose homo_to_pose(Affine3d homo){
+
+  tf::Pose pose_tf;
+  Pose pose;
+  tf::poseEigenToTF(homo,pose_tf);
+  tf::poseTFToMsg(pose_tf,pose);
+  return pose;
+
+}
+Affine3d pose_to_homo(Pose pose){
+  Affine3d homo;
+  tf::Pose pose_tf;
+  tf::poseMsgToTF(pose,pose_tf);
+  tf::poseTFToEigen(pose_tf,homo);
+  return homo;
+
+}
+Matrix3d from_rpy_to_rotational_matrix(double roll,double pitch,double yaw){
+  Quaterniond q;
+  q = AngleAxisd(roll, Vector3d::UnitX())
+      * AngleAxisd(pitch, Vector3d::UnitY())
+      * AngleAxisd(yaw, Vector3d::UnitZ());
+  return q.toRotationMatrix();
+
+}
+
+
+//Gripper
+bool action_gripper(string input){
+
+
+  moveit_msgs::MoveGroupActionResult msg;
+  moveit_msgs::MoveGroupActionResultConstPtr msg_pointer;
+  std_msgs::String msg_to_pub;
+  ros::Duration d;
+  ROS_INFO("TRYING TO SET GRIPPER AS:");
+  cout<<input<<endl;
+
+  d.sec=6;
+
+
+  if(input==posizione_gripper){
+    ROS_INFO("Gripper already in the correct position(STATE MACHINE)");
+  }
+
+
+  msg_to_pub.data=input;
+  pub_gripper.publish(msg_to_pub);
+  msg_pointer=(ros::topic::waitForMessage<moveit_msgs::MoveGroupActionResult>("/move_group/result",d));
+  if(msg_pointer==NULL){
+
+    ROS_INFO("NO MESSAGES RECEIVED");
+
+    actionlib_msgs::GoalID msg_traj_cancel;
+    msg_traj_cancel.id="";
+    pub_traj_cancel.publish(msg_traj_cancel);
+    return false;
+
+  }
+  msg=*msg_pointer;
+
+  if(msg.status.text=="Requested path and goal constraints are already met.")
+  {
+    ROS_INFO("Gripper already in the correct position");
+    return true;
+  }
+  if(msg.status.text=="Solution was found and executed."){
+
+    ROS_INFO("Gripper solution found and executed");
+    posizione_gripper=input;
+    return true;
+
+  }if(msg.status.text=="No motion plan found. No execution attempted."){
+
+    ROS_INFO("No solution found for the gripper movement");
+    return false;
+
+  }
+  //ROS_INFO("size: %d",msg.result.planned_trajectory.joint_trajectory.joint_names.size());
+  if(msg.result.planned_trajectory.joint_trajectory.joint_names.size()>0){
+    if(msg.result.planned_trajectory.joint_trajectory.joint_names[0]=="finger_joint"){
+
+      double final_value_gripper=-20;
+      final_value_gripper=msg.result.planned_trajectory.joint_trajectory.points[msg.result.planned_trajectory.joint_trajectory.points.size()-1].positions[0];
+
+      if(final_value_gripper>-0.2 && final_value_gripper<0.2){
+        if(input=="open"){
+
+          ROS_INFO("Gripper in the correct position");
+          posizione_gripper=input;
+          return true;
+
+        }
+        else{
+
+          ROS_INFO("Gripper ERROR??? Final value of gripper:%f",final_value_gripper);
+          return false;
+
+        }
+      }
+      if(final_value_gripper>=0.2 && final_value_gripper<0.85){
+        if(input=="semi_open"){
+
+          ROS_INFO("Gripper in the correct position");
+          posizione_gripper=input;
+
+          return true;
+
+        }
+        else{
+
+          ROS_INFO("Gripper ERROR??? Final value of gripper:%f",final_value_gripper);
+          return false;
+
+        }
+      }
+      if(final_value_gripper>=0.85 && final_value_gripper<1.18){
+        if(input=="semi_close"){
+
+          ROS_INFO("Gripper in the correct position");
+          posizione_gripper=input;
+          return true;
+
+        }
+        else{
+
+          ROS_INFO("Gripper ERROR??? Final value of gripper:%f",final_value_gripper);
+          return false;
+
+        }
+      }
+      if(final_value_gripper>=1.18){
+        if(input=="close"){
+
+          ROS_INFO("Gripper in the correct position");
+          posizione_gripper=input;
+          return true;
+
+        }
+        else{
+
+          ROS_INFO("Gripper ERROR??? Final value of gripper:%f",final_value_gripper);
+          return false;
+
+        }
+      }
+
+      ROS_INFO("finger joint letto, final value: %f",final_value_gripper);
+    }
+
+    ROS_INFO("finger joint non letto");
+  }
+
+  ROS_INFO("RESULT MESSAGE NON ANALIZZATO CORRETTAMENTE");
+
+  return false;
+
+}
+bool calibrazione_gripper(){
+  ROS_INFO("Codice della calibrazione non completato");
+  return false;
+}
+
+
+//Movimenti
+bool move_to_pose_cartesian(geometry_msgs::Pose pose){
+  std::vector<Pose> waypoints;
+  waypoints.push_back(pose);  // up and left
+  RobotTrajectory trajectory;
+  const double jump_threshold = 0.0;
+  const double eef_step = 0.01;
+  double traj_threshold=1;
+
+  robot->setPlanningTime(std_planning_time);
+  double traj_erro=robot->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory, true);
+  if(traj_erro>=traj_threshold){
+    robot->execute(trajectory);
+    return true;
+  }
+  else{
+    //ROS_INFO("Traj error:%f",traj_erro);
+    traj_erro=robot->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory,true);
+    if(traj_erro>=traj_threshold){
+      robot->execute(trajectory);
+      return true;
+    }
+    else{
+      //ROS_INFO("Traj error:%f",traj_erro);
+
+      traj_erro=robot->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory,true);
+      if(traj_erro>=traj_threshold){
+        robot->execute(trajectory);
+        return true;
+      }
+      else{
+        ROS_INFO("Traj error:%f",traj_erro);
+
+        return false;
+      }
+    }
+  }
+
+}
+bool move_to_pose(geometry_msgs::Pose pt, bool Orientamento){
+
+  if(!Orientamento)
+    robot->setPositionTarget(pt.position.x,pt.position.y,pt.position.z);
+  else
+    robot->setPoseTarget(pt);
+
+  robot->setPlanningTime(std_planning_time);
+  for(int i=0;i<4;i++){
+    success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
+    if(success){
+      i=5;
+      //ROS_INFO_NAMED("tutorial", "Risultato:%s", success ? "SUCCESS" : "FAILED");
+      robot->execute(my_plan);
+      return true;
+    }
+    else{
+      ROS_INFO("%d pianificazione fallita",i);
+    }
+  }
+  return false;
+}
+bool move_to_joints(vector<double> joint_group_positions){
+  robot->setJointValueTarget(joint_group_positions);
+  success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
+  if(success){
+    robot->move();
+    return true;
+  }
+  else{
+    ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+    return false;
+  }
+}
+bool ritorno_al_pannello(double percentual){
+  ROS_INFO("ERC:Starting going back to pannello");
+  Pose actual_pose,pann_pose,final_pose;
+
+  if(!pose_pannello_elaborata.valid)
+    return false;
+
+
+  actual_pose=robot->getCurrentPose().pose;
+  pann_pose=pose_pannello_elaborata.pose;
+
+  final_pose=actual_pose;
+
+  final_pose.position.x= final_pose.position.x + (pann_pose.position.x-actual_pose.position.x)*percentual/100;
+  //final_pose.position.y= final_pose.position.y + (pann_pose.position.y-actual_pose.position.y)*percentual/100;
+  //final_pose.position.z= final_pose.position.z + (pann_pose.position.z-actual_pose.position.z)*percentual/100;
+
+  return move_to_pose_cartesian(final_pose);
+}
+Pose pre_grasp(Affine3d T_0_aruco){
+  Affine3d T_aruco_finalpos,T_0_finalpos;
+  Matrix3d rotation_aruco_final_pos;
+  Vector3d xaf(0,0,1),yaf(0,1,0),zaf(-1,0,0),trans_aruco_finalpos(0,0,0.22);//con il gripper che punta sull'aruco
+
+
+  rotation_aruco_final_pos.row(0)=xaf;
+  rotation_aruco_final_pos.row(1)=yaf;
+  rotation_aruco_final_pos.row(2)=zaf;
+
+  T_aruco_finalpos.linear()=rotation_aruco_final_pos;
+  T_aruco_finalpos.translation()=trans_aruco_finalpos;
+
+  T_0_finalpos=T_0_aruco*T_aruco_finalpos;
+  //In questo punto ho T_0_final
+
+  move_to_pose(homo_to_pose(T_0_finalpos),true);
 }
 bool PosizioniBase(string str_posizione){
   vector<double> joint_group_positions=robot->getCurrentJointValues();
@@ -1034,9 +1272,15 @@ bool PosizioniBase(string str_posizione){
   }
 
   success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
-  ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
-  robot->move();
-  return true;
+  if(success){
+    robot->move();
+    return true;
+  }
+  else{
+    ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+    return false;
+  }
+
 }
 void ruota_360(){
   ROS_INFO("Starting rotating 360");
@@ -1077,11 +1321,6 @@ void ruota_360(){
   robot->execute(my_plan);
 
   ROS_INFO("Rotazione 360 completata");
-
-}
-bool aruco_individuato(){
-
-  return bridge_service(str_md_rd,"").aruco_found;
 
 }
 void ruota_e_cerca_aruco(){
@@ -1136,130 +1375,39 @@ void ruota_e_cerca_pannello(){
 
 
 }
-ur3_control::aruco_serviceResponse bridge_service(string modalita,string second_information){
+void ruotagiunto(unsigned int giunto,int angolo){
 
-    ros::NodeHandle node_handle;
-    ros::ServiceClient client1;
-    client1 = node_handle.serviceClient<ur3_control::aruco_service>("/aruco_modality");
-    ur3_control::aruco_service aruco_srv_msg;
 
-    aruco_srv_msg.request.modality=modalita;
-    aruco_srv_msg.request.second_information=second_information;
-    client1.call(aruco_srv_msg);
-    return aruco_srv_msg.response;
-}
-void load_parameters()
+  vector<double> joint_group_positions=robot->getCurrentJointValues();
+  joint_group_positions[giunto] = joint_group_positions[giunto]+grad_to_rad(angolo);  // radians
+  robot->setJointValueTarget(joint_group_positions);
+
+
+  success = (robot->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+  ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+  robot->move();
+
+  }
+void set_angolo(unsigned int giunto,int angolo)
 {
 
 
-    ifstream inFile;
-    string nome,tipo;
-    string pkgpath = ros::package::getPath("ur3_control");
-    string path_txt="/txt/standard_positions.txt";
-    string path_total=pkgpath + path_txt;
-    cout<<"percorso txt: "<<path_total<<endl<<endl;
-    inFile.open(path_total);
-    if (!inFile) {
-        cerr << "Unable to open file datafile.txt";
-        exit(1);   // call system to stop
-    }
+  vector<double> joint_group_positions=robot->getCurrentJointValues();
+  joint_group_positions[giunto] = grad_to_rad(angolo);
+  robot->setJointValueTarget(joint_group_positions);
 
-    pos_joint_home=robot->getCurrentJointValues();
-    pos_joint_up=robot->getCurrentJointValues();
-    pos_joint_r=robot->getCurrentJointValues();
-    pos_joint_centrifuga=robot->getCurrentJointValues();
-    pos_joint_pannello=robot->getCurrentJointValues();
-    pos_joint_iniziale=robot->getCurrentJointValues();
-    debug=robot->getCurrentJointValues();
-    if(pos_rpy_ta.size()==0){
 
-        pos_rpy_ta.push_back(0);
-        pos_rpy_ta.push_back(0);
-        pos_rpy_ta.push_back(0);
-
-    }
-    if(pos_rpy_tb.size()==0){
-        pos_rpy_tb.push_back(0);
-        pos_rpy_tb.push_back(0);
-        pos_rpy_tb.push_back(0);
-    }
-    while (inFile >> nome >> tipo) {
-        if(tipo=="joint"){
-            double j[6];
-            for(int i=0;i<6;i++){
-                inFile>>j[i];
-                //printf("%d:%f ",i,j[i]);
-            }
-            //printf("\n");
-
-            if(nome==str_home){
-                for (int i=0;i<6;i++) {
-                    pos_joint_home[i]=grad_to_rad(j[i]);
-                }
-            }
-            if(nome==str_up){
-                for (int i=0;i<6;i++) {
-                    pos_joint_up[i]=grad_to_rad(j[i]);
-                }
-            }
-            if(nome==str_r){
-                for (int i=0;i<6;i++) {
-                    pos_joint_r[i]=grad_to_rad(j[i]);
-                }
-            }
-            if(nome==str_centrifuga){
-                for (int i=0;i<6;i++) {
-                    pos_joint_centrifuga[i]=grad_to_rad(j[i]);
-                }
-            }
-            if(nome==str_pannello){
-                for (int i=0;i<6;i++) {
-                    pos_joint_pannello[i]=grad_to_rad(j[i]);
-                }
-            }
-            if(nome==str_pos_iniziale){
-              for (int i=0;i<6;i++) {
-                  pos_joint_iniziale[i]=grad_to_rad(j[i]);
-              }
-          }
-            if(nome=="debug"){
-              for (int i=0;i<6;i++) {
-                  debug[i]=(double)j[i];
-              }
-          }
-
-        }
-        if(tipo=="rpy"){
-            int r0,p0,y0;
-            inFile>>r0>>p0>>y0;
-            if(nome==str_ta){
-                pos_rpy_ta[0]=r0;
-                pos_rpy_ta[1]=p0;
-                pos_rpy_ta[2]=y0;
-                //printf("rpy: %d %d %d\n",pos_rpy_ta[0],pos_rpy_ta[1],pos_rpy_ta[2]);
-            }
-            if(nome==str_tb){
-
-                pos_rpy_tb[0]=r0;
-                pos_rpy_tb[1]=p0;
-                pos_rpy_tb[2]=y0;
-
-                //printf("rpy: %d %d %d\n",pos_rpy_tb[0],pos_rpy_tb[1],pos_rpy_tb[2]);
-                }
-
-        }
-
-    }
-
-    inFile.close();
-    pos_joint_iniziale_cam_alta=pos_joint_iniziale;
-    pos_joint_iniziale_cam_alta[5]=grad_to_rad(-90);
+  success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
+  ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
+  robot->move();
 }
-void stampa_homo(Affine3d homo){
-  cout<<"Translation: "<<endl<<homo.translation()<<endl;
-  cout<<"Rotation: "<<endl<<homo.linear()<<endl;
-}
-bool function_pose_aruco(){
+
+
+//Trasformate omogenee
+Affine_valid homo_0_aruco_elaration(){
+  //elabora la trasformata omogenea da 0 ad aruco
+
+
   ur3_control::aruco_serviceResponse msg_from_bridge=bridge_service(str_md_rd,"");
 
   if(msg_from_bridge.aruco_found){
@@ -1267,61 +1415,15 @@ bool function_pose_aruco(){
     Pose pose_robot=robot->getCurrentPose().pose;
 
     Pose pose_robot_target,pose_finalpos,pose_aruco,pose_camera;
-    Affine3d T_0_tool,T_tool_camera,T_0_camera,T_camera_aruco,T_0_aruco,T_aruco_finalpos,T_0_finalpos,T_0_camera_gazebo,T_camera_camera_gazebo;
+    Affine3d T_0_tool,T_0_camera,T_camera_aruco,T_0_aruco,T_0_camera_gazebo;
     tf::Pose pose_robot_tf,pose_target_tf,pose_finalpos_tf,pose_aruco_tf,pose_camera_tf;
     tf::poseMsgToTF(pose_robot,pose_robot_tf);
     tf::poseTFToEigen(pose_robot_tf,T_0_tool);
     //In questo punto ho T_0_tool
 
-/*
- * old
-    Vector3d translation_tool_camera(0.025,0,0);
-    Matrix3d rotation_tool_camera;
-    Vector3d xvec_des(0,1,0),yvec_des(0,0,1),zvec_des(1,0,0);
-    rotation_tool_camera.col(0)=xvec_des;
-    rotation_tool_camera.col(1)=yvec_des;
-    rotation_tool_camera.col(2)=zvec_des;
-
-    T_tool_camera.translation()=translation_tool_camera;
-    T_tool_camera.linear()=rotation_tool_camera;
-
     T_0_camera=T_0_tool*T_tool_camera;
+    pose_camera=homo_to_pose(T_0_camera);
     //In questo punto ho T_0_camera
-*/
-/*
-    0.9848         0    0.1736    0.0081
-   -0.1736         0    0.9848    0.0874
-         0   -1.0000         0         0
-         0         0         0    1.0000
-*/
-    //from tool0 to camera mount        <origin xyz="0.0 0.0 -0.0015" rpy="1.5707 0.0 -1.5707" />
-    //from camera mount to camera_link1 <origin xyz="0 -0.000447 0.08739618542" rpy="0 0 ${pi/2}" />
-    //from camera link1 to camera link  <origin xyz="0.0 0.0 0.0" rpy="0 ${pi/18} 0" />
-    Vector3d translation_tool_camera(0.0081,0.0874,0);
-    Matrix3d rotation_tool_camera;
-    Vector3d xvec_des(0.9848,-0.1736,0),yvec_des(0,0,-1),zvec_des(0.1736,0.9848,0);
-    rotation_tool_camera.col(0)=xvec_des;
-    rotation_tool_camera.col(1)=yvec_des;
-    rotation_tool_camera.col(2)=zvec_des;
-
-    T_tool_camera.translation()=translation_tool_camera;
-    T_tool_camera.linear()=rotation_tool_camera;
-
-    T_0_camera=T_0_tool*T_tool_camera;
-    tf::poseEigenToTF(T_0_camera,pose_camera_tf);
-    tf::poseTFToMsg(pose_camera_tf,pose_camera);
-    //In questo punto ho T_0_camera
-
-
-    Vector3d translation_camera_camera_gazebo(0,0,0);
-    Matrix3d rotation_camera_camera_gazebo;
-    Vector3d xvec_cc(0,0,1),yvec_cc(0,-1,0),zvec_cc(1,0,0);
-    rotation_camera_camera_gazebo.col(0)=xvec_cc;
-    rotation_camera_camera_gazebo.col(1)=yvec_cc;
-    rotation_camera_camera_gazebo.col(2)=zvec_cc;
-
-    T_camera_camera_gazebo.translation()=translation_camera_camera_gazebo;
-    T_camera_camera_gazebo.linear()=rotation_camera_camera_gazebo;
 
     T_0_camera_gazebo=T_0_camera*T_camera_camera_gazebo;
     //In questo punto ho T_0_camera_gazebo
@@ -1341,28 +1443,6 @@ bool function_pose_aruco(){
     tf::poseTFToMsg(pose_aruco_tf,pose_aruco);
     //In questo punto ho T_0_aruco
 
-
-    Matrix3d rotation_aruco_final_pos;
-    Vector3d xaf(0,0,1),yaf(0,1,0),zaf(-1,0,0),trans_aruco_finalpos(0,0,0.22);//con il gripper che punta sull'aruco
-
-
-    rotation_aruco_final_pos.row(0)=xaf;
-    rotation_aruco_final_pos.row(1)=yaf;
-    rotation_aruco_final_pos.row(2)=zaf;
-
-    T_aruco_finalpos.linear()=rotation_aruco_final_pos;
-    T_aruco_finalpos.translation()=trans_aruco_finalpos;
-
-    T_0_finalpos=T_0_aruco*T_aruco_finalpos;
-    //In questo punto ho T_0_final
-
-
-    tf::poseEigenToTF(T_0_finalpos,pose_finalpos_tf);
-    tf::poseTFToMsg(pose_finalpos_tf,pose_finalpos);
-
-
-    //cout<<"T_0_final_pos translation:"<<endl<<T_tool_camera.translation()<<endl;
-    //cout<<"T_0_final_pos rotation:"<<endl<<T_tool_camera.rotation()<<endl;
     bool debug=false;
     if(debug){
       cout<<"ee pose:"<<endl;
@@ -1378,15 +1458,21 @@ bool function_pose_aruco(){
 
       stampa_Pose(pose_finalpos);
     }
-    move_to_pose(pose_finalpos,true);
-    robot->setPlanningTime(std_planning_time);
-    return true;
+
+
+    Affine_valid return_value;
+    return_value.homo_matrix=T_0_aruco;
+    return_value.valid=true;
+    return return_value;
+
+  }else{
+    ROS_INFO("No aruco detected, no return??");
+    Affine_valid return_value;
+    return_value.valid=false;
+    return return_value;
 
   }
-  else{
-    ROS_INFO("No aruco detected, no return??");
-    return false;
-  }
+
 
 }
 bool move_aruco_to_center_of_camera(double percentual_zoom){
@@ -1604,27 +1690,7 @@ bool move_aruco_to_center_of_camera(double percentual_zoom){
   }
 
 }
-Pose homo_to_pose(Affine3d homo){
-
-  tf::Pose pose_tf;
-  Pose pose;
-  tf::poseEigenToTF(homo,pose_tf);
-  tf::poseTFToMsg(pose_tf,pose);
-  return pose;
-
-}
-Affine3d pose_to_homo(Pose pose){
-  Affine3d homo;
-  tf::Pose pose_tf;
-  tf::poseMsgToTF(pose,pose_tf);
-  tf::poseTFToEigen(pose_tf,homo);
-  return homo;
-
-}
-Affine_valid homo_0_aruco_elaration(){
-  //elabora la trasformata omogenea da 0 ad aruco
-
-
+bool function_pose_aruco(){
   ur3_control::aruco_serviceResponse msg_from_bridge=bridge_service(str_md_rd,"");
 
   if(msg_from_bridge.aruco_found){
@@ -1632,15 +1698,61 @@ Affine_valid homo_0_aruco_elaration(){
     Pose pose_robot=robot->getCurrentPose().pose;
 
     Pose pose_robot_target,pose_finalpos,pose_aruco,pose_camera;
-    Affine3d T_0_tool,T_0_camera,T_camera_aruco,T_0_aruco,T_0_camera_gazebo;
+    Affine3d T_0_tool,T_tool_camera,T_0_camera,T_camera_aruco,T_0_aruco,T_aruco_finalpos,T_0_finalpos,T_0_camera_gazebo,T_camera_camera_gazebo;
     tf::Pose pose_robot_tf,pose_target_tf,pose_finalpos_tf,pose_aruco_tf,pose_camera_tf;
     tf::poseMsgToTF(pose_robot,pose_robot_tf);
     tf::poseTFToEigen(pose_robot_tf,T_0_tool);
     //In questo punto ho T_0_tool
 
+/*
+ * old
+    Vector3d translation_tool_camera(0.025,0,0);
+    Matrix3d rotation_tool_camera;
+    Vector3d xvec_des(0,1,0),yvec_des(0,0,1),zvec_des(1,0,0);
+    rotation_tool_camera.col(0)=xvec_des;
+    rotation_tool_camera.col(1)=yvec_des;
+    rotation_tool_camera.col(2)=zvec_des;
+
+    T_tool_camera.translation()=translation_tool_camera;
+    T_tool_camera.linear()=rotation_tool_camera;
+
     T_0_camera=T_0_tool*T_tool_camera;
-    pose_camera=homo_to_pose(T_0_camera);
     //In questo punto ho T_0_camera
+*/
+/*
+    0.9848         0    0.1736    0.0081
+   -0.1736         0    0.9848    0.0874
+         0   -1.0000         0         0
+         0         0         0    1.0000
+*/
+    //from tool0 to camera mount        <origin xyz="0.0 0.0 -0.0015" rpy="1.5707 0.0 -1.5707" />
+    //from camera mount to camera_link1 <origin xyz="0 -0.000447 0.08739618542" rpy="0 0 ${pi/2}" />
+    //from camera link1 to camera link  <origin xyz="0.0 0.0 0.0" rpy="0 ${pi/18} 0" />
+    Vector3d translation_tool_camera(0.0081,0.0874,0);
+    Matrix3d rotation_tool_camera;
+    Vector3d xvec_des(0.9848,-0.1736,0),yvec_des(0,0,-1),zvec_des(0.1736,0.9848,0);
+    rotation_tool_camera.col(0)=xvec_des;
+    rotation_tool_camera.col(1)=yvec_des;
+    rotation_tool_camera.col(2)=zvec_des;
+
+    T_tool_camera.translation()=translation_tool_camera;
+    T_tool_camera.linear()=rotation_tool_camera;
+
+    T_0_camera=T_0_tool*T_tool_camera;
+    tf::poseEigenToTF(T_0_camera,pose_camera_tf);
+    tf::poseTFToMsg(pose_camera_tf,pose_camera);
+    //In questo punto ho T_0_camera
+
+
+    Vector3d translation_camera_camera_gazebo(0,0,0);
+    Matrix3d rotation_camera_camera_gazebo;
+    Vector3d xvec_cc(0,0,1),yvec_cc(0,-1,0),zvec_cc(1,0,0);
+    rotation_camera_camera_gazebo.col(0)=xvec_cc;
+    rotation_camera_camera_gazebo.col(1)=yvec_cc;
+    rotation_camera_camera_gazebo.col(2)=zvec_cc;
+
+    T_camera_camera_gazebo.translation()=translation_camera_camera_gazebo;
+    T_camera_camera_gazebo.linear()=rotation_camera_camera_gazebo;
 
     T_0_camera_gazebo=T_0_camera*T_camera_camera_gazebo;
     //In questo punto ho T_0_camera_gazebo
@@ -1660,6 +1772,28 @@ Affine_valid homo_0_aruco_elaration(){
     tf::poseTFToMsg(pose_aruco_tf,pose_aruco);
     //In questo punto ho T_0_aruco
 
+
+    Matrix3d rotation_aruco_final_pos;
+    Vector3d xaf(0,0,1),yaf(0,1,0),zaf(-1,0,0),trans_aruco_finalpos(0,0,0.22);//con il gripper che punta sull'aruco
+
+
+    rotation_aruco_final_pos.row(0)=xaf;
+    rotation_aruco_final_pos.row(1)=yaf;
+    rotation_aruco_final_pos.row(2)=zaf;
+
+    T_aruco_finalpos.linear()=rotation_aruco_final_pos;
+    T_aruco_finalpos.translation()=trans_aruco_finalpos;
+
+    T_0_finalpos=T_0_aruco*T_aruco_finalpos;
+    //In questo punto ho T_0_final
+
+
+    tf::poseEigenToTF(T_0_finalpos,pose_finalpos_tf);
+    tf::poseTFToMsg(pose_finalpos_tf,pose_finalpos);
+
+
+    //cout<<"T_0_final_pos translation:"<<endl<<T_tool_camera.translation()<<endl;
+    //cout<<"T_0_final_pos rotation:"<<endl<<T_tool_camera.rotation()<<endl;
     bool debug=false;
     if(debug){
       cout<<"ee pose:"<<endl;
@@ -1675,445 +1809,19 @@ Affine_valid homo_0_aruco_elaration(){
 
       stampa_Pose(pose_finalpos);
     }
-
-
-    Affine_valid return_value;
-    return_value.homo_matrix=T_0_aruco;
-    return_value.valid=true;
-    return return_value;
-
-  }else{
-    ROS_INFO("No aruco detected, no return??");
-    Affine_valid return_value;
-    return_value.valid=false;
-    return return_value;
-
-  }
-
-
-}
-Pose pre_grasp(Affine3d T_0_aruco){
-  Affine3d T_aruco_finalpos,T_0_finalpos;
-  Matrix3d rotation_aruco_final_pos;
-  Vector3d xaf(0,0,1),yaf(0,1,0),zaf(-1,0,0),trans_aruco_finalpos(0,0,0.22);//con il gripper che punta sull'aruco
-
-
-  rotation_aruco_final_pos.row(0)=xaf;
-  rotation_aruco_final_pos.row(1)=yaf;
-  rotation_aruco_final_pos.row(2)=zaf;
-
-  T_aruco_finalpos.linear()=rotation_aruco_final_pos;
-  T_aruco_finalpos.translation()=trans_aruco_finalpos;
-
-  T_0_finalpos=T_0_aruco*T_aruco_finalpos;
-  //In questo punto ho T_0_final
-
-  move_to_pose(homo_to_pose(T_0_finalpos),true);
-}
-void set_homo_std_matrix(){
-
-  //from tool0 to camera mount        <origin xyz="0.0 0.0 -0.0015" rpy="1.5707 0.0 -1.5707" />
-  //from camera mount to camera_link1 <origin xyz="0 -0.000447 0.08739618542" rpy="0 0 ${pi/2}" />
-  //from camera link1 to camera link  <origin xyz="0.0 0.0 0.0" rpy="0 ${pi/18} 0" />
-  Vector3d translation_tool_camera(0.0081,0.0874,0);
-  Matrix3d rotation_tool_camera;
-  Vector3d xvec_des(0.9848,-0.1736,0),yvec_des(0,0,-1),zvec_des(0.1736,0.9848,0);
-  rotation_tool_camera.col(0)=xvec_des;
-  rotation_tool_camera.col(1)=yvec_des;
-  rotation_tool_camera.col(2)=zvec_des;
-  T_tool_camera.translation()=translation_tool_camera;
-  T_tool_camera.linear()=rotation_tool_camera;
-
-
-  Vector3d translation_camera_camera_gazebo(0,0,0);
-  Matrix3d rotation_camera_camera_gazebo;
-  Vector3d xvec_cc(0,0,1),yvec_cc(0,-1,0),zvec_cc(1,0,0);
-  rotation_camera_camera_gazebo.col(0)=xvec_cc;
-  rotation_camera_camera_gazebo.col(1)=yvec_cc;
-  rotation_camera_camera_gazebo.col(2)=zvec_cc;
-  T_camera_camera_gazebo.translation()=translation_camera_camera_gazebo;
-  T_camera_camera_gazebo.linear()=rotation_camera_camera_gazebo;
-
-
-}
-Matrix3d from_rpy_to_rotational_matrix(double roll,double pitch,double yaw){
-  Quaterniond q;
-  q = AngleAxisd(roll, Vector3d::UnitX())
-      * AngleAxisd(pitch, Vector3d::UnitY())
-      * AngleAxisd(yaw, Vector3d::UnitZ());
-  return q.toRotationMatrix();
-
-}
-bool action_gripper(string input){
-  /*
-  if(gara){
-
-    ROS_INFO("TRYING TO SET GRIPPER AS:");
-    cout<<input<<endl;
-    std_msgs::String gs;
-    gs.data=input;
-    pub_gripper.publish(gs);
-    sleep(5);
-    ROS_INFO("FINISH TO SET GRIPPER");
+    move_to_pose(pose_finalpos,true);
+    robot->setPlanningTime(std_planning_time);
     return true;
+
   }
   else{
-    ur3_control::aruco_serviceResponse msg=bridge_service(str_md_rd,"");
-    if(input=="open" && msg.finger_joint>-0.2 && msg.finger_joint<0.3){
-      ROS_INFO("Gripper already in the correct position");
-      return true;
-    }
-    ROS_INFO("TRYING TO SET GRIPPER AS:");
-    cout<<input<<endl;
-    std_msgs::String gs;
-    gs.data=input;
-    pub_gripper.publish(gs);
-    ros::Duration d;
-    d.sec=10;
-    ros::topic::waitForMessage<moveit_msgs::MoveGroupActionResult>("/move_group/result",d);
-    ROS_INFO("FINISH TO SET GRIPPER");
-    return true;
-  }
-*/
-
-
-  moveit_msgs::MoveGroupActionResult msg;
-  moveit_msgs::MoveGroupActionResultConstPtr msg_pointer;
-  std_msgs::String msg_to_pub;
-  ros::Duration d;
-  ROS_INFO("TRYING TO SET GRIPPER AS:");
-  cout<<input<<endl;
-
-  d.sec=6;
-
-
-  if(input==posizione_gripper){
-    ROS_INFO("Gripper already in the correct position(STATE MACHINE)");
-  }
-
-
-  msg_to_pub.data=input;
-  pub_gripper.publish(msg_to_pub);
-  msg_pointer=(ros::topic::waitForMessage<moveit_msgs::MoveGroupActionResult>("/move_group/result",d));
-  if(msg_pointer==NULL){
-
-    ROS_INFO("NO MESSAGES RECEIVED");
-
-    actionlib_msgs::GoalID msg_traj_cancel;
-    msg_traj_cancel.id="";
-    pub_traj_cancel.publish(msg_traj_cancel);
-    return false;
-
-  }
-  msg=*msg_pointer;
-
-  if(msg.status.text=="Requested path and goal constraints are already met.")
-  {
-    ROS_INFO("Gripper already in the correct position");
-    return true;
-  }
-  if(msg.status.text=="Solution was found and executed."){
-
-    ROS_INFO("Gripper solution found and executed");
-    posizione_gripper=input;
-    return true;
-
-  }
-  //ROS_INFO("size: %d",msg.result.planned_trajectory.joint_trajectory.joint_names.size());
-  if(msg.result.planned_trajectory.joint_trajectory.joint_names.size()>0){
-    if(msg.result.planned_trajectory.joint_trajectory.joint_names[0]=="finger_joint"){
-
-      double final_value_gripper=-20;
-      final_value_gripper=msg.result.planned_trajectory.joint_trajectory.points[msg.result.planned_trajectory.joint_trajectory.points.size()-1].positions[0];
-
-      if(final_value_gripper>-0.2 && final_value_gripper<0.2){
-        if(input=="open"){
-
-          ROS_INFO("Gripper in the correct position");
-          posizione_gripper=input;
-          return true;
-
-        }
-        else{
-
-          ROS_INFO("Gripper ERROR??? Final value of gripper:%f",final_value_gripper);
-          return false;
-
-        }
-      }
-      if(final_value_gripper>=0.2 && final_value_gripper<0.85){
-        if(input=="semi_open"){
-
-          ROS_INFO("Gripper in the correct position");
-          posizione_gripper=input;
-
-          return true;
-
-        }
-        else{
-
-          ROS_INFO("Gripper ERROR??? Final value of gripper:%f",final_value_gripper);
-          return false;
-
-        }
-      }
-      if(final_value_gripper>=0.85 && final_value_gripper<1.18){
-        if(input=="semi_close"){
-
-          ROS_INFO("Gripper in the correct position");
-          posizione_gripper=input;
-          return true;
-
-        }
-        else{
-
-          ROS_INFO("Gripper ERROR??? Final value of gripper:%f",final_value_gripper);
-          return false;
-
-        }
-      }
-      if(final_value_gripper>=1.18){
-        if(input=="close"){
-
-          ROS_INFO("Gripper in the correct position");
-          posizione_gripper=input;
-          return true;
-
-        }
-        else{
-
-          ROS_INFO("Gripper ERROR??? Final value of gripper:%f",final_value_gripper);
-          return false;
-
-        }
-      }
-
-      ROS_INFO("finger joint letto, final value: %f",final_value_gripper);
-    }
-
-    ROS_INFO("finger joint non letto");
-  }
-
-  ROS_INFO("RESULT MESSAGE NON ANALIZZATO CORRETTAMENTE");
-
-  return false;
-
-}
-bool se_aruco_individuato_aggiorna_array(int ID){
-
-  if(aruco_individuato()) {
-    ROS_INFO("ARUCO: %d INDIVIDUATO",ID);
-    sleep(2);
-    Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
-
-    if(! T_0_aruco_valid.valid){
-      //esplorazione pannello centrale
-      return false;
-    }
-
-    Aruco_values[ID].valid=true;
-    Aruco_values[ID].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
-
-    return true;
-  }
-return false;
-}
-bool esplorazione_middle_panel_per_trovare_aruco(string ID_str){
-  stringstream ss;
-  int ID_int;
-
-  ss<<ID_str;
-  ss >> ID_int;
-  cambia_aruco(ID_str);
-
-  if(se_aruco_individuato_aggiorna_array(ID_int))
-    return true;
-
-  bridge_service(str_md_bpa,"");
-
-  PosizioniBase(str_pos_iniziale);
-
-  if(se_aruco_individuato_aggiorna_array(ID_int))
-    return true;
-
-
-  vector<double> joint_group_positions=robot->getCurrentJointValues();
-  joint_group_positions=pos_joint_iniziale;
-  joint_group_positions[0]=grad_to_rad(0);
-  joint_group_positions[1]=grad_to_rad(-136.929);
-  joint_group_positions[2]=grad_to_rad(103.488);
-  joint_group_positions[3]=grad_to_rad(33.45);
-  joint_group_positions[4]=grad_to_rad(100);
-  joint_group_positions[5]=grad_to_rad(90);
-  robot->setJointValueTarget(joint_group_positions);
-  success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
-  ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
-  robot->move();
-
-  if(se_aruco_individuato_aggiorna_array(ID_int))
-    return true;
-
-  double rp=20;
-  do{
-    joint_group_positions[0]=grad_to_rad(0);
-    joint_group_positions[1]=grad_to_rad(-136.929);
-    joint_group_positions[2]=grad_to_rad(103.488);
-    joint_group_positions[3]=grad_to_rad(33.45)+grad_to_rad(rp);
-    joint_group_positions[4]=grad_to_rad(100);
-    joint_group_positions[5]=grad_to_rad(90);
-    robot->setJointValueTarget(joint_group_positions);
-    success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
-    ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
-    robot->move();
-    rp=rp*0.8;
-  }while(!success);
-
-
-  if(se_aruco_individuato_aggiorna_array(ID_int))
-    return true;
-  rp=20;
-  do{
-    joint_group_positions[0]=grad_to_rad(0);
-    joint_group_positions[1]=grad_to_rad(-136.929);
-    joint_group_positions[2]=grad_to_rad(103.488);
-    joint_group_positions[3]=grad_to_rad(33.45)-grad_to_rad(rp);
-    joint_group_positions[4]=grad_to_rad(100);
-    joint_group_positions[5]=grad_to_rad(90);
-    robot->setJointValueTarget(joint_group_positions);
-    success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
-    ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
-    robot->move();
-    rp=rp*0.8;
-  }while(!success);
-
-  robot->setJointValueTarget(joint_group_positions);
-  success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
-  ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
-  robot->move();
-
-
-  if(se_aruco_individuato_aggiorna_array(ID_int))
-    return true;
-
-  /*Implementare nuova ruotine*/
-
-  PosizioniBase(str_pos_iniziale);
-
-  if(se_aruco_individuato_aggiorna_array(ID_int))
-    return true;
-
-  return false;
-
-}
-bool action_aruco_button(string ID_str){
-  stringstream ss;
-  int ID_int;
-
-  ss<<ID_str;
-  ss >> ID_int;
-
-  if(!Aruco_values[ID_int].valid){
-    if(!esplorazione_middle_panel_per_trovare_aruco(ID_str)){
-      ROS_INFO("ARUCO NON TROVATO, ID:%d",ID_int);
-      return false;
-    }
-  }
-  ROS_INFO("Aruco trovato, vado a premere il pulsante");
-
-
-
-
-  action_gripper("close");
-
-  Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
-
-  if(! T_0_aruco_valid.valid){
-    //esplorazione pannello centrale
+    ROS_INFO("No aruco detected, no return??");
     return false;
   }
 
-  Affine3d T_aruco_finalpos,T_0_finalpos_pregrasp, T_0_aruco;
-  T_0_aruco=T_0_aruco_valid.homo_matrix;
-
-  //stampa_Pose(homo_to_pose(T_0_aruco));
-
-
-  //questi valori vanno risettati
-  T_aruco_finalpos.translation().x()=0;
-  T_aruco_finalpos.translation().y()=-0.055; //-0.055 per la gara
-  T_aruco_finalpos.translation().z()=0.20; //23+135+12,5+sicurezza=170,5mm + sicurezza=0.1705 metri + 0.03=0.20
-  T_aruco_finalpos.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0)*from_rpy_to_rotational_matrix(M_PI,0,0);
-
-
-  T_0_finalpos_pregrasp=T_0_aruco*T_aruco_finalpos;
-  //In questo punto ho T_0_final
-
-  Pose pose_final_pose_pregrasp=homo_to_pose(T_0_finalpos_pregrasp);
-
-  if(!move_to_pose_cartesian(pose_final_pose_pregrasp)){
-    move_to_pose(pose_final_pose_pregrasp,true);
-  }
-
-
-  if(!gara) {
-
-    PosizioniBase(str_pos_iniziale);
-    return true;
-  }
-
-
-
-  //POSIZIONE PER PREMERE PULSANTE
-  T_aruco_finalpos.translation().x()=0;
-  T_aruco_finalpos.translation().y()=-0.055; //-0.055 per la gara
-  T_aruco_finalpos.translation().z()=0.163; //17+135+12,5=164.5 mm=0.164m    - in teoria 1mm di spessore aruco=0.163
-  T_aruco_finalpos.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0)*from_rpy_to_rotational_matrix(M_PI,0,0);
-
-
-  Affine3d T_0_finalpos_premuto=T_0_aruco*T_aruco_finalpos;
-  //In questo punto ho T_0_final
-
-  Pose pose_final_pose_premuto=homo_to_pose(T_0_finalpos_premuto);
-
-  if(!move_to_pose_cartesian(pose_final_pose_premuto)){
-    move_to_pose(pose_final_pose_premuto,true);
-    return true;
-  }
-
-
-
-  //PosizioniBase(str_pos_iniziale);
-  //action_gripper("open");
-
-  PosizioniBase(str_pos_iniziale);
-  return true;
 }
-void initialize_parameters(){
-  gara=false;
-  show_log=false;
-  robot->setPlannerId("RRTConnectkConfigDefault");
-  robot->setPlanningTime(5);
-  pose_pannello_elaborata.valid=false;
-}
-bool ritorno_al_pannello(double percentual){
-  ROS_INFO("ERC:Starting going back to pannello");
-  Pose actual_pose,pann_pose,final_pose;
 
-  if(!pose_pannello_elaborata.valid)
-    return false;
-
-
-  actual_pose=robot->getCurrentPose().pose;
-  pann_pose=pose_pannello_elaborata.pose;
-
-  final_pose=actual_pose;
-
-  final_pose.position.x= final_pose.position.x + (pann_pose.position.x-actual_pose.position.x)*percentual/100;
-  //final_pose.position.y= final_pose.position.y + (pann_pose.position.y-actual_pose.position.y)*percentual/100;
-  //final_pose.position.z= final_pose.position.z + (pann_pose.position.z-actual_pose.position.z)*percentual/100;
-
-  return move_to_pose_cartesian(final_pose);
-}
+//Esplorazione
 bool esplora_inspection_cover_storage(){
 
 
@@ -2327,6 +2035,163 @@ bool esplora_inspection_window_cover(){
   }
   else return false;
 }
+bool esplora_cerca_IMU(){
+  bridge_service(str_md_next_aruco,"10");
+  sleep(1);
+
+
+  PosizioniBase(str_pos_iniziale_cam_alta);
+
+
+  vector<double> joint_group_positions=robot->getCurrentJointValues();
+  joint_group_positions=pos_joint_iniziale_cam_alta;
+  joint_group_positions[3]=grad_to_rad(77);
+  joint_group_positions[5]=grad_to_rad(-90);
+  move_to_joints(joint_group_positions);
+
+  if(se_aruco_individuato_aggiorna_array(ID_IMU_MODULE)) {
+    return true;
+  }
+
+  bridge_service(str_md_bpa,"");
+
+
+  joint_group_positions=robot->getCurrentJointValues();
+  joint_group_positions[0]=joint_group_positions[0]+180;
+  move_to_joints(joint_group_positions);
+
+  if(se_aruco_individuato_aggiorna_array(ID_IMU_MODULE)) {
+    return true;
+  }
+
+  return false;
+
+
+
+}
+bool esplora_cerca_left_panel_IMU(){
+  ROS_INFO("NON ANCORA FINITO ESPLORAZIONE LEFT PANEL");
+  return true;
+}
+bool esplorazione_middle_panel_per_trovare_aruco(string ID_str){
+  stringstream ss;
+  int ID_int;
+
+  ss<<ID_str;
+  ss >> ID_int;
+
+  ROS_INFO("Inizio esplorazione per trovare aruco id:%d",ID_int);
+  cambia_aruco(ID_str);
+  if(se_aruco_individuato_aggiorna_array(ID_int))
+    return true;
+
+  bridge_service(str_md_bpa,"");
+
+  PosizioniBase(str_pos_iniziale);
+
+  if(se_aruco_individuato_aggiorna_array(ID_int))
+    return true;
+//ROUTINE 1
+{
+  vector<double> joint_group_positions=robot->getCurrentJointValues();
+  joint_group_positions=pos_joint_iniziale;
+  joint_group_positions[0]=grad_to_rad(0);
+  joint_group_positions[1]=grad_to_rad(-136.929);
+  joint_group_positions[2]=grad_to_rad(103.488);
+  joint_group_positions[3]=grad_to_rad(33.45);
+  joint_group_positions[4]=grad_to_rad(100);
+  joint_group_positions[5]=grad_to_rad(90);
+
+  if(!move_to_joints(joint_group_positions)){
+    return false;
+  }
+
+  if(se_aruco_individuato_aggiorna_array(ID_int))
+    return true;
+
+  double rp=20;
+  do{
+    joint_group_positions[3]=grad_to_rad(33.45)+grad_to_rad(rp);
+    if(!move_to_joints(joint_group_positions)){
+      return false;
+    }
+    rp=rp*0.8;
+  }while(!success && rp>0);
+
+
+  if(se_aruco_individuato_aggiorna_array(ID_int))
+    return true;
+  rp=20;
+  do{
+    joint_group_positions[3]=grad_to_rad(33.45)-grad_to_rad(rp);
+    if(!move_to_joints(joint_group_positions)){
+      return false;
+    }
+    rp=rp*0.8;
+  }while(!success && rp>0);
+
+
+
+  if(se_aruco_individuato_aggiorna_array(ID_int))
+    return true;
+}
+//ROUTINE 2
+  {
+    vector<double> joint_group_positions=robot->getCurrentJointValues();
+    joint_group_positions=pos_joint_iniziale;
+    joint_group_positions[0]=grad_to_rad(-20);
+    joint_group_positions[1]=grad_to_rad(-136.929);
+    joint_group_positions[2]=grad_to_rad(103.488);
+    joint_group_positions[3]=grad_to_rad(33.45);
+    joint_group_positions[4]=grad_to_rad(100);
+    joint_group_positions[5]=grad_to_rad(90);
+    if(!move_to_joints(joint_group_positions)){
+      return false;
+    }
+
+    if(se_aruco_individuato_aggiorna_array(ID_int))
+      return true;
+
+    double rp=20;
+    do{
+      joint_group_positions[3]=grad_to_rad(33.45)+grad_to_rad(rp);
+      if(!move_to_joints(joint_group_positions)){
+        return false;
+      }
+      rp=rp*0.8;
+    }while(!success && rp>0);
+
+
+    if(se_aruco_individuato_aggiorna_array(ID_int))
+      return true;
+
+    rp=20;
+    do{
+      joint_group_positions[3]=grad_to_rad(33.45)-grad_to_rad(rp);
+      if(!move_to_joints(joint_group_positions)){
+        return false;
+      }
+      rp=rp*0.8;
+    }while(!success && rp>0);
+
+
+    if(se_aruco_individuato_aggiorna_array(ID_int))
+      return true;
+  }
+
+
+
+
+  PosizioniBase(str_pos_iniziale);
+
+  if(se_aruco_individuato_aggiorna_array(ID_int))
+    return true;
+
+  return false;
+
+}
+
+//Panels
 bool solleva_coperchio(){
 
   if(!Aruco_values[ID_INSPECTION_WINDOW_COVER].valid){
@@ -2401,6 +2266,8 @@ bool solleva_coperchio(){
 
   if(se_aruco_individuato_aggiorna_array(ID_INSPECTION_WINDOW_COVER)){
     T_0_aruco=pose_to_homo(Aruco_values[ID_INSPECTION_WINDOW_COVER].pose);
+    T_0_final=T_0_aruco*T_aruco_final;
+    pose_final=homo_to_pose(T_0_final);
   }
 
   //scendi per afferrare
@@ -2436,6 +2303,271 @@ bool solleva_coperchio(){
 
 
   ROS_INFO("FUNCTION COMPLETE");
+  return true;
+}
+bool left_panel(){
+
+  action_gripper("open");
+
+  if(!Aruco_values[ID_IMU_DESTINATION_PLANE].valid){
+    if(!esplora_cerca_left_panel_IMU())
+      return false;
+  }
+
+  if(!Aruco_values[ID_IMU_MODULE].valid){
+    if(!esplora_cerca_IMU())
+      return false;
+  }
+
+
+  PosizioniBase(str_pos_iniziale);
+
+  Affine3d T_aruco_finalpos,T_0_finalpos_pregrasp,T_0_aruco_IMU_Module;
+  Pose pose_final_grasp,pose_final01,pose_final02,pose_final03;
+  //calcolo pose
+  {
+  T_aruco_finalpos.translation().x()=0;
+  T_aruco_finalpos.translation().y()=0;
+  T_aruco_finalpos.translation().z()=0.103;
+  T_aruco_finalpos.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0)*from_rpy_to_rotational_matrix(M_PI/2,0,0);
+
+  T_0_aruco_IMU_Module=pose_to_homo(Aruco_values[ID_IMU_MODULE].pose);
+  T_0_finalpos_pregrasp=T_0_aruco_IMU_Module*T_aruco_finalpos;
+
+  pose_final_grasp=homo_to_pose(T_0_finalpos_pregrasp);
+}
+
+
+  double angolo_disallineamento_imu=atan2(pose_final_grasp.position.y,pose_final_grasp.position.x);
+
+  vector<double> joint_group_positions=pos_joint_iniziale;
+  joint_group_positions[0]=angolo_disallineamento_imu;
+  move_to_joints(joint_group_positions);
+
+  vector<double> save_joint0=joint_group_positions;
+
+  ROS_INFO("VADO IN :POSIZIONE ADATTA PER ANDARE A PRENDERE IMU");
+
+  joint_group_positions=pos_joint_iniziale;
+  joint_group_positions[0]=angolo_disallineamento_imu;
+  joint_group_positions[1]=grad_to_rad(-90);
+  joint_group_positions[2]=grad_to_rad(87.4);
+  joint_group_positions[3]=grad_to_rad(-78);
+  joint_group_positions[4]=grad_to_rad(-90);
+  joint_group_positions[5]=grad_to_rad(-120);
+  move_to_joints(joint_group_positions);
+
+  vector<double> save_joint1=joint_group_positions;
+
+  //sistemo orientamento
+  pose_final01=robot->getCurrentPose().pose;
+  pose_final01.orientation=pose_final_grasp.orientation;
+  if(!move_to_pose_cartesian(pose_final01)){
+    if(!move_to_pose(pose_final01,true)){
+      return false;
+    }
+  }
+
+
+  //sistemo x,y
+  pose_final02=robot->getCurrentPose().pose;
+  pose_final02.position.x=pose_final_grasp.position.x;
+  pose_final02.position.y=pose_final_grasp.position.y;
+  if(!move_to_pose_cartesian(pose_final02)){
+    if(!move_to_pose(pose_final02,true)){
+      return false;
+    }
+  }
+  if(se_aruco_individuato_aggiorna_array(ID_IMU_MODULE)){
+    T_0_aruco_IMU_Module=pose_to_homo(Aruco_values[ID_IMU_MODULE].pose);
+    T_0_finalpos_pregrasp=T_0_aruco_IMU_Module*T_aruco_finalpos;
+
+    pose_final_grasp=homo_to_pose(T_0_finalpos_pregrasp);
+  }
+
+
+  //mi avvicino alla corretta z
+  pose_final03=robot->getCurrentPose().pose;
+  pose_final03.position.z=pose_final_grasp.position.z+0.03;
+  //stampa_Pose(pose_final02);
+  if(!move_to_pose_cartesian(pose_final03)){
+    if(!move_to_pose(pose_final03,true)){
+      return false;
+    }
+  }
+
+
+  //movimento finale
+  if(!move_to_pose_cartesian(pose_final_grasp)){
+    if(!move_to_pose(pose_final_grasp,true)){
+      return false;
+    }
+  }
+
+
+  action_gripper("semi_open");
+
+  sleep(2);
+
+  if(!move_to_pose_cartesian(pose_final03)){
+    if(!move_to_pose(pose_final03,true)){
+      return false;
+    }
+  }
+  if(!move_to_pose_cartesian(pose_final02)){
+      if(!move_to_pose(pose_final02,true)){
+        return false;
+      }
+  }
+  if(!move_to_pose_cartesian(pose_final01)){
+    if(!move_to_pose(pose_final01,true)){
+      return false;
+    }
+  }
+  if(!move_to_joints(save_joint1)){
+    return false;
+  }
+  if(!move_to_joints(save_joint0)){
+    return false;
+  }
+  if(PosizioniBase(str_pos_iniziale)){
+    return false;
+  }
+
+
+
+
+
+//  if(!move_to_pose_cartesian(pose_final_pose_pregrasp)){
+//    if(!move_to_pose(pose_final_pose_pregrasp,true))
+//      return false;
+//  }
+
+
+//  sleep(2);
+
+//  T_aruco_finalpos.translation().z()=0.103;
+
+
+//  T_0_finalpos_pregrasp=T_0_aruco_IMU_Module*T_aruco_finalpos;
+
+//  Pose pose_final_pose=homo_to_pose(T_0_finalpos_pregrasp);
+
+//  if(!move_to_pose_cartesian(pose_final_pose)){
+//    if(!move_to_pose(pose_final_pose,true))
+//      return false;
+//  }
+
+
+
+//  T_aruco_finalpos.translation().z()=0.13;
+
+
+//  T_0_finalpos_pregrasp=T_0_aruco_IMU_Module*T_aruco_finalpos;
+
+//  pose_final_pose=homo_to_pose(T_0_finalpos_pregrasp);
+
+//  if(!move_to_pose_cartesian(pose_final_pose)){
+//    if(!move_to_pose(pose_final_pose,true))
+//      return false;
+//  }
+
+
+//  PosizioniBase(str_pos_iniziale_cam_alta);
+
+//  if(!move_to_pose_cartesian(pose_final_pose)){
+//    if(!move_to_pose(pose_final_pose,true))
+//       return false;
+//  }
+
+
+  action_gripper("open");
+
+
+  PosizioniBase(str_pos_iniziale);
+
+
+  return true;
+}
+bool action_aruco_button(string ID_str){
+  stringstream ss;
+  int ID_int;
+
+  ss<<ID_str;
+  ss >> ID_int;
+
+  if(!Aruco_values[ID_int].valid){//se non è mai stato trovato l'aruco di interesse
+
+    if(!esplorazione_middle_panel_per_trovare_aruco(ID_str)){//qui inizia a cercare l'aruco
+        ROS_INFO("ARUCO NON TROVATO, ID:%d",ID_int);
+      return false;
+    }
+
+  }
+  ROS_INFO("Aruco trovato, vado a premere il pulsante");
+
+
+
+
+  action_gripper("close");
+
+
+
+  Affine3d T_aruco_finalpos,T_0_finalpos_pregrasp, T_0_aruco;
+
+  T_0_aruco=pose_to_homo(Aruco_values[ID_int].pose);
+
+
+  //stampa_Pose(homo_to_pose(T_0_aruco));
+
+
+  T_aruco_finalpos.translation().x()=0;
+  T_aruco_finalpos.translation().y()=-0.055; //-0.055 per la gara
+  T_aruco_finalpos.translation().z()=0.20; //23+135+12,5+sicurezza=170,5mm + sicurezza=0.1705 metri + 0.03=0.20
+  T_aruco_finalpos.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0)*from_rpy_to_rotational_matrix(M_PI,0,0);
+
+
+  T_0_finalpos_pregrasp=T_0_aruco*T_aruco_finalpos;
+  //In questo punto ho T_0_final
+
+  Pose pose_final_pose_pregrasp=homo_to_pose(T_0_finalpos_pregrasp);
+
+  if(!move_to_pose_cartesian(pose_final_pose_pregrasp)){
+    if(!move_to_pose(pose_final_pose_pregrasp,true))
+      return false;
+  }
+
+
+  if(!gara) {
+
+    PosizioniBase(str_pos_iniziale);
+    return true;
+  }
+
+
+
+  //POSIZIONE PER PREMERE PULSANTE
+  T_aruco_finalpos.translation().x()=0;
+  T_aruco_finalpos.translation().y()=-0.055; //-0.055 per la gara
+  T_aruco_finalpos.translation().z()=0.163; //17+135+12,5=164.5 mm=0.164m    - in teoria 1mm di spessore aruco=0.163
+  T_aruco_finalpos.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0)*from_rpy_to_rotational_matrix(M_PI,0,0);
+
+
+  Affine3d T_0_finalpos_premuto=T_0_aruco*T_aruco_finalpos;
+  //In questo punto ho T_0_final
+
+  Pose pose_final_pose_premuto=homo_to_pose(T_0_finalpos_premuto);
+
+  if(!move_to_pose_cartesian(pose_final_pose_premuto)){
+    if(!move_to_pose(pose_final_pose_premuto,true))
+      return false;
+  }
+
+
+
+  PosizioniBase(str_pos_iniziale);
+  action_gripper("open");
+
   return true;
 }
 bool right_panel(){
@@ -2695,143 +2827,145 @@ bool right_panel(){
 }
 
 }
-bool esplora_cerca_IMU(){
-  bridge_service(str_md_next_aruco,"10");
-  sleep(1);
+
+//Inizialisations
+void initialize_parameters(){
+  gara=false;
+  show_log=false;
+  robot->setPlannerId("RRTConnectkConfigDefault");
+  robot->setPlanningTime(5);
+  pose_pannello_elaborata.valid=false;
+}
+void load_parameters()
+{
 
 
-  PosizioniBase(str_pos_iniziale_cam_alta);
-
-
-  vector<double> joint_group_positions=robot->getCurrentJointValues();
-  joint_group_positions=pos_joint_iniziale_cam_alta;
-  joint_group_positions[3]=grad_to_rad(77);
-  joint_group_positions[5]=grad_to_rad(-90);
-  robot->setJointValueTarget(joint_group_positions);
-  success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
-  ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
-  robot->move();
-  if(aruco_individuato()) {
-    Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
-
-    if(! T_0_aruco_valid.valid){
-      //esplorazione pannello centrale
-      return false;
+    ifstream inFile;
+    string nome,tipo;
+    string pkgpath = ros::package::getPath("ur3_control");
+    string path_txt="/txt/standard_positions.txt";
+    string path_total=pkgpath + path_txt;
+    cout<<"percorso txt: "<<path_total<<endl<<endl;
+    inFile.open(path_total);
+    if (!inFile) {
+        cerr << "Unable to open file datafile.txt";
+        exit(1);   // call system to stop
     }
 
-    Aruco_values[ID_IMU_MODULE].valid=true;
-    Aruco_values[ID_IMU_MODULE].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
+    pos_joint_home=robot->getCurrentJointValues();
+    pos_joint_up=robot->getCurrentJointValues();
+    pos_joint_r=robot->getCurrentJointValues();
+    pos_joint_centrifuga=robot->getCurrentJointValues();
+    pos_joint_pannello=robot->getCurrentJointValues();
+    pos_joint_iniziale=robot->getCurrentJointValues();
+    debug=robot->getCurrentJointValues();
+    if(pos_rpy_ta.size()==0){
 
-    return true;
-  }
+        pos_rpy_ta.push_back(0);
+        pos_rpy_ta.push_back(0);
+        pos_rpy_ta.push_back(0);
 
-  bridge_service(str_md_bpa,"");
+    }
+    if(pos_rpy_tb.size()==0){
+        pos_rpy_tb.push_back(0);
+        pos_rpy_tb.push_back(0);
+        pos_rpy_tb.push_back(0);
+    }
+    while (inFile >> nome >> tipo) {
+        if(tipo=="joint"){
+            double j[6];
+            for(int i=0;i<6;i++){
+                inFile>>j[i];
+                //printf("%d:%f ",i,j[i]);
+            }
+            //printf("\n");
 
+            if(nome==str_home){
+                for (int i=0;i<6;i++) {
+                    pos_joint_home[i]=grad_to_rad(j[i]);
+                }
+            }
+            if(nome==str_up){
+                for (int i=0;i<6;i++) {
+                    pos_joint_up[i]=grad_to_rad(j[i]);
+                }
+            }
+            if(nome==str_r){
+                for (int i=0;i<6;i++) {
+                    pos_joint_r[i]=grad_to_rad(j[i]);
+                }
+            }
+            if(nome==str_centrifuga){
+                for (int i=0;i<6;i++) {
+                    pos_joint_centrifuga[i]=grad_to_rad(j[i]);
+                }
+            }
+            if(nome==str_pannello){
+                for (int i=0;i<6;i++) {
+                    pos_joint_pannello[i]=grad_to_rad(j[i]);
+                }
+            }
+            if(nome==str_pos_iniziale){
+              for (int i=0;i<6;i++) {
+                  pos_joint_iniziale[i]=grad_to_rad(j[i]);
+              }
+          }
+            if(nome=="debug"){
+              for (int i=0;i<6;i++) {
+                  debug[i]=(double)j[i];
+              }
+          }
 
-  joint_group_positions=robot->getCurrentJointValues();
-  joint_group_positions[0]=joint_group_positions[0]+180;
-  robot->setJointValueTarget(joint_group_positions);
-  success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
-  ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
-  robot->move();
+        }
+        if(tipo=="rpy"){
+            int r0,p0,y0;
+            inFile>>r0>>p0>>y0;
+            if(nome==str_ta){
+                pos_rpy_ta[0]=r0;
+                pos_rpy_ta[1]=p0;
+                pos_rpy_ta[2]=y0;
+                //printf("rpy: %d %d %d\n",pos_rpy_ta[0],pos_rpy_ta[1],pos_rpy_ta[2]);
+            }
+            if(nome==str_tb){
 
+                pos_rpy_tb[0]=r0;
+                pos_rpy_tb[1]=p0;
+                pos_rpy_tb[2]=y0;
 
+                //printf("rpy: %d %d %d\n",pos_rpy_tb[0],pos_rpy_tb[1],pos_rpy_tb[2]);
+                }
 
-  if(aruco_individuato()) {
-    sleep(2);
-    Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
+        }
 
-    if(! T_0_aruco_valid.valid){
-      //esplorazione pannello centrale
-      return false;
     }
 
-    Aruco_values[ID_IMU_MODULE].valid=true;
-    Aruco_values[ID_IMU_MODULE].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
-
-    return true;
-  }
-
-  return false;
-
-
-
+    inFile.close();
+    pos_joint_iniziale_cam_alta=pos_joint_iniziale;
+    pos_joint_iniziale_cam_alta[5]=grad_to_rad(-90);
 }
-bool left_panel(){
+void set_homo_std_matrix(){
 
-  action_gripper("open");
-  if(!esplora_cerca_IMU()){
-    return false;
-  }
-
-  Affine_valid T_aruco_valid=homo_0_aruco_elaration();
-  if(!T_aruco_valid.valid){
-    return false;
-   }
-
-  Affine3d T_aruco_finalpos,T_0_finalpos_pregrasp;
-  T_aruco_finalpos.translation().x()=0;
-  T_aruco_finalpos.translation().y()=0;
-  T_aruco_finalpos.translation().z()=0.14;
-  T_aruco_finalpos.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0)*from_rpy_to_rotational_matrix(M_PI/2,0,0);
+  //from tool0 to camera mount        <origin xyz="0.0 0.0 -0.0015" rpy="1.5707 0.0 -1.5707" />
+  //from camera mount to camera_link1 <origin xyz="0 -0.000447 0.08739618542" rpy="0 0 ${pi/2}" />
+  //from camera link1 to camera link  <origin xyz="0.0 0.0 0.0" rpy="0 ${pi/18} 0" />
+  Vector3d translation_tool_camera(0.0081,0.0874,0);
+  Matrix3d rotation_tool_camera;
+  Vector3d xvec_des(0.9848,-0.1736,0),yvec_des(0,0,-1),zvec_des(0.1736,0.9848,0);
+  rotation_tool_camera.col(0)=xvec_des;
+  rotation_tool_camera.col(1)=yvec_des;
+  rotation_tool_camera.col(2)=zvec_des;
+  T_tool_camera.translation()=translation_tool_camera;
+  T_tool_camera.linear()=rotation_tool_camera;
 
 
-  T_0_finalpos_pregrasp=T_aruco_valid.homo_matrix*T_aruco_finalpos;
-
-  Pose pose_final_pose_pregrasp=homo_to_pose(T_0_finalpos_pregrasp);
-
-  if(!move_to_pose_cartesian(pose_final_pose_pregrasp)){
-    move_to_pose(pose_final_pose_pregrasp,true);
-  }
-
-
-  sleep(2);
-
-  T_aruco_finalpos.translation().z()=0.103;
+  Vector3d translation_camera_camera_gazebo(0,0,0);
+  Matrix3d rotation_camera_camera_gazebo;
+  Vector3d xvec_cc(0,0,1),yvec_cc(0,-1,0),zvec_cc(1,0,0);
+  rotation_camera_camera_gazebo.col(0)=xvec_cc;
+  rotation_camera_camera_gazebo.col(1)=yvec_cc;
+  rotation_camera_camera_gazebo.col(2)=zvec_cc;
+  T_camera_camera_gazebo.translation()=translation_camera_camera_gazebo;
+  T_camera_camera_gazebo.linear()=rotation_camera_camera_gazebo;
 
 
-  T_0_finalpos_pregrasp=T_aruco_valid.homo_matrix*T_aruco_finalpos;
-  //In questo punto ho T_0_final
-
-  Pose pose_final_pose=homo_to_pose(T_0_finalpos_pregrasp);
-
-  if(!move_to_pose_cartesian(pose_final_pose)){
-    move_to_pose(pose_final_pose,true);
-  }
-
-  action_gripper("semi_open");
-
-  sleep(2);
-
-
-  T_aruco_finalpos.translation().z()=0.13;
-
-
-  T_0_finalpos_pregrasp=T_aruco_valid.homo_matrix*T_aruco_finalpos;
-  //In questo punto ho T_0_final
-
-  pose_final_pose=homo_to_pose(T_0_finalpos_pregrasp);
-
-  if(!move_to_pose_cartesian(pose_final_pose)){
-    move_to_pose(pose_final_pose,true);
-  }
-
-
-  PosizioniBase(str_pos_iniziale_cam_alta);
-
-  if(!move_to_pose_cartesian(pose_final_pose)){
-    move_to_pose(pose_final_pose,true);
-  }
-
-
-  action_gripper("open");
-
-
-  PosizioniBase(str_pos_iniziale_cam_alta);
-
-  return true;
-}
-bool calibrazione_gripper(){
-  ROS_INFO("Codice della calibrazione non completato");
-  return false;
 }
