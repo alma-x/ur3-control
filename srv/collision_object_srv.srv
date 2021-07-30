@@ -1,0 +1,6 @@
+string box_name
+bool add
+geometry_msgs/PoseStamped box_pose
+float32[] box_size
+---
+bool success

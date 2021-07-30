@@ -22,6 +22,7 @@ project(ur3_control)
   eigen_conversions
   tf_conversions
   message_generation
+  geometry_msgs
   )
 
 
@@ -36,6 +37,7 @@ project(ur3_control)
    UserInterface.srv
    aruco_service.srv
    cv_server.srv
+   collision_object_srv.srv
  )
 
 
@@ -43,6 +45,7 @@ project(ur3_control)
    DEPENDENCIES
    std_msgs  # Or other packages containing msgs
    geometry_msgs
+   #geometry_msgs/PoseStamped
  )
 
  catkin_package(
@@ -72,6 +75,7 @@ target_link_libraries(prova_cpp ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
  catkin_install_python(PROGRAMS
    scripts/UI_gara.py
+   scripts/collision_interface.py
    QT/user_interface.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )

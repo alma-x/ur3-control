@@ -9,6 +9,9 @@
 	<!-- CONTROLLER LAUNCHER-->
 	<node name="ERC" pkg="ur3_control" type="ERC" respawn="false" output="screen"></node>
 
+        <!-- COLLISION SERVER-->
+        <node name="collision_interface" pkg="ur3_control" type="collision_interface.py" respawn="false" output="screen"></node>
+
 	<!-- CV LAUNCHER-->
 	<node name="bridge" pkg="ur3_control" type="bridge" respawn="false" output="screen"></node>
 

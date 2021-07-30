@@ -4,6 +4,7 @@
 #include "ros/service.h"
 #include "ur3_control/aruco_service.h"
 #include "ur3_control/UserInterface.h"
+#include "ur3_control/collision_object_srv.h"
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <iostream>
@@ -565,7 +566,7 @@ return false;
 //ACTUAL FUNCTIONS
 
 
-//Bridge
+//Service
 ur3_control::aruco_serviceResponse bridge_service(string modalita,string second_information){
 
     ros::NodeHandle node_handle;
@@ -577,6 +578,45 @@ ur3_control::aruco_serviceResponse bridge_service(string modalita,string second_
     aruco_srv_msg.request.second_information=second_information;
     client1.call(aruco_srv_msg);
     return aruco_srv_msg.response;
+}
+bool add_box(string box_name,PoseStamped box_pose,float box_size[]){
+  ROS_INFO("ADDING BOX");
+  ros::NodeHandle node_handle;
+  ros::ServiceClient client1;
+  client1 = node_handle.serviceClient<ur3_control::collision_object_srv>("/collision_server");
+  ur3_control::collision_object_srv coll_srv;
+/*
+  box_name="middle_panel";
+  box_pose.header.frame_id="base_link";
+  box_size[0]=0.1f;
+  box_size[1]=0.1f;
+  box_size[2]=0.1f;
+
+*/
+  coll_srv.request.add=true;
+  coll_srv.request.box_name=box_name;
+  coll_srv.request.box_pose=box_pose;
+  coll_srv.request.box_size.push_back(box_size[0]);
+  coll_srv.request.box_size.push_back(box_size[1]);
+  coll_srv.request.box_size.push_back(box_size[2]);
+
+  client1.call(coll_srv);
+  return coll_srv.response.success;
+
+}
+bool remove_box(string box_name){
+  ROS_INFO("ADDING BOX");
+  ros::NodeHandle node_handle;
+  ros::ServiceClient client1;
+  client1 = node_handle.serviceClient<ur3_control::collision_object_srv>("/collision_server");
+  ur3_control::collision_object_srv coll_srv;
+
+  coll_srv.request.add=false;
+  coll_srv.request.box_name=box_name;
+
+  client1.call(coll_srv);
+  return coll_srv.response.success;
+
 }
 
 
@@ -600,6 +640,25 @@ bool se_aruco_individuato_aggiorna_array(int ID){
 
     Aruco_values[ID].valid=true;
     Aruco_values[ID].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
+
+    if(ID==1){
+      PoseStamped box_pose;
+      float box_size[3];
+      string box_name=to_string(ID);
+
+      box_size[0]=0.5;
+      box_size[1]=0.5;
+      box_size[2]=0.1;
+
+      box_pose.header.frame_id="base_link";
+      box_pose.pose=Aruco_values[ID].pose;
+      box_pose.pose.position.x+=box_size[2]/2;
+
+
+
+      add_box(box_name,box_pose,box_size);
+}
+
 
     return true;
   }
@@ -2828,7 +2887,7 @@ bool right_panel(){
 
 }
 
-//Inizialisations
+//Inizializations
 void initialize_parameters(){
   gara=false;
   show_log=false;
