@@ -48,8 +48,7 @@ void esegui_msg_from_inteface(){
 
       }
       if(msg_from_interface.modality=="exit"){
-          bridge_service("exit","");
-          bool_exit=true;
+          exit_from_all();
       }
       if(msg_from_interface.modality=="joystick_Joints"){
           vector<double> joint_group_positions=robot->getCurrentJointValues();
@@ -309,8 +308,7 @@ void param_control(){
     break;
   }
   case 42:{
-    bridge_service("exit","");
-    bool_exit=true;
+    exit_from_all();
 
     start_node.deleteParam("objective");
     break;

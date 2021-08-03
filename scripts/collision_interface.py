@@ -10,15 +10,22 @@ from std_msgs.msg import String
 from moveit_commander.conversions import pose_to_list
 from ur3_control.srv import collision_object_srv,collision_object_srvResponse, collision_object_srvRequest
 ## END_SUB_TUTORIAL
+bool_exit=False
 
 def callback_service(req):
-    print(req.box_pose)
-    print(req.box_size)
-    print(req.box_name)
+    global bool_exit
     print('Collision service received')
+
+    if req.exit==True :
+        bool_exit=True
+        return True
+
     if req.add==True:
+        print(req.box_pose)
+        print(req.box_size)
+        print(req.box_name)
         return tutorial.add_box(req.box_pose,box_name=req.box_name,box_size=req.box_size)
-    else:
+    if req.add==False and req.exit==False:
         return tutorial.remove_box(box_name=req.box_name)
     #return collision_object_srvResponse(success=True)
 
@@ -428,66 +435,26 @@ def main():
     print "----------------------------------------------------------"
     print "Welcome to the MoveIt MoveGroup Python Interface Tutorial"
     print "----------------------------------------------------------"
-    #print "Press Ctrl-D to exit at any time"
-    #print ""
-    #print "============ Press `Enter` to begin the tutorial by setting up the moveit_commander ..."
-    #raw_input()
     tutorial = MoveGroupPythonIntefaceTutorial()
 
     rospy.Service('collision_server', collision_object_srv, callback_service)
-    try:
-        rospy.spin()
-    except KeyboardInterrupt:#
-        print('Closing')
 
-
-
-    #print "============ Press `Enter` to execute a movement using a joint state goal ..."
-    #raw_input()
-    #tutorial.go_to_joint_state()
-
-    #print "============ Press `Enter` to execute a movement using a pose goal ..."
-    #raw_input()
-    #tutorial.go_to_pose_goal()
-
-    #print "============ Press `Enter` to plan and display a Cartesian path ..."
-    #raw_input()
-    #cartesian_plan, fraction = tutorial.plan_cartesian_path()
-
-    #print "============ Press `Enter` to display a saved trajectory (this will replay the Cartesian path)  ..."
-    #raw_input()
-    #tutorial.display_trajectory(cartesian_plan)
-
-    #print "============ Press `Enter` to execute a saved path ..."
-    #raw_input()
-    #tutorial.execute_plan(cartesian_plan)
-
-    #print "============ Press `Enter` to add a box to the planning scene ..."
-    #raw_input()
-    #tutorial.add_box()
-
-    #print "============ Press `Enter` to attach a Box to the Panda robot ..."
-    #raw_input()
-    #tutorial.attach_box()
-
-    #print "============ Press `Enter` to plan and execute a path with an attached collision object ..."
-    #raw_input()
-    #cartesian_plan, fraction = tutorial.plan_cartesian_path(scale=-1)
-    #tutorial.execute_plan(cartesian_plan)
-
-    #print "============ Press `Enter` to detach the box from the Panda robot ..."
-    #raw_input()
-    #tutorial.detach_box()
-
-    #print "============ Press `Enter` to remove the box from the planning scene ..."
-    #raw_input()
-    #tutorial.remove_box()
-
+    #try:
+    #    rospy.spin()
+    #    print('ciao');
+    #except KeyboardInterrupt:#
+    #    print('Closing')
+    #except bool_exit:
+    #    print('Closing')
+    while (not rospy.core.is_shutdown()) and (not bool_exit):
+        rospy.rostime.wallsleep(0.5)
     print "============ Python tutorial demo complete!"
   except rospy.ROSInterruptException:
     return
   except KeyboardInterrupt:
     return
 
+  except bool_exit==True:
+      return
 if __name__ == '__main__':
   main()

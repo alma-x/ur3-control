@@ -137,7 +137,7 @@ Pose_valid pose_pannello_elaborata;
 Pose_valid Aruco_values[20];
 bool bool_exit=false;
 bool gara=true;
-
+bool adding_collision_enabled=false;
 void pick(string name_object);
 char getch();
 double grad_to_rad(double grad);
@@ -167,7 +167,7 @@ Pose homo_to_pose(Affine3d homo);
 bool move_aruco_to_center_of_camera(double percentual_zoom);
 bool ritorno_al_pannello(double percentual);
 Affine_valid homo_0_aruco_elaration();
-
+bool add_box(string box_name,PoseStamped box_pose,float box_size[]);
 
 //OLD FUNCTIONS
 void pick(string name_object){
@@ -579,44 +579,15 @@ ur3_control::aruco_serviceResponse bridge_service(string modalita,string second_
     client1.call(aruco_srv_msg);
     return aruco_srv_msg.response;
 }
-bool add_box(string box_name,PoseStamped box_pose,float box_size[]){
-  ROS_INFO("ADDING BOX");
+ur3_control::collision_object_srvResponse collision_service(ur3_control::collision_object_srvRequest coll_req){
   ros::NodeHandle node_handle;
   ros::ServiceClient client1;
+  ur3_control::collision_object_srv msg;
   client1 = node_handle.serviceClient<ur3_control::collision_object_srv>("/collision_server");
-  ur3_control::collision_object_srv coll_srv;
-/*
-  box_name="middle_panel";
-  box_pose.header.frame_id="base_link";
-  box_size[0]=0.1f;
-  box_size[1]=0.1f;
-  box_size[2]=0.1f;
 
-*/
-  coll_srv.request.add=true;
-  coll_srv.request.box_name=box_name;
-  coll_srv.request.box_pose=box_pose;
-  coll_srv.request.box_size.push_back(box_size[0]);
-  coll_srv.request.box_size.push_back(box_size[1]);
-  coll_srv.request.box_size.push_back(box_size[2]);
-
-  client1.call(coll_srv);
-  return coll_srv.response.success;
-
-}
-bool remove_box(string box_name){
-  ROS_INFO("ADDING BOX");
-  ros::NodeHandle node_handle;
-  ros::ServiceClient client1;
-  client1 = node_handle.serviceClient<ur3_control::collision_object_srv>("/collision_server");
-  ur3_control::collision_object_srv coll_srv;
-
-  coll_srv.request.add=false;
-  coll_srv.request.box_name=box_name;
-
-  client1.call(coll_srv);
-  return coll_srv.response.success;
-
+  msg.request=coll_req;
+  client1.call(msg);
+  return msg.response;
 }
 
 
@@ -638,26 +609,34 @@ bool se_aruco_individuato_aggiorna_array(int ID){
       return false;
     }
 
+    //Aggiungo box di collision
+    if(!Aruco_values[ID].valid){
+      //Se non è mai stato trovato
+
+
+      if(ID==1){
+        PoseStamped box_pose;
+        float box_size[3];
+        string box_name=to_string(ID);
+
+        box_size[0]=0.5;
+        box_size[1]=0.5;
+        box_size[2]=0.1;
+
+        box_pose.header.frame_id="base_link";
+        box_pose.pose=Aruco_values[ID].pose;
+        box_pose.pose.position.x+=box_size[2]/2;
+
+
+
+        add_box(box_name,box_pose,box_size);
+        }
+    }
+
     Aruco_values[ID].valid=true;
     Aruco_values[ID].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
 
-    if(ID==1){
-      PoseStamped box_pose;
-      float box_size[3];
-      string box_name=to_string(ID);
 
-      box_size[0]=0.5;
-      box_size[1]=0.5;
-      box_size[2]=0.1;
-
-      box_pose.header.frame_id="base_link";
-      box_pose.pose=Aruco_values[ID].pose;
-      box_pose.pose.position.x+=box_size[2]/2;
-
-
-
-      add_box(box_name,box_pose,box_size);
-}
 
 
     return true;
@@ -887,6 +866,48 @@ void signal_callback_handler(int signum) {
    // Terminate program
    bool_exit=true;
    //exit(signum);
+}
+void exit_from_all(){
+
+  ur3_control::collision_object_srvRequest coll_req;
+  coll_req.exit=true;
+  coll_req.add=false;
+
+  collision_service(coll_req);
+
+  bridge_service("exit","");
+
+  bool_exit=true;
+
+}
+bool add_box(string box_name,PoseStamped box_pose,float box_size[]){
+
+  if(!adding_collision_enabled){
+    return false;
+  }
+
+  ROS_INFO("ADDING BOX");
+  ur3_control::collision_object_srvRequest coll_srv;
+  coll_srv.add=true;
+  coll_srv.box_name=box_name;
+  coll_srv.box_pose=box_pose;
+  coll_srv.box_size.push_back(box_size[0]);
+  coll_srv.box_size.push_back(box_size[1]);
+  coll_srv.box_size.push_back(box_size[2]);
+
+
+  return collision_service(coll_srv).success;
+
+}
+bool remove_box(string box_name){
+  ROS_INFO("ADDING BOX");
+  ur3_control::collision_object_srvRequest coll_srv;
+
+  coll_srv.add=false;
+  coll_srv.box_name=box_name;
+
+  return collision_service(coll_srv).success;
+
 }
 
 //Stampa
@@ -1215,6 +1236,18 @@ bool move_to_joints(vector<double> joint_group_positions){
     ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
     return false;
   }
+}
+bool move_to_pose_optimized(geometry_msgs::Pose pose){
+  if(!move_to_pose_cartesian(pose)){
+    if(!move_to_pose(pose,true)){
+      return false;
+    }
+  }
+  if(!move_to_pose(pose,true)){
+    return false;
+  }
+
+  return true;
 }
 bool ritorno_al_pannello(double percentual){
   ROS_INFO("ERC:Starting going back to pannello");
@@ -2283,6 +2316,8 @@ bool solleva_coperchio(){
   pose_final=homo_to_pose(T_0_final);
 
 
+
+
   joint_group_positions=pos_joint_iniziale;
   joint_group_positions[0]=grad_to_rad(-50);
   joint_group_positions[1]=grad_to_rad(-90);
@@ -2290,19 +2325,17 @@ bool solleva_coperchio(){
   joint_group_positions[3]=grad_to_rad(-78);
   joint_group_positions[4]=grad_to_rad(-90);
   joint_group_positions[5]=grad_to_rad(-120);
-  robot->setJointValueTarget(joint_group_positions);
-  success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
-  ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
-  robot->move();
+
+  if(!move_to_joints(joint_group_positions)){
+    return false;
+  }
 
 
   pose_final01=robot->getCurrentPose().pose;
   pose_final01.position.z=pose_final.position.z;
   //stampa_Pose(pose_final01);
-  if(!move_to_pose_cartesian(pose_final01)){
-    if(!move_to_pose(pose_final01,true)){
+  if(!move_to_pose_optimized(pose_final01)){
       return false;
-    }
   }
 
 
@@ -2310,19 +2343,15 @@ bool solleva_coperchio(){
   pose_final02.orientation=pose_final.orientation;
   //stampa_Pose(pose_final02);
 
-  if(!move_to_pose_cartesian(pose_final02)){
-    if(!move_to_pose(pose_final02,true)){
+
+  if(!move_to_pose_optimized(pose_final02)){
       return false;
-    }
   }
 
   //stampa_Pose(pose_final);
-  if(!move_to_pose_cartesian(pose_final)){
-    if(!move_to_pose(pose_final,true)){
+  if(!move_to_pose_optimized(pose_final)){
       return false;
-    }
   }
-
   if(se_aruco_individuato_aggiorna_array(ID_INSPECTION_WINDOW_COVER)){
     T_0_aruco=pose_to_homo(Aruco_values[ID_INSPECTION_WINDOW_COVER].pose);
     T_0_final=T_0_aruco*T_aruco_final;
@@ -2340,25 +2369,20 @@ bool solleva_coperchio(){
   T_0_final_avvicinato=T_0_aruco*T_aruco_final_avvicinato;
   pose_final_avvicinato=homo_to_pose(T_0_final_avvicinato);
 
-  if(!move_to_pose_cartesian(pose_final_avvicinato)){
-    if(!move_to_pose(pose_final_avvicinato,true)){
-      return false;
-    }
-  }
 
+  if(!move_to_pose_optimized(pose_final_avvicinato)){
+      return false;
+  }
 
   action_gripper("semi_close");
 
   ROS_INFO("IL coperchio e' stato afferrato, lo sollevo e lo appoggio nel punto corretto");
 
   //mi alzo
-  if(!move_to_pose_cartesian(pose_final)){
-    if(!move_to_pose(pose_final,true)){
+
+  if(!move_to_pose_optimized(pose_final)){
       return false;
-    }
   }
-
-
 
 
   ROS_INFO("FUNCTION COMPLETE");
@@ -2891,6 +2915,7 @@ bool right_panel(){
 void initialize_parameters(){
   gara=false;
   show_log=false;
+  adding_collision_enabled=false;
   robot->setPlannerId("RRTConnectkConfigDefault");
   robot->setPlanningTime(5);
   pose_pannello_elaborata.valid=false;
