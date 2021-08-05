@@ -1238,16 +1238,15 @@ bool move_to_joints(vector<double> joint_group_positions){
   }
 }
 bool move_to_pose_optimized(geometry_msgs::Pose pose){
-  if(!move_to_pose_cartesian(pose)){
-    if(!move_to_pose(pose,true)){
-      return false;
-    }
+  if(move_to_pose_cartesian(pose)){
+      return true;
   }
-  if(!move_to_pose(pose,true)){
-    return false;
+  if(move_to_pose(pose,true)){
+    return true;
   }
+  stampa_Pose(pose);
 
-  return true;
+  return false;
 }
 bool ritorno_al_pannello(double percentual){
   ROS_INFO("ERC:Starting going back to pannello");
@@ -2292,14 +2291,12 @@ bool solleva_coperchio(){
   }
 
   ROS_INFO("ARUCO TROVATO, POSSO ANDARE A PRENDERE LA COVER");
-
+  Pose p_0_aruco=Aruco_values[ID_INSPECTION_WINDOW_COVER].pose;
   vector<double> joint_group_positions=pos_joint_iniziale;
-  joint_group_positions[0]=grad_to_rad(-50);
 
-  robot->setJointValueTarget(joint_group_positions);
-  success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
-  ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
-  robot->move();
+  joint_group_positions[0]=atan2(p_0_aruco.position.y,p_0_aruco.position.x);
+
+  move_to_joints(joint_group_positions);
 
   ROS_INFO("VADO IN :POSIZIONE ADATTA PER ANDARE ALLA COVER");
 
@@ -2319,7 +2316,7 @@ bool solleva_coperchio(){
 
 
   joint_group_positions=pos_joint_iniziale;
-  joint_group_positions[0]=grad_to_rad(-50);
+  joint_group_positions[0]=atan2(p_0_aruco.position.y,p_0_aruco.position.x);
   joint_group_positions[1]=grad_to_rad(-90);
   joint_group_positions[2]=grad_to_rad(87.4);
   joint_group_positions[3]=grad_to_rad(-78);
