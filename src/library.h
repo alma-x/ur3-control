@@ -140,6 +140,9 @@ Pose_valid Aruco_values[20];
 bool bool_exit=false;
 bool gara=true;
 bool adding_collision_enabled=false;
+
+
+
 void pick(string name_object);
 char getch();
 double grad_to_rad(double grad);
@@ -170,6 +173,9 @@ bool move_aruco_to_center_of_camera(double percentual_zoom);
 bool ritorno_al_pannello(double percentual);
 Affine_valid homo_0_aruco_elaration();
 bool add_box(string box_name,PoseStamped box_pose,float box_size[]);
+bool move_to_pose_optimized(geometry_msgs::Pose pose);
+bool move_to_pose_cartesian(geometry_msgs::Pose pose);
+
 
 //OLD FUNCTIONS
 void pick(string name_object){
@@ -594,6 +600,25 @@ ur3_control::collision_object_srvResponse collision_service(ur3_control::collisi
 
 
 //Void comode
+
+bool cambia_aruco(string ID){
+  for(int j=0;j<10;j++){
+    ur3_control::aruco_serviceResponse msg=bridge_service(str_md_next_aruco,ID);
+    if(std::to_string(msg.id_aruco)==ID){
+      return true;
+    }
+
+    uint milliseconds=500;
+    for(int i=0;i<10;i++){
+      usleep(milliseconds*1000);//from milliseconds to microseconds
+      msg=bridge_service(str_md_next_aruco,ID);
+      if(std::to_string(msg.id_aruco)==ID){
+        return true;
+      }
+    }
+  }
+  return false;
+}
 bool aruco_individuato(){
 
   return bridge_service(str_md_rd,"").aruco_found;
@@ -601,38 +626,126 @@ bool aruco_individuato(){
 }
 bool se_aruco_individuato_aggiorna_array(int ID){
 
+  ur3_control::aruco_serviceResponse msg;
+  msg=bridge_service(str_md_rd,"");
+
+
+  bool aruco_di_interesse_aggiornato=false;
+  bool almeno_uno_trovato=false;
+
+
+  for(int i=0;i<msg.all_aruco_found.size();i++){
+    if(msg.all_aruco_found[i]==true && !Aruco_values[i].valid){
+      almeno_uno_trovato=true;
+    }
+  }
+
+  if(!almeno_uno_trovato)
+    return false;
+
+  sleep(2);
+
+  msg=bridge_service(str_md_rd,"");
+
+  for(int i=0;i<msg.all_aruco_found.size();i++){
+    if(msg.all_aruco_found[i]==true){
+      cambia_aruco(to_string(i));
+
+
+      if(aruco_individuato()) {
+        ROS_INFO("ARUCO: %d INDIVIDUATO",i);
+        Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
+
+        if(T_0_aruco_valid.valid){
+
+          //Aggiungo box di collision se non è mai stato trovato
+          if(!Aruco_values[i].valid){
+            ROS_INFO("E' la prima volta che vedo questo aruco");
+
+
+            if(i==1){
+//            PoseStamped box_pose;
+//            float box_size[3];
+//            string box_name=to_string(i);
+
+//            box_size[0]=0.5;
+//            box_size[1]=0.5;
+//            box_size[2]=0.1;
+
+//            box_pose.header.frame_id="base_link";
+//            box_pose.pose=Aruco_values[i].pose;
+//            box_pose.pose.position.x+=box_size[2]/2;
+
+
+
+//            add_box(box_name,box_pose,box_size);
+
+            }
+
+          }
+
+          Aruco_values[i].valid=true;
+          Aruco_values[i].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
+
+          if(i==ID)
+            aruco_di_interesse_aggiornato=true;
+
+        }
+
+
+
+
+      }
+    }
+
+  }
+  cambia_aruco(to_string(ID));
+  sleep(2);
+  if(aruco_di_interesse_aggiornato)
+    return true;
+
+  return false;
+}
+
+/*
+bool se_aruco_individuato_aggiorna_array(int ID){
+
+
+  if(!aruco_individuato())
+    return false;
+
+  sleep(2);
+
   if(aruco_individuato()) {
     ROS_INFO("ARUCO: %d INDIVIDUATO",ID);
-    sleep(2);
     Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
 
     if(! T_0_aruco_valid.valid){
-      //esplorazione pannello centrale
       return false;
     }
 
     //Aggiungo box di collision se non è mai stato trovato
     if(!Aruco_values[ID].valid){
-      //Se non è mai stato trovato
+      ROS_INFO("E' la prima volta che vedo questo aruco");
 
 
-      if(ID==1){/*
-        PoseStamped box_pose;
-        float box_size[3];
-        string box_name=to_string(ID);
+      if(ID==1){
+//        PoseStamped box_pose;
+//        float box_size[3];
+//        string box_name=to_string(ID);
 
-        box_size[0]=0.5;
-        box_size[1]=0.5;
-        box_size[2]=0.1;
+//        box_size[0]=0.5;
+//        box_size[1]=0.5;
+//        box_size[2]=0.1;
 
-        box_pose.header.frame_id="base_link";
-        box_pose.pose=Aruco_values[ID].pose;
-        box_pose.pose.position.x+=box_size[2]/2;
+//        box_pose.header.frame_id="base_link";
+//        box_pose.pose=Aruco_values[ID].pose;
+//        box_pose.pose.position.x+=box_size[2]/2;
 
 
 
-        add_box(box_name,box_pose,box_size);
-        */
+//        add_box(box_name,box_pose,box_size);
+
         }
 
     }
@@ -647,23 +760,7 @@ bool se_aruco_individuato_aggiorna_array(int ID){
   }
 return false;
 }
-bool cambia_aruco(string ID){
-  for(int j=0;j<10;j++){
-    ur3_control::aruco_serviceResponse msg=bridge_service(str_md_next_aruco,ID);
-    if(std::to_string(msg.id_aruco)==ID){
-      return true;
-    }
-    uint milliseconds=500;
-    for(int i=0;i<10;i++){
-      usleep(milliseconds*1000);//from milliseconds to microseconds
-      msg=bridge_service(str_md_next_aruco,ID);
-      if(std::to_string(msg.id_aruco)==ID){
-        return true;
-      }
-    }
-  }
-  return false;
-}
+*/
 void controlla(char key){
     Vector3d translation(0,0,0);
     string k;
@@ -797,15 +894,9 @@ void controlla(char key){
     else{
       if(bool_ee){
         if(!SDR_SOLIDALE){
-        vector<Pose> waypoints;
-        waypoints.push_back(targ);
-        moveit_msgs::RobotTrajectory trajectory;
-        robot->computeCartesianPath(waypoints,0.001,0,trajectory);
-        success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
-        ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
-        my_plan.trajectory_=trajectory;
-        robot->execute(my_plan);
-        waypoints.clear();
+        robot->setPlanningTime(0.5);
+        move_to_pose_cartesian(targ);
+        robot->setPlanningTime(std_planning_time);
         }
         else{
           tf2::Quaternion quat1;
@@ -1177,7 +1268,6 @@ bool move_to_pose_cartesian(geometry_msgs::Pose pose){
   const double eef_step = 0.01;
   double traj_threshold=1;
 
-  robot->setPlanningTime(std_planning_time);
   double traj_erro=robot->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory, true);
   if(traj_erro>=traj_threshold){
     robot->execute(trajectory);
@@ -1496,6 +1586,7 @@ void set_angolo(unsigned int giunto,int angolo)
   ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
   robot->move();
 }
+
 
 
 //Trasformate omogenee
@@ -1952,7 +2043,6 @@ bool esplora_inspection_cover_storage(){
 
 
 
-
   ruota_360();
 
 
@@ -2131,7 +2221,7 @@ bool esplora_inspection_window_cover(){
   else return false;
 }
 bool esplora_cerca_IMU(){
-  bridge_service(str_md_next_aruco,"10");
+  cambia_aruco(to_string(ID_IMU_MODULE));
   sleep(1);
 
 
@@ -2165,8 +2255,76 @@ bool esplora_cerca_IMU(){
 
 }
 bool esplora_cerca_left_panel_IMU(){
-  ROS_INFO("NON ANCORA FINITO ESPLORAZIONE LEFT PANEL");
-  return true;
+  ROS_INFO("Inizio esplorazione per trovare aruco IMU DESTINATION");
+  cambia_aruco(to_string(ID_IMU_DESTINATION_PLANE));
+  if(se_aruco_individuato_aggiorna_array(ID_IMU_DESTINATION_PLANE))
+    return true;
+
+  bridge_service(str_md_bpa,"");
+
+  PosizioniBase(str_pos_iniziale);
+
+  if(se_aruco_individuato_aggiorna_array(ID_IMU_DESTINATION_PLANE))
+    return true;
+//ROUTINE 1
+{
+  vector<double> joint_group_positions=robot->getCurrentJointValues();
+  joint_group_positions=pos_joint_iniziale;
+  joint_group_positions[0]=grad_to_rad(0);
+  joint_group_positions[1]=grad_to_rad(-136.929);
+  joint_group_positions[2]=grad_to_rad(103.488);
+  joint_group_positions[3]=grad_to_rad(20);
+  joint_group_positions[4]=grad_to_rad(90);
+  joint_group_positions[5]=grad_to_rad(90);
+
+  if(!move_to_joints(joint_group_positions)){
+    return false;
+  }
+
+  if(se_aruco_individuato_aggiorna_array(ID_IMU_DESTINATION_PLANE))
+    return true;
+
+
+  joint_group_positions[0]=grad_to_rad(90);
+  if(!move_to_joints(joint_group_positions)){
+    return false;
+  }
+
+  if(se_aruco_individuato_aggiorna_array(ID_IMU_DESTINATION_PLANE))
+    return true;
+
+
+  joint_group_positions[3]=grad_to_rad(40);
+  if(!move_to_joints(joint_group_positions)){
+    return false;
+  }
+
+  joint_group_positions[0]=grad_to_rad(0);
+  if(!move_to_joints(joint_group_positions)){
+    return false;
+  }
+
+  if(se_aruco_individuato_aggiorna_array(ID_IMU_DESTINATION_PLANE))
+    return true;
+
+  joint_group_positions[3]=grad_to_rad(60);
+  if(!move_to_joints(joint_group_positions)){
+    return false;
+  }
+
+  if(se_aruco_individuato_aggiorna_array(ID_IMU_DESTINATION_PLANE))
+    return true;
+
+  joint_group_positions[0]=grad_to_rad(90);
+  if(!move_to_joints(joint_group_positions)){
+    return false;
+  }
+
+  if(se_aruco_individuato_aggiorna_array(ID_IMU_DESTINATION_PLANE))
+    return true;
+}
+
+  return false;
 }
 bool esplorazione_middle_panel_per_trovare_aruco(string ID_str){
   stringstream ss;
@@ -2287,7 +2445,7 @@ bool esplorazione_middle_panel_per_trovare_aruco(string ID_str){
 }
 
 //Panels
-bool solleva_coperchio(){
+/*bool solleva_coperchio(){
 
   if(!Aruco_values[ID_INSPECTION_WINDOW_COVER].valid){
     if(!esplora_inspection_window_cover())
@@ -2389,13 +2547,115 @@ bool solleva_coperchio(){
   ROS_INFO("FUNCTION COMPLETE");
   return true;
 }
+*/
+bool solleva_coperchio(){
+
+  if(!Aruco_values[ID_INSPECTION_WINDOW_COVER].valid){
+    if(!esplora_inspection_window_cover())
+      return false;
+  }
+
+  ROS_INFO("ARUCO TROVATO, POSSO ANDARE A PRENDERE LA COVER");
+  Pose p_0_aruco=Aruco_values[ID_INSPECTION_WINDOW_COVER].pose;
+  vector<double> joint_group_positions=pos_joint_iniziale_cam_alta;
+
+  move_to_joints(joint_group_positions);
+
+  joint_group_positions[0]=atan2(p_0_aruco.position.y,p_0_aruco.position.x);
+
+  move_to_joints(joint_group_positions);
+
+  ROS_INFO("VADO IN :POSIZIONE ADATTA PER ANDARE ALLA COVER");
+
+  Affine3d T_aruco_final01,T_aruco_final,T_aruco_final02,T_0_final,T_0_final01,T_0_final02, T_0_aruco;
+  Pose pose_final01,pose_final02,pose_final03,pose_final;
+  T_0_aruco=pose_to_homo(Aruco_values[ID_INSPECTION_WINDOW_COVER].pose);
+
+
+
+
+  T_aruco_final.translation().x()=0.0499;//0.05
+  T_aruco_final.translation().y()=0.0249-(0.096+0.0125+0.03);//0.025 - (0.096+0.012+sicurezza)=-0.191 + sicurezza=-0.22
+  T_aruco_final.translation().z()=0.017 + 0.05;//0.015
+  T_aruco_final.linear()=from_rpy_to_rotational_matrix(0,0,M_PI/2)*from_rpy_to_rotational_matrix(M_PI/2,0,0);
+  T_0_final=T_0_aruco*T_aruco_final;
+  pose_final=homo_to_pose(T_0_final);
+
+
+
+  pose_final01=robot->getCurrentPose().pose;
+  pose_final01.orientation=pose_final.orientation;
+  //stampa_Pose(pose_final02);
+
+
+  if(!move_to_pose_optimized(pose_final01)){
+      return false;
+  }
+
+  pose_final02=robot->getCurrentPose().pose;
+  pose_final02.position.z=pose_final.position.z;
+  //stampa_Pose(pose_final01);
+  if(!move_to_pose_optimized(pose_final02)){
+      return false;
+  }
+
+  pose_final03=robot->getCurrentPose().pose;
+  pose_final03.position.x=pose_final.position.x;
+  //stampa_Pose(pose_final01);
+  if(!move_to_pose_optimized(pose_final03)){
+      return false;
+  }
+
+
+  //stampa_Pose(pose_final);
+  if(!move_to_pose_optimized(pose_final)){
+      return false;
+  }
+  if(se_aruco_individuato_aggiorna_array(ID_INSPECTION_WINDOW_COVER)){
+    T_0_aruco=pose_to_homo(Aruco_values[ID_INSPECTION_WINDOW_COVER].pose);
+    T_0_final=T_0_aruco*T_aruco_final;
+    pose_final=homo_to_pose(T_0_final);
+  }
+
+  //scendi per afferrare
+  Affine3d T_aruco_final_avvicinato,T_0_final_avvicinato;
+  Pose pose_final_avvicinato;
+
+  T_aruco_final_avvicinato.translation().x()=0.0499;//0.05
+  T_aruco_final_avvicinato.translation().y()=0.0249-(0.096+0.0125);//0.025 - (0.096+0.012+sicurezza)=-0.191 + sicurezza=-0.22
+  T_aruco_final_avvicinato.translation().z()=0.017;//132+35/2=149.5
+  T_aruco_final.linear()=from_rpy_to_rotational_matrix(0,0,M_PI/2)*from_rpy_to_rotational_matrix(M_PI/2,0,0);
+  T_0_final_avvicinato=T_0_aruco*T_aruco_final_avvicinato;
+  pose_final_avvicinato=homo_to_pose(T_0_final_avvicinato);
+
+
+  if(!move_to_pose_optimized(pose_final_avvicinato)){
+      return false;
+  }
+
+  action_gripper("semi_close");
+
+  ROS_INFO("IL coperchio e' stato afferrato, lo sollevo e lo appoggio nel punto corretto");
+
+  //mi alzo
+
+  if(!move_to_pose_optimized(pose_final)){
+      return false;
+  }
+
+
+  ROS_INFO("FUNCTION COMPLETE");
+  return true;
+}
+
+
 bool left_panel(){
 
   action_gripper("open");
 
   if(!Aruco_values[ID_IMU_DESTINATION_PLANE].valid){
     if(!esplora_cerca_left_panel_IMU())
-      return false;
+      ROS_INFO("LEFT PANEL NON TROVATO");
   }
 
   if(!Aruco_values[ID_IMU_MODULE].valid){
@@ -2657,7 +2917,7 @@ bool action_aruco_button(string ID_str){
   //POSIZIONE PER PREMERE PULSANTE
   T_aruco_finalpos.translation().x()=0;
   T_aruco_finalpos.translation().y()=-0.055; //-0.055 per la gara
-  T_aruco_finalpos.translation().z()=0.163; //17+135+12,5=164.5 mm=0.164m    - in teoria 1mm di spessore aruco=0.163
+  T_aruco_finalpos.translation().z()=0.18; //17+135+12,5=164.5 mm=0.164m    - in teoria 1mm di spessore aruco=0.163
   T_aruco_finalpos.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0);//*from_rpy_to_rotational_matrix(M_PI,0,0);
 
 

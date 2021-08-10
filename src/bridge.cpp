@@ -13,6 +13,7 @@ ur3_control::cv_to_bridge msg_from_cv;
 sensor_msgs::JointState msg_from_joints;
 ros::ServiceClient client;
 bool bool_md_bpa=false;
+int ID_DA_BLOCCARE=-1;
 void stampa_cv_msg(const ur3_control::cv_to_bridge msg){
 ROS_INFO("Message received:\n x:%f \n y:%f \n z:%f \n success:%s",msg.x,msg.y,msg.z,(msg.success)? "success":"not success");
 }
@@ -21,8 +22,8 @@ void cv_callback(const ur3_control::cv_to_bridge& msg){
   msg_from_cv=msg;
 
 
-  if(bool_md_bpa && msg_from_cv.success){
-
+  if(bool_md_bpa && msg_from_cv.success && msg.id_aruco==ID_DA_BLOCCARE){
+    ROS_INFO("BRIDGE:BLOCCO ROBOT");
     bool_md_bpa=false;
 
 //    actionlib_msgs::GoalID msg_traj_cancel;
@@ -43,9 +44,12 @@ bool callback_modality(ur3_control::aruco_service::Request &req, ur3_control::ar
      ROS_INFO("Bridge:Chiamata ricevuta:\nModalita:%s\n\n",req.modality.c_str());
 
   if(str_md_bpa==req.modality){
+    ID_DA_BLOCCARE=msg_from_cv.id_aruco;
+    ROS_INFO("BRIDGE: BLOCCO APPENA VEDO ARUCO %d",ID_DA_BLOCCARE);
     bool_md_bpa=true;
   }
   if(str_md_stop_bpa==req.modality){
+    ID_DA_BLOCCARE=-1;
     bool_md_bpa=false;
   }
   if(str_md_next_aruco==req.modality){
