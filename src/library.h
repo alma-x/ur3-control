@@ -2611,24 +2611,24 @@ bool solleva_coperchio(){
   if(!move_to_pose_optimized(pose_final)){
       return false;
   }
-  if(se_aruco_individuato_aggiorna_array(ID_INSPECTION_WINDOW_COVER)){
-    T_0_aruco=pose_to_homo(Aruco_values[ID_INSPECTION_WINDOW_COVER].pose);
-    T_0_final=T_0_aruco*T_aruco_final;
-    pose_final=homo_to_pose(T_0_final);
-  }
+//  if(se_aruco_individuato_aggiorna_array(ID_INSPECTION_WINDOW_COVER)){
+//    T_0_aruco=pose_to_homo(Aruco_values[ID_INSPECTION_WINDOW_COVER].pose);
+//    T_0_final=T_0_aruco*T_aruco_final;
+//    pose_final=homo_to_pose(T_0_final);
+//  }
 
   //scendi per afferrare
   Affine3d T_aruco_final_avvicinato,T_0_final_avvicinato;
   Pose pose_final_avvicinato;
 
   T_aruco_final_avvicinato.translation().x()=0.0499;//0.05
-  T_aruco_final_avvicinato.translation().y()=0.0249-(0.096+0.0125);//0.025 - (0.096+0.012+sicurezza)=-0.191 + sicurezza=-0.22
+  T_aruco_final_avvicinato.translation().y()=0.0249-(0.096+0.0125+0.03);//0.025 - (0.096+0.012+sicurezza)=-0.191 + sicurezza=-0.22
   T_aruco_final_avvicinato.translation().z()=0.017;//132+35/2=149.5
-  T_aruco_final.linear()=from_rpy_to_rotational_matrix(0,0,M_PI/2)*from_rpy_to_rotational_matrix(M_PI/2,0,0);
+  T_aruco_final_avvicinato.linear()=from_rpy_to_rotational_matrix(0,0,M_PI/2)*from_rpy_to_rotational_matrix(M_PI/2,0,0);
   T_0_final_avvicinato=T_0_aruco*T_aruco_final_avvicinato;
   pose_final_avvicinato=homo_to_pose(T_0_final_avvicinato);
 
-
+  sleep(3);
   if(!move_to_pose_optimized(pose_final_avvicinato)){
       return false;
   }
@@ -2656,8 +2656,6 @@ bool solleva_coperchio(){
   ROS_INFO("FUNCTION COMPLETE");
   return true;
 }
-
-
 bool left_panel(){
 
   action_gripper("open");
