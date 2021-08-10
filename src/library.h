@@ -2642,6 +2642,15 @@ bool solleva_coperchio(){
   if(!move_to_pose_optimized(pose_final)){
       return false;
   }
+  if(!move_to_pose_optimized(pose_final03)){
+      return false;
+  }
+  if(!move_to_pose_optimized(pose_final02)){
+      return false;
+  }
+  if(!move_to_pose_optimized(pose_final01)){
+      return false;
+  }
 
 
   ROS_INFO("FUNCTION COMPLETE");
