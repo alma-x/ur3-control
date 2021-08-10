@@ -330,12 +330,16 @@ int main(int argc, char** argv)
   spinner.start();
   ros::WallDuration(1.0).sleep();
   ros::NodeHandle node_handle,node_service_aruco;
-  MoveGroupInterface move_group(PLANNING_GROUP);
-  int queue_size=1;
+  using namespace std;
+
+
+     MoveGroupInterface move_group(PLANNING_GROUP);
+
+
   robot=&move_group;
-  namespace rvt = rviz_visual_tools;
-  moveit_visual_tools::MoveItVisualTools visual_tools("base_link");
-  visual_tools.deleteAllMarkers();
+  //namespace rvt = rviz_visual_tools;
+  //moveit_visual_tools::MoveItVisualTools visual_tools("base_link");
+  //visual_tools.deleteAllMarkers();
 
   gazebo_model_state_pub = node_handle.advertise<gazebo_msgs::ModelState>("/gazebo/set_model_state", 100);
   pose_object_client = node_handle.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
@@ -343,10 +347,10 @@ int main(int argc, char** argv)
   ros::ServiceServer serv=node_handle.advertiseService("/user_interface_serv", callback_modality);
   pub_gripper = node_handle.advertise<std_msgs::String>("/gripper_command", 1);
   pub_traj_cancel = node_handle.advertise<actionlib_msgs::GoalID>("/move_group/cancel", 1);
-  initialize_parameters();
-  set_homo_std_matrix();
-  load_parameters();
-  calibrazione_gripper();
+
+  //INIZIALIZZAZIONI
+  ALL_INITIAL_VOIDS();
+
 
   string scelta_tipologia;
   string gara_str;

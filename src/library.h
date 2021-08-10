@@ -41,6 +41,8 @@
 #include "control_msgs/GripperCommandActionGoal.h"
 #include <sstream>
 #include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
 using namespace std;
 using namespace geometry_msgs;
 using namespace moveit;
@@ -609,12 +611,12 @@ bool se_aruco_individuato_aggiorna_array(int ID){
       return false;
     }
 
-    //Aggiungo box di collision
+    //Aggiungo box di collision se non è mai stato trovato
     if(!Aruco_values[ID].valid){
       //Se non è mai stato trovato
 
 
-      if(ID==1){
+      if(ID==1){/*
         PoseStamped box_pose;
         float box_size[3];
         string box_name=to_string(ID);
@@ -630,7 +632,9 @@ bool se_aruco_individuato_aggiorna_array(int ID){
 
 
         add_box(box_name,box_pose,box_size);
+        */
         }
+
     }
 
     Aruco_values[ID].valid=true;
@@ -2587,8 +2591,7 @@ bool action_aruco_button(string ID_str){
   ROS_INFO("Aruco trovato, vado a premere il pulsante");
 
 
-
-
+  PosizioniBase(str_pos_iniziale_cam_alta);
   action_gripper("close");
 
 
@@ -2604,7 +2607,7 @@ bool action_aruco_button(string ID_str){
   T_aruco_finalpos.translation().x()=0;
   T_aruco_finalpos.translation().y()=-0.055; //-0.055 per la gara
   T_aruco_finalpos.translation().z()=0.20; //23+135+12,5+sicurezza=170,5mm + sicurezza=0.1705 metri + 0.03=0.20
-  T_aruco_finalpos.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0)*from_rpy_to_rotational_matrix(M_PI,0,0);
+  T_aruco_finalpos.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0);//*from_rpy_to_rotational_matrix(M_PI,0,0);
 
 
   T_0_finalpos_pregrasp=T_0_aruco*T_aruco_finalpos;
@@ -2612,8 +2615,33 @@ bool action_aruco_button(string ID_str){
 
   Pose pose_final_pose_pregrasp=homo_to_pose(T_0_finalpos_pregrasp);
 
-  if(!move_to_pose_cartesian(pose_final_pose_pregrasp)){
-    if(!move_to_pose(pose_final_pose_pregrasp,true))
+  //AVVICINAMENTO
+  Pose pose1,pose2,pose3;
+  {
+    pose1=robot->getCurrentPose().pose;
+    pose1.orientation=pose_final_pose_pregrasp.orientation;
+    if(!move_to_pose_optimized(pose1)){
+        return false;
+    }
+
+    pose2=robot->getCurrentPose().pose;
+    pose2.position.x=pose_final_pose_pregrasp.position.x;
+    pose2.position.y=pose_final_pose_pregrasp.position.y;
+    if(!move_to_pose_optimized(pose2)){
+        return false;
+    }
+
+    pose3=robot->getCurrentPose().pose;
+    pose3.position.z=pose_final_pose_pregrasp.position.z;
+    if(!move_to_pose_optimized(pose3)){
+        return false;
+    }
+
+
+  }
+
+
+  if(!move_to_pose_optimized(pose_final_pose_pregrasp)){
       return false;
   }
 
@@ -2630,7 +2658,7 @@ bool action_aruco_button(string ID_str){
   T_aruco_finalpos.translation().x()=0;
   T_aruco_finalpos.translation().y()=-0.055; //-0.055 per la gara
   T_aruco_finalpos.translation().z()=0.163; //17+135+12,5=164.5 mm=0.164m    - in teoria 1mm di spessore aruco=0.163
-  T_aruco_finalpos.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0)*from_rpy_to_rotational_matrix(M_PI,0,0);
+  T_aruco_finalpos.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0);//*from_rpy_to_rotational_matrix(M_PI,0,0);
 
 
   Affine3d T_0_finalpos_premuto=T_0_aruco*T_aruco_finalpos;
@@ -2644,8 +2672,36 @@ bool action_aruco_button(string ID_str){
   }
 
 
+  //RITORNO INDIETRO
 
-  PosizioniBase(str_pos_iniziale);
+
+  if(!move_to_pose_cartesian(pose_final_pose_premuto)){
+    if(!move_to_pose(pose_final_pose_premuto,true))
+      return false;
+  }
+
+  if(!move_to_pose_cartesian(pose_final_pose_pregrasp)){
+    if(!move_to_pose(pose_final_pose_premuto,true))
+      return false;
+  }
+
+  if(!move_to_pose_cartesian(pose3)){
+    if(!move_to_pose(pose_final_pose_premuto,true))
+      return false;
+  }
+
+  if(!move_to_pose_cartesian(pose2)){
+    if(!move_to_pose(pose_final_pose_premuto,true))
+      return false;
+  }
+
+  if(!move_to_pose_cartesian(pose1)){
+    if(!move_to_pose(pose_final_pose_premuto,true))
+      return false;
+  }
+
+
+  PosizioniBase(str_pos_iniziale_cam_alta);
   action_gripper("open");
 
   return true;
@@ -2912,7 +2968,7 @@ bool right_panel(){
 void initialize_parameters(){
   gara=false;
   show_log=false;
-  adding_collision_enabled=false;
+  adding_collision_enabled=true;
   robot->setPlannerId("RRTConnectkConfigDefault");
   robot->setPlanningTime(5);
   pose_pannello_elaborata.valid=false;
@@ -3049,4 +3105,49 @@ void set_homo_std_matrix(){
   T_camera_camera_gazebo.linear()=rotation_camera_camera_gazebo;
 
 
+}
+void add_initial_collision_environment(){
+  ROS_INFO("ADDING std environment collision");
+  PoseStamped box_pose;
+  float box_size_rialzo[3],box_size_table[3];
+  string box_name;
+
+  //Impalcatura
+  {
+  box_name="impalcatura";
+  box_size_rialzo[0]=2;//0.4 è il massimo
+  box_size_rialzo[1]=0.22;
+  box_size_rialzo[2]=0.14;
+
+  box_pose.header.frame_id="base_link";
+  box_pose.pose.position.x=box_size_rialzo[0]/2;
+  box_pose.pose.position.y=0;
+  box_pose.pose.position.z=-box_size_rialzo[2]/2;
+  add_box(box_name,box_pose,box_size_rialzo);
+  }
+
+  //ikea_table
+  {
+  box_name="ikea_table";
+  box_size_table[0]=0.75;
+  box_size_table[1]=0.75;
+  box_size_table[2]=0.001;
+
+  box_pose.header.frame_id="base_link";
+  box_pose.pose.position.x=0;
+  box_pose.pose.position.y=0;
+  box_pose.pose.position.z=-(box_size_rialzo[2] + box_size_table[2]/2);
+  add_box(box_name,box_pose,box_size_table);
+  }
+
+
+
+}
+void ALL_INITIAL_VOIDS(){
+
+  initialize_parameters();
+  set_homo_std_matrix();
+  load_parameters();
+  calibrazione_gripper();
+  add_initial_collision_environment();
 }

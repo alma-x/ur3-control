@@ -21,9 +21,9 @@ def callback_service(req):
         return True
 
     if req.add==True:
-        print(req.box_pose)
-        print(req.box_size)
-        print(req.box_name)
+        #print(req.box_pose)
+        #print(req.box_size)
+        #print(req.box_name)
         return tutorial.add_box(req.box_pose,box_name=req.box_name,box_size=req.box_size)
     if req.add==False and req.exit==False:
         return tutorial.remove_box(box_name=req.box_name)
@@ -332,10 +332,10 @@ class MoveGroupPythonIntefaceTutorial(object):
     # In practice, you should use the class variables directly unless you have a good
     # reason not to.
     #box_name = self.box_name
-    print('adding box')
-    print(box_name)
-    print(box_size)
-    print(box_pose)
+    #print('adding box')
+    #print(box_name)
+    #print(box_size)
+    #print(box_pose)
     scene = self.scene
 
     ## BEGIN_SUB_TUTORIAL add_box
