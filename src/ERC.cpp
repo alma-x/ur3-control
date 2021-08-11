@@ -145,6 +145,11 @@ void esegui_msg_from_inteface(){
         stampa_Pose(robot->getCurrentPose().pose);
         stampa_giunti();
       }
+      if(msg_from_interface.modality=="salva_aruco"){
+
+        se_aruco_individuato_aggiorna_array(0);
+
+      }
       msg_to_be_processed=false;
   }
 

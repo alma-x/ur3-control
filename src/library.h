@@ -624,6 +624,45 @@ bool aruco_individuato(){
   return bridge_service(str_md_rd,"").aruco_found;
 
 }
+bool se_aruco_individuato_add_collision(int ID){
+
+  switch(ID){
+
+  case ID_BUTTON_1:{
+
+    if(Aruco_values[ID_BUTTON_1].valid){
+
+      PoseStamped box_pose;
+      float box_size[3];
+      string box_name="middle_panel";
+
+      box_size[0]=0.001;
+      box_size[1]=0.7;
+      box_size[2]=0.7;
+
+      box_pose.header.frame_id="base_link";
+
+
+      SetPoseOrientationRPY(&box_pose.pose,0,0,0);
+
+      box_pose.pose.position.x=Aruco_values[ID_BUTTON_1].pose.position.x+box_size[0]/2;//sicurezza
+      box_pose.pose.position.y=Aruco_values[ID_BUTTON_1].pose.position.y;
+      box_pose.pose.position.z=Aruco_values[ID_BUTTON_1].pose.position.z;
+      add_box(box_name,box_pose,box_size);
+      stampa_Pose(box_pose.pose);
+      stampa_Pose(Aruco_values[ID_BUTTON_1].pose);
+
+    }
+
+    break;
+  }
+
+
+  }
+
+
+
+}
 bool se_aruco_individuato_aggiorna_array(int ID){
 
   ur3_control::aruco_serviceResponse msg;
@@ -658,37 +697,21 @@ bool se_aruco_individuato_aggiorna_array(int ID){
 
         if(T_0_aruco_valid.valid){
 
+          if(i==ID)
+            aruco_di_interesse_aggiornato=true;
+
+          Aruco_values[i].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
+
           //Aggiungo box di collision se non è mai stato trovato
           if(!Aruco_values[i].valid){
             ROS_INFO("E' la prima volta che vedo questo aruco");
-
-
-            if(i==1){
-//            PoseStamped box_pose;
-//            float box_size[3];
-//            string box_name=to_string(i);
-
-//            box_size[0]=0.5;
-//            box_size[1]=0.5;
-//            box_size[2]=0.1;
-
-//            box_pose.header.frame_id="base_link";
-//            box_pose.pose=Aruco_values[i].pose;
-//            box_pose.pose.position.x+=box_size[2]/2;
-
-
-
-//            add_box(box_name,box_pose,box_size);
-
-            }
+            Aruco_values[i].valid=true;
+            se_aruco_individuato_add_collision(i);
 
           }
-
           Aruco_values[i].valid=true;
-          Aruco_values[i].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
 
-          if(i==ID)
-            aruco_di_interesse_aggiornato=true;
+
 
         }
 

@@ -23,6 +23,7 @@ def menu():
         print("6) ruota e cerca aruco")
         print("7) Stampa pose")
         print("8) Freno a mano")
+        print("9) Salva aruco visibili")
 
         choice=raw_input("choice: ")
 
@@ -119,6 +120,14 @@ def menu():
             second_information=''
             msg=aruco_serviceRequest(modality,second_information)
             resp1 = bridge_serv(msg)
+
+        elif(choice=='9'):
+            target_joints=[0,0,0,0,0,0]
+            target_pose=Pose()
+            modality='salva_aruco'
+            second_information='null'
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
+            resp1 = serv(msg)
 
         else:
             print('COMMAND NOT KNOWN')
