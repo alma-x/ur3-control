@@ -2507,7 +2507,11 @@ bool esplora_tutti_aruco_per_terra(){
 bool esplora_tutti_gli_aruco(){
 
   PosizioniBase(str_pos_iniziale);
+
   esplorazione_middle_panel_per_trovare_aruco("9");
+  if(!Aruco_values[ID_BUTTON_1].valid){
+    esplorazione_middle_panel_per_trovare_aruco(to_string(ID_BUTTON_1));
+  }
 
   do{
   }while(esplora_tutti_aruco_per_terra()&&(!Aruco_values[ID_IMU_MODULE].valid || !Aruco_values[ID_INSPECTION_WINDOW_COVER_STORAGE].valid));
