@@ -2477,7 +2477,7 @@ bool esplora_tutti_aruco_per_terra(){
     return true;
   }
 
-  if(Aruco_values[ID_IMU_MODULE].valid){
+  if(!Aruco_values[ID_IMU_MODULE].valid){
     joint_group_positions=pos_joint_adatta_ricerca_per_terra;
     joint_group_positions[0]=grad_to_rad(90);
     move_to_joints(joint_group_positions);
@@ -2488,7 +2488,7 @@ bool esplora_tutti_aruco_per_terra(){
 
 }
 
-  if(Aruco_values[ID_IMU_DESTINATION_PLANE].valid){
+  if(!Aruco_values[ID_INSPECTION_WINDOW_COVER_STORAGE].valid){
   joint_group_positions=pos_joint_adatta_ricerca_per_terra;
   joint_group_positions[0]=grad_to_rad(-90);
   move_to_joints(joint_group_positions);
