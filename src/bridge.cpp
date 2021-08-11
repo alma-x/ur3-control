@@ -13,6 +13,8 @@ ur3_control::cv_to_bridge msg_from_cv;
 sensor_msgs::JointState msg_from_joints;
 ros::ServiceClient client;
 bool bool_md_bpa=false;
+bool bool_blocca_per_ogni_nuovo_aruco=false;
+bool aruco_trovati[aruco_length_array];
 int ID_DA_BLOCCARE=-1;
 void stampa_cv_msg(const ur3_control::cv_to_bridge msg){
 ROS_INFO("Message received:\n x:%f \n y:%f \n z:%f \n success:%s",msg.x,msg.y,msg.z,(msg.success)? "success":"not success");
@@ -32,6 +34,20 @@ void cv_callback(const ur3_control::cv_to_bridge& msg){
     ROS_INFO("Aruco trovato, traiettoria cancellata");
     robot->stop();
   }
+
+  if(bool_blocca_per_ogni_nuovo_aruco && msg.aruco_found.size()!=0){
+    for (int i=0;i<aruco_length_array;i++) {
+      if(!aruco_trovati[i] && msg.aruco_found[i]){
+
+        bool_blocca_per_ogni_nuovo_aruco=false;
+        ROS_INFO("Aruco %d trovato, traiettoria cancellata",i);
+        robot->stop();
+      }
+
+    }
+  }
+
+
 }
 void joint_callback(const sensor_msgs::JointState& msg){
 
@@ -78,6 +94,16 @@ bool callback_modality(ur3_control::aruco_service::Request &req, ur3_control::ar
 //    ROS_INFO("traiettoria cancellata");
     robot->stop();
 
+  }
+  if("blocca_se_vedi_nuovo_aruco"==req.modality){
+    ROS_INFO("BLOCCHERO' LA PRIMA VOLTA CHE TROVERO' UN NUOVO ARUCO");
+    bool_blocca_per_ogni_nuovo_aruco=true;
+    for (int i=0;i<aruco_length_array;i++) {
+      aruco_trovati[i]=req.aruco_trovati[i];
+    }
+  }
+  if("smetti_di_bloccare_se_vedi_nuovo_aruco"==req.modality){
+    bool_blocca_per_ogni_nuovo_aruco=false;
   }
   res.aruco_found=msg_from_cv.success;
   res.x=msg_from_cv.x;

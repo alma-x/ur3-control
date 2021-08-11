@@ -64,6 +64,7 @@ using namespace Eigen;
 #define ID_INSPECTION_WINDOW 12
 #define ID_INSPECTION_WINDOW_COVER 13
 #define ID_INSPECTION_WINDOW_COVER_STORAGE 14
+#define aruco_length_array 15
 
 double tol=0.01;
 bool SDR_SOLIDALE=false;
@@ -109,7 +110,7 @@ string str_pannello="posizione_pannello";
 string str_rotaz_pannello="posizione_rotazione_ricerca_pannello";
 string str_pos_iniziale="posizione_iniziale";
 string str_pos_iniziale_cam_alta="str_pos_iniziale_cam_alta";
-
+string str_pos_adatta_ricerca_per_terra="str_pos_adatta_ricerca_per_terra";
 string posizione_gripper="open";
 
 vector<double> pos_joint_home;
@@ -119,6 +120,7 @@ vector<double> pos_joint_centrifuga;
 vector<double> pos_joint_pannello;
 vector<double> pos_joint_iniziale;
 vector<double> pos_joint_iniziale_cam_alta;
+vector<double> pos_joint_adatta_ricerca_per_terra;
 vector<double> debug;
 vector<int> pos_rpy_tb;
 vector<int> pos_rpy_ta;
@@ -136,7 +138,7 @@ struct Pose_valid
 
 Pose_valid pose_pannello_elaborata;
 
-Pose_valid Aruco_values[20];
+Pose_valid Aruco_values[aruco_length_array];
 bool bool_exit=false;
 bool gara=true;
 bool adding_collision_enabled=false;
@@ -649,8 +651,6 @@ bool se_aruco_individuato_add_collision(int ID){
       box_pose.pose.position.y=Aruco_values[ID_BUTTON_1].pose.position.y;
       box_pose.pose.position.z=Aruco_values[ID_BUTTON_1].pose.position.z;
       add_box(box_name,box_pose,box_size);
-      stampa_Pose(box_pose.pose);
-      stampa_Pose(Aruco_values[ID_BUTTON_1].pose);
 
     }
 
@@ -664,6 +664,8 @@ bool se_aruco_individuato_add_collision(int ID){
 
 }
 bool se_aruco_individuato_aggiorna_array(int ID){
+
+  //se chiamata con ID==0 controllerà tutti gli ID e se ne avrà trovato almeno uno restituirà true
 
   ur3_control::aruco_serviceResponse msg;
   msg=bridge_service(str_md_rd,"");
@@ -712,7 +714,6 @@ bool se_aruco_individuato_aggiorna_array(int ID){
           Aruco_values[i].valid=true;
 
 
-
         }
 
 
@@ -726,64 +727,12 @@ bool se_aruco_individuato_aggiorna_array(int ID){
   sleep(2);
   if(aruco_di_interesse_aggiornato)
     return true;
+  if(ID==0){
+    return true;
+  }
 
   return false;
 }
-
-/*
-bool se_aruco_individuato_aggiorna_array(int ID){
-
-
-  if(!aruco_individuato())
-    return false;
-
-  sleep(2);
-
-  if(aruco_individuato()) {
-    ROS_INFO("ARUCO: %d INDIVIDUATO",ID);
-    Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
-
-    if(! T_0_aruco_valid.valid){
-      return false;
-    }
-
-    //Aggiungo box di collision se non è mai stato trovato
-    if(!Aruco_values[ID].valid){
-      ROS_INFO("E' la prima volta che vedo questo aruco");
-
-
-      if(ID==1){
-//        PoseStamped box_pose;
-//        float box_size[3];
-//        string box_name=to_string(ID);
-
-//        box_size[0]=0.5;
-//        box_size[1]=0.5;
-//        box_size[2]=0.1;
-
-//        box_pose.header.frame_id="base_link";
-//        box_pose.pose=Aruco_values[ID].pose;
-//        box_pose.pose.position.x+=box_size[2]/2;
-
-
-
-//        add_box(box_name,box_pose,box_size);
-
-        }
-
-    }
-
-    Aruco_values[ID].valid=true;
-    Aruco_values[ID].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
-
-
-
-
-    return true;
-  }
-return false;
-}
-*/
 void controlla(char key){
     Vector3d translation(0,0,0);
     string k;
@@ -1027,6 +976,35 @@ bool remove_box(string box_name){
   return collision_service(coll_srv).success;
 
 }
+void blocca_se_vedi_nuovo_aruco(){
+  ros::NodeHandle node_handle;
+  ros::ServiceClient client1;
+  client1 = node_handle.serviceClient<ur3_control::aruco_service>("/aruco_modality");
+  ur3_control::aruco_service aruco_srv_msg;
+
+  aruco_srv_msg.request.modality="blocca_se_vedi_nuovo_aruco";
+  aruco_srv_msg.request.second_information="";
+
+  bool aruco_da_trovare[aruco_length_array];
+  aruco_srv_msg.request.aruco_trovati.push_back(true);
+  for(int i=1;i<aruco_length_array;i++){
+    aruco_srv_msg.request.aruco_trovati.push_back(Aruco_values[i].valid);
+  }
+  client1.call(aruco_srv_msg);
+}
+void smetti_di_bloccare_se_vedi_nuovo_aruco(){
+  ros::NodeHandle node_handle;
+  ros::ServiceClient client1;
+  client1 = node_handle.serviceClient<ur3_control::aruco_service>("/aruco_modality");
+  ur3_control::aruco_service aruco_srv_msg;
+
+  aruco_srv_msg.request.modality="smetti_di_bloccare_se_vedi_nuovo_aruco";
+  aruco_srv_msg.request.second_information="";
+
+
+  client1.call(aruco_srv_msg);
+}
+
 
 //Stampa
 void stampa_Pose(Pose po)
@@ -1472,6 +1450,11 @@ bool PosizioniBase(string str_posizione){
   else
   if(str_posizione==str_pos_iniziale_cam_alta){
     joint_group_positions=pos_joint_iniziale_cam_alta;
+    robot->setJointValueTarget(joint_group_positions);
+  }
+  else
+  if(str_posizione==str_pos_adatta_ricerca_per_terra){
+    joint_group_positions=pos_joint_adatta_ricerca_per_terra;
     robot->setJointValueTarget(joint_group_positions);
   }
   else{
@@ -2467,6 +2450,114 @@ bool esplorazione_middle_panel_per_trovare_aruco(string ID_str){
 
 }
 
+bool esplora_tutto_right_panel(){
+
+}
+bool esplora_tutti_aruco_per_terra(){
+//IMU, Cover storage destination
+  vector<double> joint_group_positions=robot->getCurrentJointValues();
+
+  ROS_INFO("ESPLORO ARUCO PER TERRA");
+  blocca_se_vedi_nuovo_aruco();
+  if(se_aruco_individuato_aggiorna_array(0)){
+    smetti_di_bloccare_se_vedi_nuovo_aruco();
+    return true;
+  }
+
+
+  PosizioniBase(str_pos_iniziale);
+  if(se_aruco_individuato_aggiorna_array(0)){
+    smetti_di_bloccare_se_vedi_nuovo_aruco();
+    return true;
+  }
+
+  PosizioniBase(str_pos_adatta_ricerca_per_terra);
+  if(se_aruco_individuato_aggiorna_array(0)){
+    smetti_di_bloccare_se_vedi_nuovo_aruco();
+    return true;
+  }
+
+  if(Aruco_values[ID_IMU_MODULE].valid){
+    joint_group_positions=pos_joint_adatta_ricerca_per_terra;
+    joint_group_positions[0]=grad_to_rad(90);
+    move_to_joints(joint_group_positions);
+    if(se_aruco_individuato_aggiorna_array(0)){
+      smetti_di_bloccare_se_vedi_nuovo_aruco();
+      return true;
+    }
+
+}
+
+  if(Aruco_values[ID_IMU_DESTINATION_PLANE].valid){
+  joint_group_positions=pos_joint_adatta_ricerca_per_terra;
+  joint_group_positions[0]=grad_to_rad(-90);
+  move_to_joints(joint_group_positions);
+
+  if(se_aruco_individuato_aggiorna_array(0)){
+    smetti_di_bloccare_se_vedi_nuovo_aruco();
+    return true;
+  }
+}
+
+
+  smetti_di_bloccare_se_vedi_nuovo_aruco();
+
+  return false;
+}
+bool esplora_tutti_gli_aruco(){
+
+  PosizioniBase(str_pos_iniziale);
+  esplorazione_middle_panel_per_trovare_aruco("9");
+
+  do{
+  }while(esplora_tutti_aruco_per_terra()&&(!Aruco_values[ID_IMU_MODULE].valid || !Aruco_values[ID_INSPECTION_WINDOW_COVER_STORAGE].valid));
+
+  if(!Aruco_values[ID_BUTTON_1].valid){
+    esplorazione_middle_panel_per_trovare_aruco(to_string(ID_BUTTON_1));
+  }
+  if(!Aruco_values[ID_BUTTON_2].valid){
+    esplorazione_middle_panel_per_trovare_aruco(to_string(ID_BUTTON_2));
+  }
+  if(!Aruco_values[ID_BUTTON_3].valid){
+    esplorazione_middle_panel_per_trovare_aruco(to_string(ID_BUTTON_3));
+  }
+  if(!Aruco_values[ID_BUTTON_4].valid){
+    esplorazione_middle_panel_per_trovare_aruco(to_string(ID_BUTTON_4));
+  }
+  if(!Aruco_values[ID_BUTTON_5].valid){
+    esplorazione_middle_panel_per_trovare_aruco(to_string(ID_BUTTON_5));
+  }
+  if(!Aruco_values[ID_BUTTON_6].valid){
+    esplorazione_middle_panel_per_trovare_aruco(to_string(ID_BUTTON_6));
+  }
+  if(!Aruco_values[ID_BUTTON_7].valid){
+    esplorazione_middle_panel_per_trovare_aruco(to_string(ID_BUTTON_7));
+  }
+  if(!Aruco_values[ID_BUTTON_8].valid){
+    esplorazione_middle_panel_per_trovare_aruco(to_string(ID_BUTTON_8));
+  }
+  if(!Aruco_values[ID_BUTTON_9].valid){
+    esplorazione_middle_panel_per_trovare_aruco(to_string(ID_BUTTON_9));
+  }
+  if(!Aruco_values[ID_IMU_MODULE].valid){
+    esplora_cerca_IMU();
+  }
+  if(!Aruco_values[ID_IMU_DESTINATION_PLANE].valid){
+    esplora_cerca_left_panel_IMU();
+  }
+  if(!Aruco_values[ID_INSPECTION_WINDOW].valid){
+    ROS_INFO("ESPLORAZIONE PER ARUCO %d NON ANCORA IMPLEMENTATA",ID_INSPECTION_WINDOW);
+  }
+  if(!Aruco_values[ID_INSPECTION_WINDOW_COVER].valid){
+    esplora_inspection_window_cover();
+  }if(!Aruco_values[ID_INSPECTION_WINDOW_COVER_STORAGE].valid){
+    esplora_inspection_cover_storage();
+  }
+
+
+  return false;
+}
+
 //Panels
 /*bool solleva_coperchio(){
 
@@ -3285,6 +3376,7 @@ void load_parameters()
     pos_joint_centrifuga=robot->getCurrentJointValues();
     pos_joint_pannello=robot->getCurrentJointValues();
     pos_joint_iniziale=robot->getCurrentJointValues();
+    pos_joint_adatta_ricerca_per_terra=robot->getCurrentJointValues();
     debug=robot->getCurrentJointValues();
     if(pos_rpy_ta.size()==0){
 
@@ -3340,6 +3432,11 @@ void load_parameters()
             if(nome=="debug"){
               for (int i=0;i<6;i++) {
                   debug[i]=(double)j[i];
+              }
+          }
+            if(nome==str_pos_adatta_ricerca_per_terra){
+              for (int i=0;i<6;i++) {
+                  pos_joint_adatta_ricerca_per_terra[i]=grad_to_rad(j[i]);
               }
           }
 

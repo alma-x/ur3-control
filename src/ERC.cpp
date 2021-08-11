@@ -150,6 +150,9 @@ void esegui_msg_from_inteface(){
         se_aruco_individuato_aggiorna_array(0);
 
       }
+      if(msg_from_interface.modality=="esplora_tutto"){
+        esplora_tutti_gli_aruco();
+      }
       msg_to_be_processed=false;
   }
 

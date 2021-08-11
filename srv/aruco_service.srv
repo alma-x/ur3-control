@@ -1,5 +1,6 @@
 string modality
 string second_information
+bool[] aruco_trovati
 ---
 bool aruco_found
 int32 id_aruco

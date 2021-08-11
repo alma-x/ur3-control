@@ -24,7 +24,7 @@ def menu():
         print("7) Stampa pose")
         print("8) Freno a mano")
         print("9) Salva aruco visibili")
-
+        print("10) Esplora")
         choice=raw_input("choice: ")
 
         if(choice=='0'):
@@ -125,6 +125,13 @@ def menu():
             target_joints=[0,0,0,0,0,0]
             target_pose=Pose()
             modality='salva_aruco'
+            second_information='null'
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
+            resp1 = serv(msg)
+        elif(choice=='10'):
+            target_joints=[0,0,0,0,0,0]
+            target_pose=Pose()
+            modality='esplora_tutto'
             second_information='null'
             msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
