@@ -177,7 +177,7 @@ Affine_valid homo_0_aruco_elaration();
 bool add_box(string box_name,PoseStamped box_pose,float box_size[]);
 bool move_to_pose_optimized(geometry_msgs::Pose pose);
 bool move_to_pose_cartesian(geometry_msgs::Pose pose);
-
+bool flagMiddlePanelCreated=false;
 
 //OLD FUNCTIONS
 void pick(string name_object){
@@ -627,40 +627,35 @@ bool aruco_individuato(){
 
 }
 bool se_aruco_individuato_add_collision(int ID){
+  if((ID==ID_BUTTON_2 ||ID==ID_BUTTON_5 ||ID==ID_BUTTON_8)
+     && !(flagMiddlePanelCreated)){
+    flagMiddlePanelCreated=true;
+    PoseStamped box_pose;
+    float box_size[3];
+    string box_name="middle_panel";
 
-  switch(ID){
+    box_size[0]=0.001;//thickness
+    box_size[1]=0.3;//width
+    box_size[2]=3*0.5;//height
 
-  case ID_BUTTON_1:{
-
-    if(Aruco_values[ID_BUTTON_1].valid){
-
-      PoseStamped box_pose;
-      float box_size[3];
-      string box_name="middle_panel";
-
-      box_size[0]=0.001;
-      box_size[1]=0.7;
-      box_size[2]=0.7;
-
-      box_pose.header.frame_id="base_link";
+    box_pose.header.frame_id="base_link";
 
 
-      SetPoseOrientationRPY(&box_pose.pose,0,0,0);
+    SetPoseOrientationRPY(&box_pose.pose,0,0,0);
+    //no orientation change wrt base frame
 
-      box_pose.pose.position.x=Aruco_values[ID_BUTTON_1].pose.position.x+box_size[0]/2;//sicurezza
-      box_pose.pose.position.y=Aruco_values[ID_BUTTON_1].pose.position.y;
-      box_pose.pose.position.z=Aruco_values[ID_BUTTON_1].pose.position.z;
-      add_box(box_name,box_pose,box_size);
+    box_pose.pose.position.x=Aruco_values[ID].pose.position.x+box_size[0]/2;//sicurezza
+    box_pose.pose.position.y=Aruco_values[ID].pose.position.y;
+    box_pose.pose.position.z=Aruco_values[ID].pose.position.z;
+    add_box(box_name,box_pose,box_size);
 
+  }
+  /*
+    switch(ID){
+    case ID_BUTTON_1:{
     }
 
-    break;
-  }
-
-
-  }
-
-
+  */
 
 }
 bool se_aruco_individuato_aggiorna_array(int ID){
@@ -2632,42 +2627,50 @@ bool esplora_tutti_gli_aruco(){
 
   bool ripeti_ciclo=true;
   PosizioniBase(str_pos_iniziale);
-
-  esplorazione_middle_panel_per_trovare_aruco("9");
+  if(!Aruco_values[ID_BUTTON_9].valid){
+    esplorazione_middle_panel_per_trovare_aruco("9");
+  }
   if(!Aruco_values[ID_BUTTON_1].valid){
     esplorazione_middle_panel_per_trovare_aruco(to_string(ID_BUTTON_1));
   }
 
   //In questo ciclo verranno cercati gli aruco che si trovano in alto
   ripeti_ciclo=true;
-  do{
-    esplora_tutti_aruco_aria();
+  if(!Aruco_values[ID_IMU_DESTINATION_PLANE].valid || !Aruco_values[ID_INSPECTION_WINDOW].valid|| !Aruco_values[ID_INSPECTION_WINDOW_COVER].valid){
 
-    if(routine_aria>num_routine_aria){
-      ripeti_ciclo=false;
-    }
+    do{
+      esplora_tutti_aruco_aria();
 
-    if(Aruco_values[ID_IMU_DESTINATION_PLANE].valid)
-      if(Aruco_values[ID_INSPECTION_WINDOW].valid)
-        if(Aruco_values[ID_INSPECTION_WINDOW_COVER].valid)
-          ripeti_ciclo=false;
-  }while(ripeti_ciclo);
+      if(routine_aria>num_routine_aria){
+        ripeti_ciclo=false;
+      }
+
+      if(Aruco_values[ID_IMU_DESTINATION_PLANE].valid)
+        if(Aruco_values[ID_INSPECTION_WINDOW].valid)
+          if(Aruco_values[ID_INSPECTION_WINDOW_COVER].valid)
+            ripeti_ciclo=false;
+    }while(ripeti_ciclo);
 
 
-  //In questo ciclo verranno cercati gli aruco per terra
-  ripeti_ciclo=true;
-  do{
-    esplora_tutti_aruco_per_terra();
+  }
 
-    if(routine_aria>num_routine_terra){
-      ripeti_ciclo=false;
-    }
+  if(!Aruco_values[ID_IMU_MODULE].valid || !Aruco_values[ID_INSPECTION_WINDOW_COVER_STORAGE].valid|| !Aruco_values[ID_INSPECTION_WINDOW_COVER].valid)
+  {
+    //In questo ciclo verranno cercati gli aruco per terra
+    ripeti_ciclo=true;
+    do{
+      esplora_tutti_aruco_per_terra();
 
-    if(Aruco_values[ID_IMU_MODULE].valid)
-      if(Aruco_values[ID_INSPECTION_WINDOW_COVER_STORAGE].valid)
-        if(Aruco_values[ID_INSPECTION_WINDOW_COVER].valid)
-          ripeti_ciclo=false;
-  }while(ripeti_ciclo);
+      if(routine_aria>num_routine_terra){
+        ripeti_ciclo=false;
+      }
+
+      if(Aruco_values[ID_IMU_MODULE].valid)
+        if(Aruco_values[ID_INSPECTION_WINDOW_COVER_STORAGE].valid)
+          if(Aruco_values[ID_INSPECTION_WINDOW_COVER].valid)
+            ripeti_ciclo=false;
+    }while(ripeti_ciclo);
+  }
 
 
 
