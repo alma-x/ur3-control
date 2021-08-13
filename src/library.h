@@ -147,7 +147,7 @@ bool bool_exit=false;
 bool gara=true;
 bool adding_collision_enabled=false;
 bool flagMiddlePanelCreated=false;
-
+bool flagRightBoxCreated=false;
 
 
 
@@ -697,7 +697,38 @@ bool se_aruco_individuato_add_collision(int ID){
 
   }
 
+  if(ID==ID_INSPECTION_WINDOW_COVER && !(flagRightBoxCreated)){
 
+    Affine3d T_aruco_boxcenter,T_0_boxcenter;
+    Pose pose_boxcenter;
+    T_aruco_boxcenter.translation().x()=0.0499;//0.05
+    T_aruco_boxcenter.translation().y()=0.0249;//0.025 - (0.096+0.012+sicurezza)=-0.191 + sicurezza=-0.22
+    T_aruco_boxcenter.translation().z()=0;//132+35/2=149.5
+    T_aruco_boxcenter.linear()=from_rpy_to_rotational_matrix(0,0,0);
+    T_0_boxcenter=pose_to_homo(Aruco_values[ID].pose)*T_aruco_boxcenter;
+    pose_boxcenter=homo_to_pose(T_0_boxcenter);
+
+
+    PoseStamped box_pose;
+    float box_size[3];
+    string box_name="right_box";
+
+    box_size[0]=0.04;//thickness
+    box_size[1]=0.04;//width
+    box_size[2]=0.04;//height
+
+    box_pose.header.frame_id="base_link";
+
+
+    box_pose.pose.orientation=pose_boxcenter.orientation;
+    //no orientation change wrt base frame
+
+    box_pose.pose.position.x=pose_boxcenter.position.x;//sicurezza
+    box_pose.pose.position.y=pose_boxcenter.position.y;
+    box_pose.pose.position.z=pose_boxcenter.position.z;
+    add_box(box_name,box_pose,box_size);
+
+  }
   
   
 
