@@ -25,6 +25,7 @@ def menu():
         print("8) Freno a mano")
         print("9) Salva aruco visibili")
         print("10) Esplora")
+        print("11) TXT_SAVE_ARUCO")
         choice=raw_input("choice: ")
 
         if(choice=='0'):
@@ -135,7 +136,13 @@ def menu():
             second_information='null'
             msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
-
+        elif(choice=='11'):
+            target_joints=[0,0,0,0,0,0]
+            target_pose=Pose()
+            modality='save_aruco_in_txt'
+            second_information='null'
+            msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
+            resp1 = serv(msg)
         else:
             print('COMMAND NOT KNOWN')
 

@@ -14,7 +14,7 @@ bool_exit=False
 
 def callback_service(req):
     global bool_exit
-    print('Collision service received')
+    #print('Collision service received')
 
     if req.exit==True :
         bool_exit=True

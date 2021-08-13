@@ -43,6 +43,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include<list>
+
 using namespace std;
 using namespace geometry_msgs;
 using namespace moveit;
@@ -139,9 +141,13 @@ struct Pose_valid
 Pose_valid pose_pannello_elaborata;
 
 Pose_valid Aruco_values[aruco_length_array];
+
+//FLAGS
 bool bool_exit=false;
 bool gara=true;
 bool adding_collision_enabled=false;
+bool flagMiddlePanelCreated=false;
+
 
 
 
@@ -177,7 +183,13 @@ Affine_valid homo_0_aruco_elaration();
 bool add_box(string box_name,PoseStamped box_pose,float box_size[]);
 bool move_to_pose_optimized(geometry_msgs::Pose pose);
 bool move_to_pose_cartesian(geometry_msgs::Pose pose);
-bool flagMiddlePanelCreated=false;
+Matrix3d from_rpy_to_rotational_matrix(double roll,double pitch,double yaw);
+Affine3d pose_to_homo(Pose pose);
+bool save_aruco_in_txt();
+
+
+
+
 
 //OLD FUNCTIONS
 void pick(string name_object){
@@ -627,8 +639,10 @@ bool aruco_individuato(){
 
 }
 bool se_aruco_individuato_add_collision(int ID){
+  //Creazione middle panel
   if((ID==ID_BUTTON_2 ||ID==ID_BUTTON_5 ||ID==ID_BUTTON_8)
      && !(flagMiddlePanelCreated)){
+
     flagMiddlePanelCreated=true;
     PoseStamped box_pose;
     float box_size[3];
@@ -650,6 +664,44 @@ bool se_aruco_individuato_add_collision(int ID){
     add_box(box_name,box_pose,box_size);
 
   }
+
+  if(ID>=ID_BUTTON_1 && ID<=ID_BUTTON_9){
+    Affine3d T_aruco_finalpos;
+    T_aruco_finalpos.translation().x()=0;
+    T_aruco_finalpos.translation().y()=-0.055;
+    T_aruco_finalpos.translation().z()=0;
+    T_aruco_finalpos.linear()=from_rpy_to_rotational_matrix(0,0,0);//non mi interessa cambiare la rotazione
+
+
+    Affine3d T_0_finalpos_premuto=pose_to_homo(Aruco_values[ID].pose)*T_aruco_finalpos;
+    Pose pose_pulsante=homo_to_pose(T_0_finalpos_premuto);
+
+    PoseStamped box_pose;
+    float box_size[3];
+    string box_name="button_"+to_string(ID);
+
+    box_size[0]=0.023;//thickness
+    box_size[1]=0.04;//width
+    box_size[2]=0.04;//height
+
+    box_pose.header.frame_id="base_link";
+
+
+    SetPoseOrientationRPY(&box_pose.pose,0,0,0);
+    //no orientation change wrt base frame
+
+    box_pose.pose.position.x=pose_pulsante.position.x-box_size[0]/2;//sicurezza
+    box_pose.pose.position.y=pose_pulsante.position.y;
+    box_pose.pose.position.z=pose_pulsante.position.z;
+    add_box(box_name,box_pose,box_size);
+
+  }
+
+
+  
+  
+
+
   /*
     switch(ID){
     case ID_BUTTON_1:{
@@ -720,6 +772,9 @@ bool se_aruco_individuato_aggiorna_array(int ID){
   }
   cambia_aruco(to_string(ID));
   sleep(2);
+
+  save_aruco_in_txt();
+
   if(aruco_di_interesse_aggiornato)
     return true;
   if(ID==0){
@@ -948,7 +1003,6 @@ bool add_box(string box_name,PoseStamped box_pose,float box_size[]){
     return false;
   }
 
-  ROS_INFO("ADDING BOX");
   ur3_control::collision_object_srvRequest coll_srv;
   coll_srv.add=true;
   coll_srv.box_name=box_name;
@@ -999,7 +1053,30 @@ void smetti_di_bloccare_se_vedi_nuovo_aruco(){
 
   client1.call(aruco_srv_msg);
 }
+bool save_aruco_in_txt(){
+  ofstream outFile;
+  string nome,tipo;
+  string pkgpath = ros::package::getPath("ur3_control");
+  string path_txt="/txt/aruco_values.txt";
+  string path_total=pkgpath + path_txt;
+  if(show_log)
+    cout<<"percorso txt: "<<path_total<<endl<<endl;
+  ROS_INFO("Aggiorno txt aruco pos");
+  outFile.open(path_total);
+  if (!outFile) {
+      cerr << "Unable to open file datafile.txt";
+      return false;  // call system to stop
+  }
+  for(int i=1;i<aruco_length_array;i++){
 
+    outFile.write((char*) &Aruco_values[i],sizeof(Aruco_values[i]));
+
+  }
+
+
+  outFile.close();
+  return true;
+}
 
 //Stampa
 void stampa_Pose(Pose po)
@@ -1653,7 +1730,7 @@ Affine_valid homo_0_aruco_elaration(){
     return return_value;
 
   }else{
-    ROS_INFO("No aruco detected, no return??");
+    ROS_INFO("Hai chiamato il calcolo della trasformata T_0_aruco ma non vedo nessun aruco");
     Affine_valid return_value;
     return_value.valid=false;
     return return_value;
@@ -2625,6 +2702,18 @@ bool esplora_tutti_aruco_per_terra(){
 }
 bool esplora_tutti_gli_aruco(){
 
+  {
+  //Se ho già trovato tutti gli aruco esco
+  bool tutti=true;
+  for(int i=1;i<aruco_length_array;i++){
+    if(!Aruco_values[i].valid)
+      tutti=false;
+  }
+  if(tutti){
+    ROS_INFO("Tutti gli aruco sono già stati trovati, NON ESPLORO");
+    return true;
+  }
+  }
   bool ripeti_ciclo=true;
   PosizioniBase(str_pos_iniziale);
   if(!Aruco_values[ID_BUTTON_9].valid){
@@ -3716,11 +3805,45 @@ void add_initial_collision_environment(){
 
 
 }
+bool load_aruco_values_from_txt(){
+
+  ifstream inFile;
+  string nome,tipo;
+  string pkgpath = ros::package::getPath("ur3_control");
+  string path_txt="/txt/aruco_values.txt";
+  string path_total=pkgpath + path_txt;
+  cout<<"percorso txt: "<<path_total<<endl<<endl;
+  inFile.open(path_total);
+  if (!inFile) {
+      cerr << "Unable to open file aruco_values.txt";
+      return false;  // call system to stop
+  }
+
+  for(int i=1;i<aruco_length_array;i++){
+
+    inFile.read((char*)(&Aruco_values[i]),sizeof(Aruco_values[i]));
+    if(Aruco_values[i].valid){
+      ROS_INFO("Sono a conoscenza dell'aruco %d:",i);
+      se_aruco_individuato_add_collision(i);
+    }
+  }
+
+
+  inFile.close();
+
+}
 void ALL_INITIAL_VOIDS(){
+  ros::NodeHandle n;
+  bool load_aruco=false;
+  n.getParam("load_aruco",load_aruco);
 
   initialize_parameters();
   set_homo_std_matrix();
   load_parameters();
   calibrazione_gripper();
   add_initial_collision_environment();
+
+  if(load_aruco){
+    load_aruco_values_from_txt();
+  }
 }

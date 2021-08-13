@@ -47,6 +47,9 @@ void esegui_msg_from_inteface(){
           robot->move();
 
       }
+      if(msg_from_interface.modality=="save_aruco_in_txt"){
+        save_aruco_in_txt();
+      }
       if(msg_from_interface.modality=="exit"){
           exit_from_all();
       }
