@@ -148,7 +148,7 @@ bool gara=true;
 bool adding_collision_enabled=false;
 bool flagMiddlePanelCreated=false;
 bool flagRightBoxCreated=false;
-
+bool flagRightPanelCreated=false;
 
 
 void pick(string name_object);
@@ -697,41 +697,283 @@ bool se_aruco_individuato_add_collision(int ID){
 
   }
 
-  if(ID==ID_INSPECTION_WINDOW_COVER && !(flagRightBoxCreated)){
+  if((ID==ID_INSPECTION_WINDOW_COVER || ID==ID_INSPECTION_WINDOW) && !(flagRightBoxCreated)){
 
-    Affine3d T_aruco_boxcenter,T_0_boxcenter;
-    Pose pose_boxcenter;
-    T_aruco_boxcenter.translation().x()=0.0499;//0.05
-    T_aruco_boxcenter.translation().y()=0.0249;//0.025 - (0.096+0.012+sicurezza)=-0.191 + sicurezza=-0.22
-    T_aruco_boxcenter.translation().z()=0;//132+35/2=149.5
+    flagRightBoxCreated=true;
+    Affine3d T_aruco_boxcenter,T_0_rightborder,T_0_leftborder,T_0_belowborder,T_0_upperborder,T_0_fondobox,T_0_coperchio,T_0_pomello;
+    Affine3d T_boxcenter_rightborder,T_boxcenter_leftborder,T_boxcenter_upperborder,T_boxcenter_belowborder,T_boxcenter_fondobox,T_boxcenter_coperchio,T_boxcenter_pomello;
+    Pose pose_rightborder,pose_leftborder,pose_belowborder,pose_upperborder,pose_fondobox,pose_pomello,pose_coperchio;
+
+    PoseStamped box_pose_rightborder,box_pose_leftborder,box_pose_upperborder,box_pose_belowborder,box_pose_fondobox,box_pose_coperchio,box_pose_pomello;
+    float box_size_right_border[3],box_size_below_border[3],box_size_upper_border[3],box_size_left_border[3],box_size_fondobox[3],box_size_coperchio[3],box_size_pomello[3];
+    string box_name_rightborder,box_name_leftborder,box_name_upperborder,box_name_belowborder,box_name_fondobox,box_name_coperchio,box_name_pomello;
+
+
+    if(ID==ID_INSPECTION_WINDOW_COVER){
+
+    T_aruco_boxcenter.translation().x()=0.0499;
+    T_aruco_boxcenter.translation().y()=0.0249;
+    T_aruco_boxcenter.translation().z()=-(0.07/2);
     T_aruco_boxcenter.linear()=from_rpy_to_rotational_matrix(0,0,0);
-    T_0_boxcenter=pose_to_homo(Aruco_values[ID].pose)*T_aruco_boxcenter;
-    pose_boxcenter=homo_to_pose(T_0_boxcenter);
+
+    }
+    else if(ID==ID_INSPECTION_WINDOW){
+
+      T_aruco_boxcenter.translation().x()=0;
+      T_aruco_boxcenter.translation().y()=0;
+      T_aruco_boxcenter.translation().z()=-(0.1/2);
+      T_aruco_boxcenter.linear()=from_rpy_to_rotational_matrix(-M_PI/2,0,0);
 
 
-    PoseStamped box_pose;
-    float box_size[3];
-    string box_name="right_box";
+    }
+    else{
+      ROS_INFO("Questo errore non dovrebbe esistere");
+      return false;
+    }
 
-    box_size[0]=0.04;//thickness
-    box_size[1]=0.04;//width
-    box_size[2]=0.04;//height
+    T_boxcenter_leftborder.translation().x()=-(0.15)/2;
+    T_boxcenter_leftborder.translation().y()=0;
+    T_boxcenter_leftborder.translation().z()=0;
+    T_boxcenter_leftborder.linear()=from_rpy_to_rotational_matrix(0,0,0);
 
-    box_pose.header.frame_id="base_link";
+
+    T_boxcenter_rightborder.translation().x()=(0.15)/2;//cambia solo questo
+    T_boxcenter_rightborder.translation().y()=0;
+    T_boxcenter_rightborder.translation().z()=0;
+    T_boxcenter_rightborder.linear()=from_rpy_to_rotational_matrix(0,0,0);
 
 
-    box_pose.pose.orientation=pose_boxcenter.orientation;
-    //no orientation change wrt base frame
+    T_boxcenter_upperborder.translation().x()=0;
+    T_boxcenter_upperborder.translation().y()=(0.1/2);
+    T_boxcenter_upperborder.translation().z()=0;
+    T_boxcenter_upperborder.linear()=from_rpy_to_rotational_matrix(0,0,0);
 
-    box_pose.pose.position.x=pose_boxcenter.position.x;//sicurezza
-    box_pose.pose.position.y=pose_boxcenter.position.y;
-    box_pose.pose.position.z=pose_boxcenter.position.z;
-    add_box(box_name,box_pose,box_size);
+
+    T_boxcenter_belowborder.translation().x()=0;
+    T_boxcenter_belowborder.translation().y()=-(0.1/2);
+    T_boxcenter_belowborder.translation().z()=0;
+    T_boxcenter_belowborder.linear()=from_rpy_to_rotational_matrix(0,0,0);
+
+    T_boxcenter_fondobox.translation().x()=0;
+    T_boxcenter_fondobox.translation().y()=0;
+    T_boxcenter_fondobox.translation().z()=-(0.07)/2;
+    T_boxcenter_fondobox.linear()=from_rpy_to_rotational_matrix(0,0,0);
+
+    T_boxcenter_coperchio.translation().x()=0;
+    T_boxcenter_coperchio.translation().y()=0;
+    T_boxcenter_coperchio.translation().z()=(0.07)/2;
+    T_boxcenter_coperchio.linear()=from_rpy_to_rotational_matrix(0,0,0);
+
+    T_boxcenter_pomello.translation().x()=0;
+    T_boxcenter_pomello.translation().y()=0;
+    T_boxcenter_pomello.translation().z()=((0.07)/2 + 0.035/2);
+    T_boxcenter_pomello.linear()=from_rpy_to_rotational_matrix(0,0,0);
+
+
+
+
+    T_0_leftborder=pose_to_homo(Aruco_values[ID].pose)*T_aruco_boxcenter*T_boxcenter_leftborder;
+    pose_leftborder=homo_to_pose(T_0_leftborder);
+
+
+    T_0_rightborder=pose_to_homo(Aruco_values[ID].pose)*T_aruco_boxcenter*T_boxcenter_rightborder;
+    pose_rightborder=homo_to_pose(T_0_rightborder);
+
+
+    T_0_upperborder=pose_to_homo(Aruco_values[ID].pose)*T_aruco_boxcenter*T_boxcenter_upperborder;
+    pose_upperborder=homo_to_pose(T_0_upperborder);
+
+
+    T_0_belowborder=pose_to_homo(Aruco_values[ID].pose)*T_aruco_boxcenter*T_boxcenter_belowborder;
+    pose_belowborder=homo_to_pose(T_0_belowborder);
+
+    T_0_fondobox=pose_to_homo(Aruco_values[ID].pose)*T_aruco_boxcenter*T_boxcenter_fondobox;
+    pose_fondobox=homo_to_pose(T_0_fondobox);
+
+    T_0_coperchio=pose_to_homo(Aruco_values[ID].pose)*T_aruco_boxcenter*T_boxcenter_coperchio;
+    pose_coperchio=homo_to_pose(T_0_coperchio);
+
+    T_0_pomello=pose_to_homo(Aruco_values[ID].pose)*T_aruco_boxcenter*T_boxcenter_pomello;
+    pose_pomello=homo_to_pose(T_0_pomello);
+
+
+
+    box_name_leftborder="inspection_box_leftborder";
+    box_name_rightborder="inspection_box_rightborder";
+    box_name_upperborder="inspection_box_upperborder";
+    box_name_belowborder="inspection_box_belowborder";
+    box_name_fondobox="inspection_box_fondobox";
+    box_name_coperchio="inspection_box_base_coperchio";
+    box_name_pomello="inspection_box_pomello_coperchio";
+
+
+    box_size_left_border[0]=0.001;//thickness
+    box_size_left_border[1]=0.1;//width
+    box_size_left_border[2]=0.07;//height
+
+    box_size_right_border[0]=0.001;//thickness
+    box_size_right_border[1]=0.1;//width
+    box_size_right_border[2]=0.07;//height
+
+    box_size_below_border[0]=0.15;//thickness
+    box_size_below_border[1]=0.001;//width
+    box_size_below_border[2]=0.07;//height
+
+    box_size_upper_border[0]=0.15;//thickness
+    box_size_upper_border[1]=0.001;//width
+    box_size_upper_border[2]=0.07;//height
+
+    box_size_fondobox[0]=0.15;//thickness
+    box_size_fondobox[1]=0.1;//width
+    box_size_fondobox[2]=0.001;//height
+
+    box_size_coperchio[0]=0.15;//thickness
+    box_size_coperchio[1]=0.1;//width
+    box_size_coperchio[2]=0.001;//height
+
+    box_size_pomello[0]=0.035;//thickness
+    box_size_pomello[1]=0.035;//width
+    box_size_pomello[2]=0.035;//height
+
+
+
+    box_pose_leftborder.header.frame_id="base_link";
+    box_pose_leftborder.pose.orientation=pose_leftborder.orientation;
+    box_pose_leftborder.pose.position.x=pose_leftborder.position.x;
+    box_pose_leftborder.pose.position.y=pose_leftborder.position.y;
+    box_pose_leftborder.pose.position.z=pose_leftborder.position.z;
+
+    box_pose_rightborder.header.frame_id="base_link";
+    box_pose_rightborder.pose.orientation=pose_rightborder.orientation;
+    box_pose_rightborder.pose.position.x=pose_rightborder.position.x;
+    box_pose_rightborder.pose.position.y=pose_rightborder.position.y;
+    box_pose_rightborder.pose.position.z=pose_rightborder.position.z;
+
+    box_pose_upperborder.header.frame_id="base_link";
+    box_pose_upperborder.pose.orientation=pose_upperborder.orientation;
+    box_pose_upperborder.pose.position.x=pose_upperborder.position.x;
+    box_pose_upperborder.pose.position.y=pose_upperborder.position.y;
+    box_pose_upperborder.pose.position.z=pose_upperborder.position.z;
+
+    box_pose_belowborder.header.frame_id="base_link";
+    box_pose_belowborder.pose.orientation=pose_belowborder.orientation;
+    box_pose_belowborder.pose.position.x=pose_belowborder.position.x;
+    box_pose_belowborder.pose.position.y=pose_belowborder.position.y;
+    box_pose_belowborder.pose.position.z=pose_belowborder.position.z;
+
+
+    box_pose_fondobox.header.frame_id="base_link";
+    box_pose_fondobox.pose.orientation=pose_fondobox.orientation;
+    box_pose_fondobox.pose.position.x=pose_fondobox.position.x;
+    box_pose_fondobox.pose.position.y=pose_fondobox.position.y;
+    box_pose_fondobox.pose.position.z=pose_fondobox.position.z;
+
+    box_pose_coperchio.pose=pose_coperchio;
+    box_pose_coperchio.header.frame_id="base_link";
+
+    box_pose_pomello.pose=pose_pomello;
+    box_pose_pomello.header.frame_id="base_link";
+
+
+
+
+
+    add_box(box_name_leftborder,box_pose_leftborder,box_size_left_border);
+    add_box(box_name_rightborder,box_pose_rightborder,box_size_right_border);
+    add_box(box_name_upperborder,box_pose_upperborder,box_size_upper_border);
+    add_box(box_name_belowborder,box_pose_belowborder,box_size_below_border);
+    add_box(box_name_fondobox,box_pose_fondobox,box_size_fondobox);
+    add_box(box_name_coperchio,box_pose_coperchio,box_size_coperchio);
+    add_box(box_name_pomello,box_pose_pomello,box_size_pomello);
+
+
+
 
   }
   
-  
+  if((ID==ID_INSPECTION_WINDOW_COVER || ID==ID_INSPECTION_WINDOW) && !(flagRightPanelCreated)){
+    flagRightPanelCreated=true;
+    Affine3d T_aruco_rightpanel,T_0_rightpanel;
+    Pose pose_rightpanel;
 
+    PoseStamped box_pose_rightpanel;
+    float box_size_rightpanel[3];
+    string box_name_rightpanel;
+
+    if(ID==ID_INSPECTION_WINDOW_COVER){
+
+    T_aruco_rightpanel.translation().x()=0;//assumo che sia nel centro
+    T_aruco_rightpanel.translation().y()=0.0249+0.0996/2;
+    T_aruco_rightpanel.translation().z()=-(0.18/2);
+    T_aruco_rightpanel.linear()=from_rpy_to_rotational_matrix(0,0,0);
+
+    }
+    else if(ID==ID_INSPECTION_WINDOW){
+
+      T_aruco_rightpanel.translation().x()=-(0.1496/2 - 0.0049 - 0.04/2);
+      T_aruco_rightpanel.translation().y()=(0.07/2 - 0.18/2);
+      T_aruco_rightpanel.translation().z()=-(0.0996);
+      T_aruco_rightpanel.linear()=from_rpy_to_rotational_matrix(-M_PI/2,0,0);
+
+
+    }
+    else{
+      ROS_INFO("Questo errore non dovrebbe esistere");
+      return false;
+    }
+
+    T_0_rightpanel=pose_to_homo(Aruco_values[ID].pose)*T_aruco_rightpanel;
+    pose_rightpanel=homo_to_pose(T_0_rightpanel);
+
+    box_name_rightpanel="right_panel";
+
+    box_size_rightpanel[0]=0.25+0.05;//thickness HO AGGIUNTO 5 cm di sicurezza
+    box_size_rightpanel[1]=0.001;//width
+    box_size_rightpanel[2]=0.18;//height
+
+    box_pose_rightpanel.pose=pose_rightpanel;
+    box_pose_rightpanel.header.frame_id="base_link";
+
+    add_box(box_name_rightpanel,box_pose_rightpanel,box_size_rightpanel);
+
+
+
+
+}
+
+  if(ID==ID_IMU_DESTINATION_PLANE ){
+    Affine3d T_aruco_leftpanel,T_0_leftpanel;
+    Pose pose_leftpanel;
+
+    PoseStamped box_pose_leftpanel;
+    float box_size_leftpanel[3];
+    string box_name_leftpanel;
+
+
+    T_aruco_leftpanel.translation().x()=(-0.06/2 - 0.025 +0.24/2);//assumo che sia nel centro
+    T_aruco_leftpanel.translation().y()=(0.05/2 - 0.35/2);
+    T_aruco_leftpanel.translation().z()=0;
+    T_aruco_leftpanel.linear()=from_rpy_to_rotational_matrix(0,0,0);
+
+
+    T_0_leftpanel=pose_to_homo(Aruco_values[ID].pose)*T_aruco_leftpanel;
+    pose_leftpanel=homo_to_pose(T_0_leftpanel);
+
+    box_name_leftpanel="left_panel";
+
+    box_size_leftpanel[0]=0.25+0.05;//thickness HO AGGIUNTO MARGINE
+    box_size_leftpanel[1]=0.36;//width
+    box_size_leftpanel[2]=0.001;//height
+
+    box_pose_leftpanel.pose=pose_leftpanel;
+    box_pose_leftpanel.header.frame_id="base_link";
+
+    add_box(box_name_leftpanel,box_pose_leftpanel,box_size_leftpanel);
+
+
+
+
+}
 
   /*
     switch(ID){
