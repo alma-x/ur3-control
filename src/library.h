@@ -137,11 +137,15 @@ struct Pose_valid
      bool valid=false;
      Pose pose;
 };
+struct Collision_box_type{
+  string name;
+  PoseStamped pose;
+  float size[3];
+};
 
 Pose_valid pose_pannello_elaborata;
-
 Pose_valid Aruco_values[aruco_length_array];
-
+map<string,Collision_box_type> collision_boxes;
 //FLAGS
 bool bool_exit=false;
 bool gara=true;
@@ -149,6 +153,7 @@ bool adding_collision_enabled=false;
 bool flagMiddlePanelCreated=false;
 bool flagRightBoxCreated=false;
 bool flagRightPanelCreated=false;
+bool gazebo_bool=false;
 
 
 void pick(string name_object);
@@ -180,7 +185,7 @@ Pose homo_to_pose(Affine3d homo);
 bool move_aruco_to_center_of_camera(double percentual_zoom);
 bool ritorno_al_pannello(double percentual);
 Affine_valid homo_0_aruco_elaration();
-bool add_box(string box_name,PoseStamped box_pose,float box_size[]);
+bool add_box(Collision_box_type box);
 bool move_to_pose_optimized(geometry_msgs::Pose pose);
 bool move_to_pose_cartesian(geometry_msgs::Pose pose);
 Matrix3d from_rpy_to_rotational_matrix(double roll,double pitch,double yaw);
@@ -192,29 +197,6 @@ bool save_aruco_in_txt();
 
 
 //OLD FUNCTIONS
-void pick(string name_object){
-
-//  Pose pose;
-//  pose.position.x = 0.0;
-//  pose.position.y = 0.11;
-//  pose.position.z = 0.0;
-//  pose.orientation.w = 1;
-//  pose.orientation.x = 1;
-//  pose.orientation.y = 0;
-//  pose.orientation.z = 0;
-
-//  gazebo_msgs::ModelState model_state;
-//  model_state.model_name = name_object;
-//  model_state.pose = pose;
-//  model_state.reference_frame =std::string("wrist_3_link");
-
-//  picked=true;
-//  while(picked==true){
-//  gazebo_model_state_pub.publish(model_state);
-//  usleep(10000);
-//  }
-
-}
 char getch() {
 //        char buf = 0;
 //        struct termios old = {0};
@@ -661,7 +643,14 @@ bool se_aruco_individuato_add_collision(int ID){
     box_pose.pose.position.x=Aruco_values[ID].pose.position.x+box_size[0]/2;//sicurezza
     box_pose.pose.position.y=Aruco_values[ID].pose.position.y;
     box_pose.pose.position.z=Aruco_values[ID].pose.position.z;
-    add_box(box_name,box_pose,box_size);
+
+    collision_boxes[box_name].name=box_name;
+    collision_boxes[box_name].pose=box_pose;
+    collision_boxes[box_name].size[0]=box_size[0];
+    collision_boxes[box_name].size[1]=box_size[1];
+    collision_boxes[box_name].size[2]=box_size[2];
+    add_box(collision_boxes[box_name]);
+
 
   }
 
@@ -693,7 +682,15 @@ bool se_aruco_individuato_add_collision(int ID){
     box_pose.pose.position.x=pose_pulsante.position.x-box_size[0]/2;//sicurezza
     box_pose.pose.position.y=pose_pulsante.position.y;
     box_pose.pose.position.z=pose_pulsante.position.z;
-    add_box(box_name,box_pose,box_size);
+
+    collision_boxes[box_name].name=box_name;
+    collision_boxes[box_name].pose=box_pose;
+    collision_boxes[box_name].size[0]=box_size[0];
+    collision_boxes[box_name].size[1]=box_size[1];
+    collision_boxes[box_name].size[2]=box_size[2];
+
+
+    add_box(collision_boxes[box_name]);
 
   }
 
@@ -878,13 +875,70 @@ bool se_aruco_individuato_add_collision(int ID){
 
 
 
-    add_box(box_name_leftborder,box_pose_leftborder,box_size_left_border);
-    add_box(box_name_rightborder,box_pose_rightborder,box_size_right_border);
-    add_box(box_name_upperborder,box_pose_upperborder,box_size_upper_border);
-    add_box(box_name_belowborder,box_pose_belowborder,box_size_below_border);
-    add_box(box_name_fondobox,box_pose_fondobox,box_size_fondobox);
-    add_box(box_name_coperchio,box_pose_coperchio,box_size_coperchio);
-    add_box(box_name_pomello,box_pose_pomello,box_size_pomello);
+//    add_box(box_name_leftborder,box_pose_leftborder,box_size_left_border);
+//    add_box(box_name_rightborder,box_pose_rightborder,box_size_right_border);
+//    add_box(box_name_upperborder,box_pose_upperborder,box_size_upper_border);
+//    add_box(box_name_belowborder,box_pose_belowborder,box_size_below_border);
+//    add_box(box_name_fondobox,box_pose_fondobox,box_size_fondobox);
+//    add_box(box_name_coperchio,box_pose_coperchio,box_size_coperchio);
+//    add_box(box_name_pomello,box_pose_pomello,box_size_pomello);
+
+    collision_boxes[box_name_leftborder].name=box_name_leftborder;
+    collision_boxes[box_name_leftborder].pose=box_pose_leftborder;
+    collision_boxes[box_name_leftborder].size[0]=box_size_left_border[0];
+    collision_boxes[box_name_leftborder].size[1]=box_size_left_border[1];
+    collision_boxes[box_name_leftborder].size[2]=box_size_left_border[2];
+    add_box(collision_boxes[box_name_leftborder]);
+
+    collision_boxes[box_name_rightborder].name=box_name_rightborder;
+    collision_boxes[box_name_rightborder].pose=box_pose_rightborder;
+    collision_boxes[box_name_rightborder].size[0]=box_size_right_border[0];
+    collision_boxes[box_name_rightborder].size[1]=box_size_right_border[1];
+    collision_boxes[box_name_rightborder].size[2]=box_size_right_border[2];
+    add_box(collision_boxes[box_name_rightborder]);
+
+
+    collision_boxes[box_name_upperborder].name=box_name_upperborder;
+    collision_boxes[box_name_upperborder].pose=box_pose_upperborder;
+    collision_boxes[box_name_upperborder].size[0]=box_size_upper_border[0];
+    collision_boxes[box_name_upperborder].size[1]=box_size_upper_border[1];
+    collision_boxes[box_name_upperborder].size[2]=box_size_upper_border[2];
+    add_box(collision_boxes[box_name_upperborder]);
+
+
+    collision_boxes[box_name_belowborder].name=box_name_belowborder;
+    collision_boxes[box_name_belowborder].pose=box_pose_belowborder;
+    collision_boxes[box_name_belowborder].size[0]=box_size_below_border[0];
+    collision_boxes[box_name_belowborder].size[1]=box_size_below_border[1];
+    collision_boxes[box_name_belowborder].size[2]=box_size_below_border[2];
+    add_box(collision_boxes[box_name_belowborder]);
+
+
+    collision_boxes[box_name_fondobox].name=box_name_fondobox;
+    collision_boxes[box_name_fondobox].pose=box_pose_fondobox;
+    collision_boxes[box_name_fondobox].size[0]=box_size_fondobox[0];
+    collision_boxes[box_name_fondobox].size[1]=box_size_fondobox[1];
+    collision_boxes[box_name_fondobox].size[2]=box_size_fondobox[2];
+    add_box(collision_boxes[box_name_fondobox]);
+
+
+    collision_boxes[box_name_pomello].name=box_name_pomello;
+    collision_boxes[box_name_pomello].pose=box_pose_pomello;
+    collision_boxes[box_name_pomello].size[0]=box_size_pomello[0];
+    collision_boxes[box_name_pomello].size[1]=box_size_pomello[1];
+    collision_boxes[box_name_pomello].size[2]=box_size_pomello[2];
+    add_box(collision_boxes[box_name_pomello]);
+
+
+
+    collision_boxes[box_name_coperchio].name=box_name_coperchio;
+    collision_boxes[box_name_coperchio].pose=box_pose_coperchio;
+    collision_boxes[box_name_coperchio].size[0]=box_size_coperchio[0];
+    collision_boxes[box_name_coperchio].size[1]=box_size_coperchio[1];
+    collision_boxes[box_name_coperchio].size[2]=box_size_coperchio[2];
+    add_box(collision_boxes[box_name_coperchio]);
+
+
 
 
 
@@ -934,10 +988,14 @@ bool se_aruco_individuato_add_collision(int ID){
     box_pose_rightpanel.pose=pose_rightpanel;
     box_pose_rightpanel.header.frame_id="base_link";
 
-    add_box(box_name_rightpanel,box_pose_rightpanel,box_size_rightpanel);
 
 
-
+    collision_boxes[box_name_rightpanel].name=box_name_rightpanel;
+    collision_boxes[box_name_rightpanel].pose=box_pose_rightpanel;
+    collision_boxes[box_name_rightpanel].size[0]=box_size_rightpanel[0];
+    collision_boxes[box_name_rightpanel].size[1]=box_size_rightpanel[1];
+    collision_boxes[box_name_rightpanel].size[2]=box_size_rightpanel[2];
+    add_box(collision_boxes[box_name_rightpanel]);
 
 }
 
@@ -968,20 +1026,45 @@ bool se_aruco_individuato_add_collision(int ID){
     box_pose_leftpanel.pose=pose_leftpanel;
     box_pose_leftpanel.header.frame_id="base_link";
 
-    add_box(box_name_leftpanel,box_pose_leftpanel,box_size_leftpanel);
+    collision_boxes[box_name_leftpanel].name=box_name_leftpanel;
+    collision_boxes[box_name_leftpanel].pose=box_pose_leftpanel;
+    collision_boxes[box_name_leftpanel].size[0]=box_size_leftpanel[0];
+    collision_boxes[box_name_leftpanel].size[1]=box_size_leftpanel[1];
+    collision_boxes[box_name_leftpanel].size[2]=box_size_leftpanel[2];
+    add_box(collision_boxes[box_name_leftpanel]);
 
 
 
 
 }
 
-  /*
-    switch(ID){
-    case ID_BUTTON_1:{
-    }
+  if(ID==ID_IMU_MODULE){
+    Affine3d T_aruco_imu,T_0_imu;
+    Pose pose_imu;
 
-  */
+    string imu_name="imu_module";
 
+    T_aruco_imu.translation().x()=0;//assumo che sia nel centro
+    T_aruco_imu.translation().y()=0;
+    T_aruco_imu.translation().z()=-0.0262;//1.2mm +25mm=26.2mm
+    T_aruco_imu.linear()=from_rpy_to_rotational_matrix(0,0,0);
+
+
+    T_0_imu=pose_to_homo(Aruco_values[ID].pose)*T_aruco_imu;
+    pose_imu=homo_to_pose(T_0_imu);
+
+    collision_boxes[imu_name].name=imu_name;
+    collision_boxes[imu_name].size[0]=0.165;//thickness HO AGGIUNTO MARGINE
+    collision_boxes[imu_name].size[1]=0.05;//width
+    collision_boxes[imu_name].size[2]=0.052;//height
+
+    collision_boxes[imu_name].pose.pose=pose_imu;
+    collision_boxes[imu_name].pose.header.frame_id="base_link";
+
+    add_box(collision_boxes[imu_name]);
+
+  }
+  return true;
 }
 bool se_aruco_individuato_aggiorna_array(int ID){
 
@@ -1270,7 +1353,7 @@ void exit_from_all(){
   bool_exit=true;
 
 }
-bool add_box(string box_name,PoseStamped box_pose,float box_size[]){
+bool add_box(Collision_box_type box){
 
   if(!adding_collision_enabled){
     return false;
@@ -1278,18 +1361,18 @@ bool add_box(string box_name,PoseStamped box_pose,float box_size[]){
 
   ur3_control::collision_object_srvRequest coll_srv;
   coll_srv.add=true;
-  coll_srv.box_name=box_name;
-  coll_srv.box_pose=box_pose;
-  coll_srv.box_size.push_back(box_size[0]);
-  coll_srv.box_size.push_back(box_size[1]);
-  coll_srv.box_size.push_back(box_size[2]);
+  coll_srv.box_name=box.name;
+  coll_srv.box_pose=box.pose;
+  coll_srv.box_size.push_back(box.size[0]);
+  coll_srv.box_size.push_back(box.size[1]);
+  coll_srv.box_size.push_back(box.size[2]);
 
 
   return collision_service(coll_srv).success;
 
 }
 bool remove_box(string box_name){
-  ROS_INFO("ADDING BOX");
+  ROS_INFO("REMOVING BOX");
   ur3_control::collision_object_srvRequest coll_srv;
 
   coll_srv.add=false;
@@ -1350,6 +1433,30 @@ bool save_aruco_in_txt(){
   outFile.close();
   return true;
 }
+void pick(string name_object){
+  ROS_INFO("Trying to attach the box");
+  Pose pose;
+  pose.position.x = 0.0;
+  pose.position.y = 0.193;
+  pose.position.z = 0.0;
+  pose.orientation.w = 1;
+  pose.orientation.x = 1;
+  pose.orientation.y = 0;
+  pose.orientation.z = 0;
+
+  gazebo_msgs::ModelState model_state;
+  model_state.model_name = name_object;
+  model_state.pose = pose;
+  model_state.reference_frame =std::string("wrist_3_link");
+
+  picked=true;
+  while(picked==true){
+  gazebo_model_state_pub.publish(model_state);
+  usleep(10000);
+  }
+
+}
+
 
 //Stampa
 void stampa_Pose(Pose po)
@@ -2797,8 +2904,6 @@ bool esplorazione_middle_panel_per_trovare_aruco(string ID_str){
 
 int routine_aria=1,routine_terra=1;
 int num_routine_aria=4,num_routine_terra=1;
-
-
 bool esplora_tutti_aruco_aria(){
   //IMU DESTINATION,INSP WIND, INSP COVER
     vector<double> joint_group_positions=robot->getCurrentJointValues();
@@ -3418,7 +3523,15 @@ bool left_panel(){
   }
 
 
-  action_gripper("semi_open");
+  if(!gara) {
+    string nome;
+    boost::thread pick_thread(pick, "imu_module");
+    action_gripper("semi_open");
+    sleep(5);
+    picked=false;
+  }
+
+
 
   sleep(2);
 
@@ -3570,6 +3683,10 @@ bool action_aruco_button(string ID_str){
   }
 
 
+
+  remove_box("button_"+ID_str);
+
+
   if(!move_to_pose_optimized(pose_final_pose_pregrasp)){
       return false;
   }
@@ -3595,7 +3712,7 @@ bool action_aruco_button(string ID_str){
 
   Pose pose_final_pose_premuto=homo_to_pose(T_0_finalpos_premuto);
 
-  if(!move_to_pose_cartesian(pose_final_pose_premuto)){
+  if(!move_to_pose_optimized(pose_final_pose_premuto)){
     if(!move_to_pose(pose_final_pose_premuto,true))
       return false;
   }
@@ -3604,33 +3721,35 @@ bool action_aruco_button(string ID_str){
   //RITORNO INDIETRO
 
 
-  if(!move_to_pose_cartesian(pose_final_pose_premuto)){
+  if(!move_to_pose_optimized(pose_final_pose_premuto)){
     if(!move_to_pose(pose_final_pose_premuto,true))
       return false;
   }
 
-  if(!move_to_pose_cartesian(pose_final_pose_pregrasp)){
+  if(!move_to_pose_optimized(pose_final_pose_pregrasp)){
     if(!move_to_pose(pose_final_pose_premuto,true))
       return false;
   }
 
-  if(!move_to_pose_cartesian(pose3)){
+  if(!move_to_pose_optimized(pose3)){
     if(!move_to_pose(pose_final_pose_premuto,true))
       return false;
   }
 
-  if(!move_to_pose_cartesian(pose2)){
+  if(!move_to_pose_optimized(pose2)){
     if(!move_to_pose(pose_final_pose_premuto,true))
       return false;
   }
 
-  if(!move_to_pose_cartesian(pose1)){
+  if(!move_to_pose_optimized(pose1)){
     if(!move_to_pose(pose_final_pose_premuto,true))
       return false;
   }
 
 
   PosizioniBase(str_pos_iniziale_cam_alta);
+
+  add_box(collision_boxes["button_"+ID_str]);
   action_gripper("open");
 
   return true;
@@ -4058,7 +4177,14 @@ void add_initial_collision_environment(){
   box_pose.pose.position.x=box_size_rialzo[0]/2;
   box_pose.pose.position.y=0;
   box_pose.pose.position.z=-box_size_rialzo[2]/2;
-  add_box(box_name,box_pose,box_size_rialzo);
+
+  collision_boxes[box_name].name=box_name;
+  collision_boxes[box_name].pose=box_pose;
+  collision_boxes[box_name].size[0]=box_size_rialzo[0];
+  collision_boxes[box_name].size[1]=box_size_rialzo[1];
+  collision_boxes[box_name].size[2]=box_size_rialzo[2];
+  add_box(collision_boxes[box_name]);
+
   }
 
   //ikea_table
@@ -4072,7 +4198,13 @@ void add_initial_collision_environment(){
   box_pose.pose.position.x=0;
   box_pose.pose.position.y=0;
   box_pose.pose.position.z=-(box_size_rialzo[2] + box_size_table[2]/2);
-  add_box(box_name,box_pose,box_size_table);
+
+  collision_boxes[box_name].name=box_name;
+  collision_boxes[box_name].pose=box_pose;
+  collision_boxes[box_name].size[0]=box_size_table[0];
+  collision_boxes[box_name].size[1]=box_size_table[1];
+  collision_boxes[box_name].size[2]=box_size_table[2];
+  add_box(collision_boxes[box_name]);
   }
 
 
@@ -4109,13 +4241,23 @@ void ALL_INITIAL_VOIDS(){
   ros::NodeHandle n;
   bool load_aruco=false;
   n.getParam("load_aruco",load_aruco);
-
+  n.getParam("gazebox",gazebo_bool);
   initialize_parameters();
   set_homo_std_matrix();
   load_parameters();
   calibrazione_gripper();
   add_initial_collision_environment();
-
+  if(gazebo_bool) {
+    sleep(5);
+    ROS_INFO("SETTINGG");
+    string nome;
+    boost::thread pick_thread(pick, "imu_module");
+    action_gripper("semi_open");
+    sleep(5);
+    picked=false;
+  }
+  if(!gazebo_bool)
+    ROS_INFO("GAZEBO PARAM NOT SET");
   if(load_aruco){
     load_aruco_values_from_txt();
   }
