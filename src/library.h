@@ -4145,7 +4145,7 @@ void prova(){
 //  action_gripper("semi_open");
 //  sleep(10);
 //  picked=false;
-centra_aruco_nella_camera(ID_BUTTON_1,0);
+//centra_aruco_nella_camera(ID_BUTTON_1,0);
 
 }
 void initialize_parameters(){
