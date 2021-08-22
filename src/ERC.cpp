@@ -821,7 +821,7 @@ void Interazione_Environment(){
     case 3:{
       cout<<endl<<"nome oggetto: ";
       cin>>nome_oggetto;
-      boost::thread pick_thread(pick, nome_oggetto);
+      boost::thread pick_thread(pick, nome_oggetto,0.191);
       break;
 
     }

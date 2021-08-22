@@ -7,4 +7,4 @@ posizione_centrifuga joint 53 -19 4 -79 -89 0
 posizione_pannello joint -20 -149 54 -58 -84 173
 posizione_iniziale joint 0 -120 100 20 90 90
 str_pos_adatta_ricerca_per_terra joint 0 -120 100 77 90 -90
-debug joint 0 0 0.193 0 0 0
+debug joint 0 0 0.1018 0 0 0
