@@ -5,6 +5,7 @@
 #include "ur3_control/aruco_service.h"
 #include "ur3_control/UserInterface.h"
 #include "ur3_control/collision_object_srv.h"
+#include "ur3_control/float_return_srv.h"
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <iostream>
@@ -2358,18 +2359,28 @@ bool centra_aruco_nella_camera(int ID_aruco, double percentuale_zoom){
 
   T_camera_gazebo_aruco=T_0_camera_gazebo.inverse()*T_0_aruco;
   Affine3d T_tool_aruco;
+  Affine3d T_ok;
   T_tool_aruco=T_0_tool.inverse()*T_0_aruco;
 
-//  stampa_homo_named(T_tool_aruco,"T_tool_aruco");
-//  cout<<"Inserisci theta";
-//  double theta=0;
+  stampa_homo_named(T_tool_aruco,"T_tool_aruco");
+  float theta1,theta2;
+  ros::NodeHandle node_handle;
+  ros::ServiceClient client1;
+  client1 = node_handle.serviceClient<ur3_control::float_return_srv>("/solve_equation_serv");
+  ur3_control::float_return_srv msg;
 
-//  cin>>theta;
-  double theta;
-  theta=atan2(T_tool_aruco.translation().x(),-T_tool_aruco.translation().y());
-  Affine3d T_ok;
+  msg.request.num1=T_tool_aruco.translation().x();
+  msg.request.num2=T_tool_aruco.translation().y();
+
+  client1.call(msg);
+
+  theta1=msg.response.result1;
+  theta2=msg.response.result2;
+  Affine3d T_finale;
+
+{
   Matrix3d rot_ok;
-  rot_ok=from_rpy_to_rotational_matrix(0,0,theta);
+  rot_ok=from_rpy_to_rotational_matrix(0,0,theta1);
   T_ok.linear()=rot_ok;
 
   T_ok.translation().x()=0;
@@ -2382,8 +2393,8 @@ bool centra_aruco_nella_camera(int ID_aruco, double percentuale_zoom){
   T_tool_aruco_vert=T_0_tool_vert.inverse()*T_0_aruco;
 
 
-  move_to_pose_optimized(homo_to_pose(T_0_tool_vert));
-  sleep(2);
+  //move_to_pose_optimized(homo_to_pose(T_0_tool_vert));
+  //sleep(2);
 
   double phi=0;
   phi=-(M_PI/2-atan2(T_tool_aruco_vert.translation().x(),T_tool_aruco_vert.translation().z()));
@@ -2399,10 +2410,59 @@ bool centra_aruco_nella_camera(int ID_aruco, double percentuale_zoom){
   T_orizz.translation().y()=0;
   T_orizz.translation().z()=0;
 
-  Affine3d T_0_tool_vert_orizz;
+  Affine3d T_0_tool_vert_orizz,T_tool_aruco_theta1;
   T_0_tool_vert_orizz=T_0_tool_vert*T_orizz;
 
-  move_to_pose_optimized(homo_to_pose(T_0_tool_vert_orizz));
+  T_tool_aruco_theta1=T_0_tool_vert_orizz.inverse()*T_0_aruco;
+  stampa_homo_named(T_tool_aruco_theta1,"T_tool_aruco_theta1");
+  if(T_tool_aruco_theta1.translation().x()>0){
+    T_finale=T_0_tool_vert_orizz;
+  }
+}
+{
+
+    Matrix3d rot_ok;
+    rot_ok=from_rpy_to_rotational_matrix(0,0,theta2);
+    T_ok.linear()=rot_ok;
+
+    T_ok.translation().x()=0;
+    T_ok.translation().y()=0;
+    T_ok.translation().z()=0;
+
+    Affine3d T_0_tool_vert,T,T_tool_aruco_vert;
+    T_0_tool_vert=T_0_tool*T_ok;
+
+    T_tool_aruco_vert=T_0_tool_vert.inverse()*T_0_aruco;
+
+
+    //move_to_pose_optimized(homo_to_pose(T_0_tool_vert));
+    //sleep(2);
+
+    double phi=0;
+    phi=-(M_PI/2-atan2(T_tool_aruco_vert.translation().x(),T_tool_aruco_vert.translation().z()));
+
+
+
+    Affine3d T_orizz;
+    Matrix3d rot_orizz;
+    rot_orizz=from_rpy_to_rotational_matrix(0,phi,0);
+    T_orizz.linear()=rot_orizz;
+
+    T_orizz.translation().x()=0;
+    T_orizz.translation().y()=0;
+    T_orizz.translation().z()=0;
+
+    Affine3d T_0_tool_vert_orizz,T_tool_aruco_theta2;
+    T_0_tool_vert_orizz=T_0_tool_vert*T_orizz;
+
+    T_tool_aruco_theta2=T_0_tool_vert_orizz.inverse()*T_0_aruco;
+    stampa_homo_named(T_tool_aruco_theta2,"T_tool_aruco_theta1");
+    if(T_tool_aruco_theta2.translation().x()>0){
+      T_finale=T_0_tool_vert_orizz;
+    }
+}
+
+  move_to_pose_optimized(homo_to_pose(T_finale));
 
 /*
   double angolo_finale,teta0,xA,yA;
@@ -2519,6 +2579,43 @@ bool centra_aruco_nella_camera(int ID_aruco, double percentuale_zoom){
 
 
   return true;
+}
+bool zoom_camera_to_aruco(int ID_aruco,double valore){
+  if(!Aruco_values[ID_aruco].valid){
+    ROS_INFO("NON POSSEGGO QUELL ARUCO");
+    return false;
+  }
+  cambia_aruco(to_string(ID_aruco));
+  if(!aruco_individuato()){
+    centra_aruco_nella_camera(ID_aruco, 0);
+  }
+
+
+  Affine3d T_0_aruco,T_0_tool,T_0_camera_gazebo,T_camera_gazebo_aruco,T_0_camera_gazebo_modified,T_all_orizz,T_all_vert,T_0_camera_gazebo_modified_orizz,T_camera_gazebo_aruco_modified_orizz,T_all_rotativo,T_0_tool_modified_oriz,T_0_tool_zoom;
+  Vector3d vettore_gazebo_aruco(0,0,0);
+  Matrix3d rot_allineamento_orizzontale,rot_all_vert,rot_all_rotativo;
+  float roll_oriz, pitch_oriz, yaw_oriz,roll_vert,pitch_vert,yaw_vert,roll_rot,pitch_rot,yaw_rot;
+  T_0_tool=pose_to_homo(robot->getCurrentPose().pose);
+  T_0_aruco=pose_to_homo(Aruco_values[ID_aruco].pose);
+  T_0_camera_gazebo=T_0_tool*T_tool_camera_gazebo;
+
+  //T_0_aruco=T_0_camera*T_camera_aruco
+
+  T_camera_gazebo_aruco=T_0_camera_gazebo*T_0_aruco.inverse();
+  float distanza_su_asse_focale=T_camera_gazebo_aruco.translation().z();
+
+  Affine3d T_ok;
+  T_ok.translation().z()=distanza_su_asse_focale*valore/100;
+  T_ok.translation().x()=0;
+  T_ok.translation().y()=0;
+  T_ok.linear()=from_rpy_to_rotational_matrix(0,0,0);
+
+  T_0_camera_gazebo=T_0_camera_gazebo*T_ok;
+
+  T_0_tool_zoom=T_0_camera_gazebo*T_tool_camera_gazebo.inverse();
+
+  move_to_pose_optimized(homo_to_pose(T_0_tool_zoom));
+
 }
 bool function_pose_aruco(){
   ur3_control::aruco_serviceResponse msg_from_bridge=bridge_service(str_md_rd,"");
@@ -4235,8 +4332,6 @@ void prova(){
 //  sleep(10);
 //  picked=false;
   ROS_INFO("INIZIOO");
-  se_aruco_individuato_aggiorna_array(1);
-  sleep(5);
   centra_aruco_nella_camera(ID_BUTTON_1,0);
 
 }

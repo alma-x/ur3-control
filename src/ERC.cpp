@@ -119,11 +119,16 @@ void esegui_msg_from_inteface(){
         centra_aruco_nella_camera(id,0);
       }
       if(msg_from_interface.modality=="centra_aruco_and_zoom_in"){
-        move_aruco_to_center_of_camera(20);
+        int id;
+        cout<<"Quale aruco?";
+        cin>>id;
+        zoom_camera_to_aruco(id,20);
       }
       if(msg_from_interface.modality=="centra_aruco_and_zoom_out"){
-
-        move_aruco_to_center_of_camera(-20);
+        int id;
+        cout<<"Quale aruco?";
+        cin>>id;
+        zoom_camera_to_aruco(id,-20);
       }
       if(msg_from_interface.modality=="automazione_go_pos_iniziale"){
 
