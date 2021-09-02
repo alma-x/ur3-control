@@ -1,0 +1,7 @@
+string modality
+float32 num1
+float32 num2
+float32 num3
+---
+float32 result1
+float32 result2

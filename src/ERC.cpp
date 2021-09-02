@@ -113,7 +113,10 @@ void esegui_msg_from_inteface(){
         usleep(300000);//0.3 sec
       }
       if(msg_from_interface.modality=="centra_aruco"){
-        move_aruco_to_center_of_camera(0);
+        int id;
+        cout<<"Quale aruco?";
+        cin>>id;
+        centra_aruco_nella_camera(id,0);
       }
       if(msg_from_interface.modality=="centra_aruco_and_zoom_in"){
         move_aruco_to_center_of_camera(20);
@@ -155,6 +158,9 @@ void esegui_msg_from_inteface(){
       }
       if(msg_from_interface.modality=="esplora_tutto"){
         esplora_tutti_gli_aruco();
+      }
+      if(msg_from_interface.modality=="superdebug"){
+        prova();
       }
       msg_to_be_processed=false;
   }

@@ -38,6 +38,7 @@ project(ur3_control)
    aruco_service.srv
    cv_server.srv
    collision_object_srv.srv
+   float_return_srv.srv
  )
 
 
@@ -76,6 +77,7 @@ target_link_libraries(prova_cpp ${catkin_LIBRARIES} ${Boost_LIBRARIES})
  catkin_install_python(PROGRAMS
    scripts/UI_gara.py
    scripts/collision_interface.py
+   scripts/solve_equation.py
    QT/user_interface.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )

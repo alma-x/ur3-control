@@ -2346,7 +2346,7 @@ bool centra_aruco_nella_camera(int ID_aruco, double percentuale_zoom){
     return false;
   }
 
-  Affine3d T_0_aruco,T_0_tool,T_0_camera_gazebo,T_0_camera_gazebo_modified,T_all_orizz,T_all_vert,T_0_camera_gazebo_modified_orizz,T_camera_gazebo_aruco_modified_orizz,T_all_rotativo,T_0_tool_modified_oriz;
+  Affine3d T_0_aruco,T_0_tool,T_0_camera_gazebo,T_camera_gazebo_aruco,T_0_camera_gazebo_modified,T_all_orizz,T_all_vert,T_0_camera_gazebo_modified_orizz,T_camera_gazebo_aruco_modified_orizz,T_all_rotativo,T_0_tool_modified_oriz;
   Vector3d vettore_gazebo_aruco(0,0,0);
   Matrix3d rot_allineamento_orizzontale,rot_all_vert,rot_all_rotativo;
   float roll_oriz, pitch_oriz, yaw_oriz,roll_vert,pitch_vert,yaw_vert,roll_rot,pitch_rot,yaw_rot;
@@ -2354,7 +2354,96 @@ bool centra_aruco_nella_camera(int ID_aruco, double percentuale_zoom){
   T_0_aruco=pose_to_homo(Aruco_values[ID_aruco].pose);
   T_0_camera_gazebo=T_0_tool*T_tool_camera_gazebo;
 
+  //T_0_aruco=T_0_camera*T_camera_aruco
 
+  T_camera_gazebo_aruco=T_0_camera_gazebo.inverse()*T_0_aruco;
+  Affine3d T_tool_aruco;
+  T_tool_aruco=T_0_tool.inverse()*T_0_aruco;
+
+//  stampa_homo_named(T_tool_aruco,"T_tool_aruco");
+//  cout<<"Inserisci theta";
+//  double theta=0;
+
+//  cin>>theta;
+  double theta;
+  theta=atan2(T_tool_aruco.translation().x(),-T_tool_aruco.translation().y());
+  Affine3d T_ok;
+  Matrix3d rot_ok;
+  rot_ok=from_rpy_to_rotational_matrix(0,0,theta);
+  T_ok.linear()=rot_ok;
+
+  T_ok.translation().x()=0;
+  T_ok.translation().y()=0;
+  T_ok.translation().z()=0;
+
+  Affine3d T_0_tool_vert,T,T_tool_aruco_vert;
+  T_0_tool_vert=T_0_tool*T_ok;
+
+  T_tool_aruco_vert=T_0_tool_vert.inverse()*T_0_aruco;
+
+
+  move_to_pose_optimized(homo_to_pose(T_0_tool_vert));
+  sleep(2);
+
+  double phi=0;
+  phi=-(M_PI/2-atan2(T_tool_aruco_vert.translation().x(),T_tool_aruco_vert.translation().z()));
+
+
+
+  Affine3d T_orizz;
+  Matrix3d rot_orizz;
+  rot_orizz=from_rpy_to_rotational_matrix(0,phi,0);
+  T_orizz.linear()=rot_orizz;
+
+  T_orizz.translation().x()=0;
+  T_orizz.translation().y()=0;
+  T_orizz.translation().z()=0;
+
+  Affine3d T_0_tool_vert_orizz;
+  T_0_tool_vert_orizz=T_0_tool_vert*T_orizz;
+
+  move_to_pose_optimized(homo_to_pose(T_0_tool_vert_orizz));
+
+/*
+  double angolo_finale,teta0,xA,yA;
+
+
+  xA=homo_to_pose(T_camera_gazebo_aruco).position.z;
+  yA=homo_to_pose(T_camera_gazebo_aruco).position.x;
+  teta0=grad_to_rad(18);
+
+  angolo_finale= teta0 - 2*atan((sqrt(((xA*xA*cos(2*teta0 - 2*atan(yA/xA)) - yA*yA*cos(2*teta0 - 2*atan(yA/xA)) + xA*xA + yA*yA)/(2*cos(teta0/2 - atan(yA/xA)/2)*cos(teta0/2 - atan(yA/xA)/2)*cos(teta0/2 - atan(yA/xA)/2)*cos(teta0/2 - atan(yA/xA)/2))))- 2*xA*cos(teta0 - atan(yA/xA)) + cos(teta0 - atan(yA/xA))*sqrt(((xA*xA*cos(2*teta0 - 2*atan(yA/xA)) - yA*yA*cos(2*teta0 - 2*atan(yA/xA)) + xA*xA + yA*yA)/(2*cos(teta0/2 - atan(yA/xA)/2)*cos(teta0/2 - atan(yA/xA)/2)*cos(teta0/2 - atan(yA/xA)/2)*cos(teta0/2 - atan(yA/xA)/2)))))/(4*yA*cos(teta0/2 - atan(yA/xA)/2)*sin(teta0/2 - atan(yA/xA)/2)));
+
+
+  Affine3d T_ok;
+  Matrix3d rot_ok;
+  rot_ok=from_rpy_to_rotational_matrix(0,0,-angolo_finale);
+  T_ok.linear()=rot_ok;
+
+  T_ok.translation().x()=0;
+  T_ok.translation().y()=0;
+  T_ok.translation().z()=0;
+
+  Affine3d T_finale;
+  T_finale=T_0_tool*T_ok;
+
+
+  move_to_pose_optimized(homo_to_pose(T_finale));
+
+*/
+  stampa_homo_named(T_tool_camera_gazebo,"T_tool_camera_gazebo");
+  stampa_homo_named(T_0_aruco,"T_0_aruco");
+  stampa_homo_named(T_0_camera_gazebo,"T_0_camera_gazebo");
+  stampa_homo_named(T_0_tool,"T_0_tool");
+  stampa_homo_named(T_camera_gazebo_aruco,"T_camera_gazebo_aruco");
+  //stampa_homo_named(T_finale,"T_finale");
+  stampa_homo_named(T_ok,"T_ok");
+  //ROS_INFO("Angolo finale:%f",angolo_finale);
+  //ROS_INFO(" xA:%f",xA);
+  //ROS_INFO(" yA:%f",yA);
+  //ROS_INFO(" teta0:%f",teta0);
+
+/*
   vettore_gazebo_aruco.x()=T_0_aruco.translation().x()-T_0_camera_gazebo.translation().x();
   vettore_gazebo_aruco.y()=T_0_aruco.translation().y()-T_0_camera_gazebo.translation().y();
   vettore_gazebo_aruco.z()=T_0_aruco.translation().z()-T_0_camera_gazebo.translation().z();
@@ -2390,7 +2479,7 @@ bool centra_aruco_nella_camera(int ID_aruco, double percentuale_zoom){
 
   move_to_pose_optimized(homo_to_pose(T_0_tool_modified_oriz));
 
-
+*/
   /*
   double dissallineamento_verticale=M_PI/2 - atan(T_camera_aruco_modified_orizz.translation().z()/T_camera_aruco_modified_orizz.translation().x());
   //double sq_dist=sqrt(vettore_gazebo_aruco.x()*vettore_gazebo_aruco.x() +vettore_gazebo_aruco.y()*vettore_gazebo_aruco.y() + vettore_gazebo_aruco.z()*vettore_gazebo_aruco.z());
@@ -4145,7 +4234,10 @@ void prova(){
 //  action_gripper("semi_open");
 //  sleep(10);
 //  picked=false;
-//centra_aruco_nella_camera(ID_BUTTON_1,0);
+  ROS_INFO("INIZIOO");
+  se_aruco_individuato_aggiorna_array(1);
+  sleep(5);
+  centra_aruco_nella_camera(ID_BUTTON_1,0);
 
 }
 void initialize_parameters(){
