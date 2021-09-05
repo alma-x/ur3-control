@@ -18,7 +18,6 @@ def callback_service(req):
 
     L=0.0874
     phi=0.1745
-    print("2222")
     #theta=sym.Symbol('theta')
     Xa=req.num1
     Ya=req.num2
@@ -27,7 +26,9 @@ def callback_service(req):
     #solution = sym.solve(f,theta)
     res1=2*atan((5000*Xa*cos(pi/18) + 5000*Ya*sin(pi/18) + (25000000*Xa**2*cos(pi/18)**2 - 190969*cos(pi/18)**2 + 25000000*Ya**2*cos(pi/18)**2 + 25000000*Xa**2*sin(pi/18)**2 + 25000000*Ya**2*sin(pi/18)**2)**(1/2))/(437*cos(pi/18) - 5000*Ya*cos(pi/18) + 5000*Xa*sin(pi/18)))
     res2=2*atan((5000*Xa*cos(pi/18) + 5000*Ya*sin(pi/18) - (25000000*Xa**2*cos(pi/18)**2 - 190969*cos(pi/18)**2 + 25000000*Ya**2*cos(pi/18)**2 + 25000000*Xa**2*sin(pi/18)**2 + 25000000*Ya**2*sin(pi/18)**2)**(1/2))/(437*cos(pi/18) - 5000*Ya*cos(pi/18) + 5000*Xa*sin(pi/18)))
+    print("solution1:")
     print(res1)
+    print("solution2:")
     print(res2)
     return float_return_srvResponse(result1=res1,result2=res2)
 
