@@ -68,6 +68,7 @@ using namespace Eigen;
 #define ID_INSPECTION_WINDOW_COVER 13
 #define ID_INSPECTION_WINDOW_COVER_STORAGE 14
 #define aruco_length_array 15
+#define pi 3.1415926535
 
 double tol=0.01;
 bool SDR_SOLIDALE=false;
@@ -2364,18 +2365,24 @@ bool centra_aruco_nella_camera(int ID_aruco, double percentuale_zoom){
 
   stampa_homo_named(T_tool_aruco,"T_tool_aruco");
   float theta1,theta2;
-  ros::NodeHandle node_handle;
-  ros::ServiceClient client1;
-  client1 = node_handle.serviceClient<ur3_control::float_return_srv>("/solve_equation_serv");
-  ur3_control::float_return_srv msg;
 
-  msg.request.num1=T_tool_aruco.translation().x();
-  msg.request.num2=T_tool_aruco.translation().y();
+  //con servizio python------------------
+  //ros::NodeHandle node_handle;
+  //ros::ServiceClient client1;
+  //client1 = node_handle.serviceClient<ur3_control::float_return_srv>("/solve_equation_serv");
+  //ur3_control::float_return_srv msg;
+  //msg.request.num1=T_tool_aruco.translation().x();
+  //msg.request.num2=T_tool_aruco.translation().y();
+  //client1.call(msg);
+  //--------------------------
 
-  client1.call(msg);
+  float Xa=T_tool_aruco.translation().x();
+  float Ya=T_tool_aruco.translation().y();
+  theta1=2*atan((5000*Xa*cos(pi/18) + 5000*Ya*sin(pi/18) + sqrt((25000000*pow(Xa,2)*pow(cos(pi/18),2) - 190969*pow(cos(pi/18),2) + 25000000*pow(Ya,2)*pow(cos(pi/18),2) + 25000000*pow(Xa,2)*pow(sin(pi/18),2) + 25000000*pow(Ya,2)*pow(sin(pi/18),2))))/(437*cos(pi/18) - 5000*Ya*cos(pi/18) + 5000*Xa*sin(pi/18)));
+  theta2=2*atan((5000*Xa*cos(pi/18) + 5000*Ya*sin(pi/18) - sqrt((25000000*pow(Xa,2)*pow(cos(pi/18),2) - 190969*pow(cos(pi/18),2) + 25000000*pow(Ya,2)*pow(cos(pi/18),2) + 25000000*pow(Xa,2)*pow(sin(pi/18),2) + 25000000*pow(Ya,2)*pow(sin(pi/18),2))))/(437*cos(pi/18) - 5000*Ya*cos(pi/18) + 5000*Xa*sin(pi/18)));
+  printf("res1: %f \n",theta1);
+  printf("res2: %f \n",theta2);
 
-  theta1=msg.response.result1;
-  theta2=msg.response.result2;
   Affine3d T_finale;
 
 {
@@ -3684,14 +3691,14 @@ bool solleva_imu(){
     }
   }
 
-
+/* Per evitare problemi nella simulazione
   //movimento finale
   if(!move_to_pose_cartesian(pose_final_grasp)){
     if(!move_to_pose(pose_final_grasp,true)){
       return false;
     }
   }
-
+*/
 
   if(gazebo_bool) {
     string nome;
@@ -3849,8 +3856,8 @@ bool left_panel(){
   solleva_imu();
 
 
-  sleep(5);
-  picked=false;
+//  sleep(5);
+//  picked=false;
 //  if(!move_to_pose_cartesian(pose_final_pose_pregrasp)){
 //    if(!move_to_pose(pose_final_pose_pregrasp,true))
 //      return false;
@@ -3894,7 +3901,7 @@ bool left_panel(){
 //  }
 
 
-  action_gripper("open");
+//  action_gripper("open");
 
 
   PosizioniBase(str_pos_iniziale);
@@ -4331,8 +4338,6 @@ void prova(){
 //  action_gripper("semi_open");
 //  sleep(10);
 //  picked=false;
-  ROS_INFO("INIZIOO");
-  centra_aruco_nella_camera(ID_BUTTON_1,0);
 
 }
 void initialize_parameters(){

@@ -114,6 +114,7 @@ void esegui_msg_from_inteface(){
       }
       if(msg_from_interface.modality=="centra_aruco"){
         int id;
+        int zoom;
         cout<<"Quale aruco?";
         cin>>id;
         centra_aruco_nella_camera(id,0);

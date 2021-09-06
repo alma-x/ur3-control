@@ -27,6 +27,7 @@ def menu():
         print("10) Esplora")
         print("11) TXT_SAVE_ARUCO")
         print("12) superdebug")
+        print("13) centra aruco")
         choice=raw_input("choice: ")
 
         if(choice=='0'):
@@ -151,7 +152,13 @@ def menu():
             second_information='null'
             msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
             resp1 = serv(msg)
-
+        elif(choice=='13'):
+                target_joints=[0,0,0,0,0,0]
+                target_pose=Pose()
+                modality='centra_aruco'
+                second_information='null'
+                msg=UserInterfaceRequest(modality,second_information,target_pose,target_joints)
+                resp1 = serv(msg)
         else:
             print('COMMAND NOT KNOWN')
 
