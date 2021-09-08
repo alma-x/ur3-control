@@ -25,6 +25,8 @@ def callback_service(req):
         #print(req.box_size)
         #print(req.box_name)
         return tutorial.add_box(req.box_pose,box_name=req.box_name,box_size=req.box_size)
+    if req.attach==True:
+        return tutorial.attach_box(req.box_pose,box_name=req.box_name,box_size=req.box_size)
     if req.add==False and req.exit==False:
         return tutorial.remove_box(box_name=req.box_name)
     #return collision_object_srvResponse(success=True)
@@ -358,11 +360,10 @@ class MoveGroupPythonIntefaceTutorial(object):
     return self.wait_for_state_update(box_is_known=True, timeout=timeout)
 
 
-  def attach_box(self, timeout=4):
+  def attach_box(self,box_pose,box_name,box_size, timeout=4):
     # Copy class variables to local variables to make the web tutorials more clear.
     # In practice, you should use the class variables directly unless you have a good
     # reason not to.
-    box_name = self.box_name
     robot = self.robot
     scene = self.scene
     eef_link = self.eef_link
@@ -378,8 +379,9 @@ class MoveGroupPythonIntefaceTutorial(object):
     ## planning scene to ignore collisions between those links and the box. For the Panda
     ## robot, we set ``grasping_group = 'hand'``. If you are using a different robot,
     ## you should change this value to the name of your end effector group name.
-    grasping_group = 'hand'
-    touch_links = robot.get_link_names(group=grasping_group)
+    grasping_group = 'manipulator'
+    touch_links = robot.get_link_names()
+    #print(touch_links)
     scene.attach_box(eef_link, box_name, touch_links=touch_links)
     ## END_SUB_TUTORIAL
 

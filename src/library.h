@@ -1363,6 +1363,7 @@ bool add_box(Collision_box_type box){
 
   ur3_control::collision_object_srvRequest coll_srv;
   coll_srv.add=true;
+  coll_srv.exit=false;
   coll_srv.box_name=box.name;
   coll_srv.box_pose=box.pose;
   coll_srv.box_size.push_back(box.size[0]);
@@ -1383,6 +1384,31 @@ bool remove_box(string box_name){
   return collision_service(coll_srv).success;
 
 }
+bool attach_box(Collision_box_type box){
+
+  if(!adding_collision_enabled){
+    return false;
+  }
+
+  ur3_control::collision_object_srvRequest coll_srv;
+  coll_srv.add=false;
+  coll_srv.exit=false;
+  coll_srv.attach=true;
+  coll_srv.box_name=box.name;
+  coll_srv.box_pose=box.pose;
+  coll_srv.box_size.push_back(box.size[0]);
+  coll_srv.box_size.push_back(box.size[1]);
+  coll_srv.box_size.push_back(box.size[2]);
+
+
+  return collision_service(coll_srv).success;
+
+}
+bool add_and_attach_box(Collision_box_type box){
+  add_box(box);
+  attach_box(box);
+}
+
 void blocca_se_vedi_nuovo_aruco(){
   ros::NodeHandle node_handle;
   ros::ServiceClient client1;
@@ -1583,6 +1609,86 @@ Matrix3d from_rpy_to_rotational_matrix(double roll,double pitch,double yaw){
 
 
 //Gripper
+bool update_gripper_collision_box(string new_position){
+  /*Diversamente dalle altre funzioni, qui verrà fatto tutto rispetto al tool. Questo per mantenere solidale la box*/
+  Affine3d T_tool_to_center_of_box;
+
+
+
+
+  PoseStamped box_pose;
+  float box_size[3];
+  string box_name="gripper_box";
+  box_pose.header.frame_id="ee_link";
+  box_size[1]=0.03;
+  if(new_position=="open"){
+
+    T_tool_to_center_of_box.translation().x()=(0.096+0.025/2)/2;
+    T_tool_to_center_of_box.translation().y()=0.002;
+    T_tool_to_center_of_box.translation().z()=0;
+    T_tool_to_center_of_box.linear()=from_rpy_to_rotational_matrix(0,0,0);//non mi interessa cambiare la rotazione
+
+
+
+
+
+
+    box_size[0]=0.12;
+    box_size[2]=0.13;
+
+  }
+  if(new_position=="semi_open"){
+
+    T_tool_to_center_of_box.translation().x()=(0.128+0.025/2)/2;
+    T_tool_to_center_of_box.translation().y()=0.002;
+    T_tool_to_center_of_box.translation().z()=0;
+    T_tool_to_center_of_box.linear()=from_rpy_to_rotational_matrix(0,0,0);//non mi interessa cambiare la rotazione
+
+
+
+    box_size[0]=(0.128+0.025/2)*1.1;
+    box_size[2]=0.1;
+
+  }
+  if(new_position=="semi_close"){
+
+    T_tool_to_center_of_box.translation().x()=(0.132+0.025/2)/2;
+    T_tool_to_center_of_box.translation().y()=0.002;
+    T_tool_to_center_of_box.translation().z()=0;
+    T_tool_to_center_of_box.linear()=from_rpy_to_rotational_matrix(0,0,0);//non mi interessa cambiare la rotazione
+
+
+
+
+    box_size[0]=(0.132+0.025/2)*1.1;
+    box_size[2]=0.09;
+
+  }
+  if(new_position=="close"){
+
+    T_tool_to_center_of_box.translation().x()=(0.135+0.025/2)/2;
+    T_tool_to_center_of_box.translation().y()=0.002;
+    T_tool_to_center_of_box.translation().z()=0;
+    T_tool_to_center_of_box.linear()=from_rpy_to_rotational_matrix(0,0,0);//non mi interessa cambiare la rotazione
+
+
+
+    box_size[0]=(0.135+0.025/2)*1.1;
+    box_size[2]=0.07;
+
+  }
+
+  Pose pose_center_of_box=homo_to_pose(T_tool_to_center_of_box);
+  box_pose.pose=pose_center_of_box;
+
+  collision_boxes[box_name].name=box_name;
+  collision_boxes[box_name].pose=box_pose;
+  collision_boxes[box_name].size[0]=box_size[0];
+  collision_boxes[box_name].size[1]=box_size[1];
+  collision_boxes[box_name].size[2]=box_size[2];
+  //remove_box(box_name);
+  add_and_attach_box(collision_boxes["gripper_box"]);
+}
 bool action_gripper(string input){
 
 
@@ -1625,6 +1731,7 @@ bool action_gripper(string input){
 
     ROS_INFO("Gripper solution found and executed");
     posizione_gripper=input;
+    update_gripper_collision_box(input);
     return true;
 
   }if(msg.status.text=="No motion plan found. No execution attempted."){
@@ -1645,6 +1752,8 @@ bool action_gripper(string input){
 
           ROS_INFO("Gripper in the correct position");
           posizione_gripper=input;
+
+          update_gripper_collision_box(input);
           return true;
 
         }
@@ -1661,6 +1770,7 @@ bool action_gripper(string input){
           ROS_INFO("Gripper in the correct position");
           posizione_gripper=input;
 
+          update_gripper_collision_box(input);
           return true;
 
         }
@@ -1676,6 +1786,7 @@ bool action_gripper(string input){
 
           ROS_INFO("Gripper in the correct position");
           posizione_gripper=input;
+          update_gripper_collision_box(input);
           return true;
 
         }
@@ -1691,6 +1802,7 @@ bool action_gripper(string input){
 
           ROS_INFO("Gripper in the correct position");
           posizione_gripper=input;
+          update_gripper_collision_box(input);
           return true;
 
         }
@@ -3979,6 +4091,7 @@ bool action_aruco_button(string ID_str){
 
 
   remove_box("button_"+ID_str);
+  //remove_box("gripper_box");
 
 
   if(!move_to_pose_optimized(pose_final_pose_pregrasp)){
@@ -4015,15 +4128,13 @@ bool action_aruco_button(string ID_str){
   //RITORNO INDIETRO
 
 
-  if(!move_to_pose_optimized(pose_final_pose_premuto)){
-    if(!move_to_pose(pose_final_pose_premuto,true))
-      return false;
-  }
-
   if(!move_to_pose_optimized(pose_final_pose_pregrasp)){
     if(!move_to_pose(pose_final_pose_premuto,true))
       return false;
   }
+
+  add_box(collision_boxes["button_"+ID_str]);
+  //add_and_attach_box(collision_boxes["gripper_box"]);
 
   if(!move_to_pose_optimized(pose3)){
     if(!move_to_pose(pose_final_pose_premuto,true))
@@ -4043,7 +4154,7 @@ bool action_aruco_button(string ID_str){
 
   PosizioniBase(str_pos_iniziale_cam_alta);
 
-  add_box(collision_boxes["button_"+ID_str]);
+  //add_box(collision_boxes["button_"+ID_str]);
   action_gripper("open");
 
   return true;
@@ -4536,8 +4647,57 @@ void add_initial_collision_environment(){
   add_box(collision_boxes[box_name]);
   }
 
+  //Camera_collision
+  {
+    /*Diversamente dalle altre funzioni, qui verrà fatto tutto rispetto al tool. Questo per mantenere solidale la box*/
+    Affine3d T_camera_to_center_of_box;
+
+    //T_0_camera=pose_to_homo(robot->getCurrentPose().pose) * T_tool_camera_gazebo;
 
 
+    //altezza camera: 76.95/sin(80)=75.78   assumo distanza tra camera centro camera e fine camera=11.4
+
+
+    T_camera_to_center_of_box.translation().x()=-0.02649;
+    T_camera_to_center_of_box.translation().y()=0;
+    T_camera_to_center_of_box.translation().z()=-0.02293/2;
+    T_camera_to_center_of_box.linear()=from_rpy_to_rotational_matrix(0,0,0);//non mi interessa cambiare la rotazione
+
+
+    Affine3d T_tool_center_of_box=T_tool_camera_gazebo*T_camera_to_center_of_box;
+    Pose pose_center_of_box=homo_to_pose(T_tool_center_of_box);
+
+
+    PoseStamped box_pose;
+    float box_size[3];
+    string box_name="camera_box";
+
+    box_size[0]=0.1;//thickness
+    box_size[1]=0.055;//width
+    box_size[2]=0.03;//height
+
+    box_pose.header.frame_id="ee_link";
+
+    box_pose.pose=pose_center_of_box;
+
+    collision_boxes[box_name].name=box_name;
+    collision_boxes[box_name].pose=box_pose;
+    collision_boxes[box_name].size[0]=box_size[0];
+    collision_boxes[box_name].size[1]=box_size[1];
+    collision_boxes[box_name].size[2]=box_size[2];
+
+
+    add_box(collision_boxes[box_name]);
+    attach_box(collision_boxes[box_name]);
+  }
+
+  //Gripper_collision
+  {
+
+    update_gripper_collision_box("open");
+
+
+  }
 }
 bool load_aruco_values_from_txt(){
 
@@ -4575,11 +4735,13 @@ void ALL_INITIAL_VOIDS(){
   set_homo_std_matrix();
   load_parameters();
   calibrazione_gripper();
-  add_initial_collision_environment();
 
   if(gazebo_bool){
     PosizioniBase(str_pos_iniziale);
   }
+
+
+  add_initial_collision_environment();
 
 
   if(load_aruco){
