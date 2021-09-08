@@ -380,8 +380,10 @@ class MoveGroupPythonIntefaceTutorial(object):
     ## robot, we set ``grasping_group = 'hand'``. If you are using a different robot,
     ## you should change this value to the name of your end effector group name.
     grasping_group = 'manipulator'
-    touch_links = robot.get_link_names()
-    #print(touch_links)
+    #touch_links = robot.get_link_names()
+    touch_links=['wrist_3_link', 'ee_link', 'tool0', 'camera_ur_mount', 'camera_link1', 'camera_link', 'camera_camera_lens', 'camera_camera', 'camera_camera_gazebo', 'robotiq_arg2f_base_link', 'left_outer_knuckle', 'left_outer_finger', 'left_inner_finger', 'left_finger_tip_temp', 'left_finger_tip', 'left_inner_finger2', 'left_inner_knuckle', 'left_inner_knuckle2', 'plate1', 'dys_middle', 'right_inner_knuckle', 'right_inner_knuckle2', 'right_outer_knuckle', 'right_outer_finger', 'right_inner_finger', 'right_finger_tip_temp', 'right_finger_tip', 'right_inner_finger2']
+
+    print(touch_links)
     scene.attach_box(eef_link, box_name, touch_links=touch_links)
     ## END_SUB_TUTORIAL
 

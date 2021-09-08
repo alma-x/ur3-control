@@ -193,7 +193,7 @@ bool move_to_pose_cartesian(geometry_msgs::Pose pose);
 Matrix3d from_rpy_to_rotational_matrix(double roll,double pitch,double yaw);
 Affine3d pose_to_homo(Pose pose);
 bool save_aruco_in_txt();
-
+bool se_aruco_individuato_add_collision(int ID);
 
 
 
@@ -620,6 +620,39 @@ bool cambia_aruco(string ID){
 bool aruco_individuato(){
 
   return bridge_service(str_md_rd,"").aruco_found;
+
+}
+bool aggiorna_aruco_selezionato(int ID){
+  ur3_control::aruco_serviceResponse msg;
+  msg=bridge_service(str_md_rd,"");
+
+
+
+
+  if(!msg.all_aruco_found[ID]==true){
+    return false;
+  }
+
+  cambia_aruco(to_string(ID));
+
+
+  if(aruco_individuato()) {
+    ROS_INFO("ARUCO: %d INDIVIDUATO",ID);
+    Affine_valid T_0_aruco_valid=homo_0_aruco_elaration();
+
+    if(T_0_aruco_valid.valid){
+
+      Aruco_values[ID].pose=homo_to_pose(T_0_aruco_valid.homo_matrix);
+      Aruco_values[ID].valid=true;
+      se_aruco_individuato_add_collision(ID);
+
+      save_aruco_in_txt();
+    }
+  }
+
+
+
+
 
 }
 bool se_aruco_individuato_add_collision(int ID){
@@ -1408,7 +1441,6 @@ bool add_and_attach_box(Collision_box_type box){
   add_box(box);
   attach_box(box);
 }
-
 void blocca_se_vedi_nuovo_aruco(){
   ros::NodeHandle node_handle;
   ros::ServiceClient client1;
@@ -3729,7 +3761,7 @@ bool solleva_imu(){
   PosizioniBase(str_pos_iniziale);
 
   Affine3d T_aruco_finalpos,T_0_finalpos_pregrasp,T_0_aruco_IMU_Module;
-  Pose pose_final_grasp,pose_final01,pose_final02,pose_final03;
+  Pose pose_final_grasp,pose_final01,pose_final02,pose_final03,pose_final025;
   //calcolo pose
 
   {
@@ -3793,6 +3825,19 @@ bool solleva_imu(){
   }
 
 
+  centra_aruco_nella_camera(ID_IMU_MODULE,0);
+  aggiorna_aruco_selezionato(ID_IMU_MODULE);
+  remove_box("imu_module");
+
+  //mi avvicino alla corretta z
+  pose_final025=robot->getCurrentPose().pose;
+  pose_final025.position.z=pose_final_grasp.position.z+0.08;
+  if(!move_to_pose_optimized(pose_final025)){
+      return false;
+  }
+
+
+
   //mi avvicino alla corretta z
   pose_final03=robot->getCurrentPose().pose;
   pose_final03.position.z=pose_final_grasp.position.z+0.03;
@@ -3817,36 +3862,10 @@ bool solleva_imu(){
     boost::thread pick_thread(pick, "imu_module",debug[2]);
     action_gripper("semi_open");
   }
+  else{
+    action_gripper("semi_open");
 
-
-
-  sleep(2);
-
-//  if(!move_to_pose_cartesian(pose_final03)){
-//    if(!move_to_pose(pose_final03,true)){
-//      return false;
-//    }
-//  }
-//  if(!move_to_pose_cartesian(pose_final02)){
-//      if(!move_to_pose(pose_final02,true)){
-//        return false;
-//      }
-//  }
-//  if(!move_to_pose_cartesian(pose_final01)){
-//    if(!move_to_pose(pose_final01,true)){
-//      return false;
-//    }
-//  }
-//  if(!move_to_joints(save_joint1)){
-//    return false;
-//  }
-//  if(!move_to_joints(save_joint0)){
-//    return false;
-//  }
-//  if(PosizioniBase(str_pos_iniziale)){
-//    return false;
-//  }
-
+  }
 
 
 }
@@ -4416,6 +4435,7 @@ bool right_panel(){
 }
 
 }
+
 
 //Inizializations
 void prova(){

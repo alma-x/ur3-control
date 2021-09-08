@@ -181,12 +181,10 @@ void param_control(){
 
   switch(current_objective){
   case 1:{
+
+    esplora_tutti_gli_aruco();
     PosizioniBase(str_pos_iniziale);
     action_gripper("open");
-
-
-
-
 
     start_node.setParam("objective",0);
     break;}
@@ -275,7 +273,7 @@ void param_control(){
     break;}
   case 3:{
 
-    left_panel();
+    solleva_imu();
 
     start_node.setParam("objective",0);
     break;}
@@ -330,7 +328,9 @@ void param_control(){
     break;
   }
   case 9:{
-    // go initial position
+    PosizioniBase(str_pos_iniziale);
+    action_gripper("open");
+
 
     start_node.setParam("objective",0);
     break;
