@@ -185,7 +185,7 @@ void param_control(){
     action_gripper("open");
 
 
-
+    
 
 
     start_node.setParam("objective",0);

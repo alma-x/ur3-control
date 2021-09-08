@@ -4725,6 +4725,27 @@ bool load_aruco_values_from_txt(){
 
   inFile.close();
 
+  string path_total_csv=pkgpath +"/txt/aruco_table.csv";
+  cout<<"percorso txt: "<<path_total_csv<<endl<<endl;
+
+
+
+  std::ofstream myfile;
+  myfile.open (path_total_csv);
+  for(int i=0;i<aruco_length_array;i++){
+    if(!Aruco_values[i].valid)
+    {
+      myfile <<i<<" "<<"0.000"<<" "<<"0.000"<<" "<<"0.000"<<"\n";
+    }
+    else{
+      myfile <<i<<" "<<trunc((Aruco_values[i].pose.position.x)*1000)/1000<<" "<<trunc((Aruco_values[i].pose.position.y)*1000)/1000<<" "<<trunc((Aruco_values[i].pose.position.z)*1000)/1000<<"\n";
+    }
+  }
+
+  myfile.close();
+  return 0;
+
+
 }
 void ALL_INITIAL_VOIDS(){
   ros::NodeHandle n;
