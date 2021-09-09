@@ -1568,6 +1568,30 @@ void publish_joystick_info(){
 
   ROS_INFO("\n\nPremi h, per info.Da qui in poi inserisci i comandi:");
 }
+void stampa_aruco_su_excel(){
+
+  ifstream inFile;
+  string nome,tipo;
+  string pkgpath = ros::package::getPath("ur3_control");
+  string path_total_csv=pkgpath +"/../../../"+"aruco_table.csv";
+  cout<<"percorso txt: "<<path_total_csv<<endl<<endl;
+
+
+
+  std::ofstream myfile;
+  myfile.open (path_total_csv);
+  for(int i=0;i<aruco_length_array;i++){
+    if(!Aruco_values[i].valid)
+    {
+      myfile <<i<<" "<<"0.000"<<" "<<"0.000"<<" "<<"0.000"<<"\n";
+    }
+    else{
+      myfile <<i<<" "<<trunc((Aruco_values[i].pose.position.x)*1000)/1000<<" "<<trunc((Aruco_values[i].pose.position.y)*1000)/1000<<" "<<trunc((Aruco_values[i].pose.position.z)*1000)/1000<<"\n";
+    }
+  }
+
+  myfile.close();
+}
 
 //Conversioni
 double grad_to_rad(double grad)
@@ -3721,12 +3745,6 @@ bool solleva_imu(){
     aggiorna_aruco_selezionato(ID_IMU_MODULE);
 
   }
-  else{
-
-    centra_aruco_nella_camera(ID_IMU_MODULE,0);
-    aggiorna_aruco_selezionato(ID_IMU_MODULE);
-
-  }
 
   remove_box("imu_module");
 
@@ -3778,13 +3796,13 @@ bool solleva_imu(){
 
   return true;
 }
-bool go_and_attach_imu(){
+bool go_and_attach_imu(double angolo){
 
     Affine3d T_aruco_final,T_0_final;
     T_aruco_final.translation().x()=debug[0];
     T_aruco_final.translation().y()=debug[1];
     T_aruco_final.translation().z()=debug[2];
-    T_aruco_final.linear()=from_rpy_to_rotational_matrix(0,grad_to_rad(90),0);
+    T_aruco_final.linear()=from_rpy_to_rotational_matrix(0,grad_to_rad(90),0)*from_rpy_to_rotational_matrix(grad_to_rad(-90)-grad_to_rad(angolo),0,0);
 
     T_0_final=pose_to_homo(Aruco_values[ID_IMU_DESTINATION_PLANE].pose)*T_aruco_final;
 
@@ -4093,6 +4111,7 @@ bool action_aruco_button(string ID_str){
 
 
   remove_box("button_"+ID_str);
+  remove_box("middle_panel");
   //remove_box("gripper_box");
 
 
@@ -4101,18 +4120,12 @@ bool action_aruco_button(string ID_str){
   }
 
 
-  if(gazebo_bool) {
-
-    PosizioniBase(str_pos_iniziale);
-    return true;
-  }
-
 
 
   //POSIZIONE PER PREMERE PULSANTE
   T_aruco_finalpos.translation().x()=0;
   T_aruco_finalpos.translation().y()=-0.055; //-0.055 per la gara
-  T_aruco_finalpos.translation().z()=0.18; //17+135+12,5=164.5 mm=0.164m    - in teoria 1mm di spessore aruco=0.163
+  T_aruco_finalpos.translation().z()=0.16;//0.18 È GIUSTO //17+135+12,5=164.5 mm=0.164m    - in teoria 1mm di spessore aruco=0.163
   T_aruco_finalpos.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0);//*from_rpy_to_rotational_matrix(M_PI,0,0);
 
 
@@ -4125,9 +4138,12 @@ bool action_aruco_button(string ID_str){
   n.setParam("freno_a_mano_buttons",true);
 
   move_to_pose_optimized(pose_final_pose_premuto);
+  sleep(2);
 
 
-  //RITORNO INDIETRO
+  n.setParam("freno_a_mano_buttons",false);
+
+  //RITORNO INDIETRO-------------------
 
 
   if(!move_to_pose_optimized(pose_final_pose_pregrasp)){
@@ -4136,6 +4152,7 @@ bool action_aruco_button(string ID_str){
   }
 
   add_box(collision_boxes["button_"+ID_str]);
+  add_box(collision_boxes["middle_panel"]);
   //add_and_attach_box(collision_boxes["gripper_box"]);
 
   if(!move_to_pose_optimized(pose3)){
@@ -4778,26 +4795,7 @@ bool load_aruco_values_from_txt(){
 
   inFile.close();
 
-  string path_total_csv=pkgpath +"/txt/aruco_table.csv";
-  cout<<"percorso txt: "<<path_total_csv<<endl<<endl;
-
-
-
-  std::ofstream myfile;
-  myfile.open (path_total_csv);
-  for(int i=0;i<aruco_length_array;i++){
-    if(!Aruco_values[i].valid)
-    {
-      myfile <<i<<" "<<"0.000"<<" "<<"0.000"<<" "<<"0.000"<<"\n";
-    }
-    else{
-      myfile <<i<<" "<<trunc((Aruco_values[i].pose.position.x)*1000)/1000<<" "<<trunc((Aruco_values[i].pose.position.y)*1000)/1000<<" "<<trunc((Aruco_values[i].pose.position.z)*1000)/1000<<"\n";
-    }
-  }
-
-  myfile.close();
-  return 0;
-
+  return true;
 
 }
 void ALL_INITIAL_VOIDS(){

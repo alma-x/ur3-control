@@ -131,19 +131,6 @@ void button_callback(const std_msgs::Bool &msg){
     ROS_INFO("RILEVATO ARUCO PREMUTO TRAMITE TOPIC");
 //    freno_a_mano_is_on=true;
     robot->stop();
-    /*
-    button_was_pushed=true;*/
-    //-- da qualche altra parte --
-    /*
-      if(button_was_pushed && freno_a_mano_is_on){
-         sleep(5);
-         get curren pose
-         new pose.x=current pose.x - 4* escursione bottone
-         plan
-         button_was_pushed=false;
-         freno_a_mano_is_of=false;
-      }
-     */
   }
 }
 

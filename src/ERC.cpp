@@ -185,8 +185,10 @@ void param_control(){
   case 1:{
 
     esplora_tutti_gli_aruco();
+    stampa_aruco_su_excel();
     PosizioniBase(str_pos_iniziale);
     action_gripper("open");
+
 
     start_node.setParam("objective",0);
     break;}
@@ -288,7 +290,7 @@ void param_control(){
     ROS_INFO_STREAM( "imu angle  " << imu_angle);
 
 
-    go_and_attach_imu();
+    go_and_attach_imu(imu_angle);
 
     start_node.deleteParam("imu_angle");
     start_node.setParam("objective",0);
