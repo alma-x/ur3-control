@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
-<launch>	
-	<arg name="input"/>
-	<param name="hidden_id" type="int" value="$(arg input)" />
+<launch>
+        <arg name="input"/>
+        <param name="hidden_id" type="int" value="$(arg input)" />
 	<param name="objective" type="int" value="7" />
 </launch>

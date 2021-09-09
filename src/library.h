@@ -150,7 +150,6 @@ Pose_valid Aruco_values[aruco_length_array];
 map<string,Collision_box_type> collision_boxes;
 //FLAGS
 bool bool_exit=false;
-bool gara=true;
 bool adding_collision_enabled=false;
 bool flagMiddlePanelCreated=false;
 bool flagRightBoxCreated=false;
@@ -2615,123 +2614,16 @@ bool centra_aruco_nella_camera(int ID_aruco, double percentuale_zoom){
 
   move_to_pose_optimized(homo_to_pose(T_finale));
 
-/*
-  double angolo_finale,teta0,xA,yA;
-
-
-  xA=homo_to_pose(T_camera_gazebo_aruco).position.z;
-  yA=homo_to_pose(T_camera_gazebo_aruco).position.x;
-  teta0=grad_to_rad(18);
-
-  angolo_finale= teta0 - 2*atan((sqrt(((xA*xA*cos(2*teta0 - 2*atan(yA/xA)) - yA*yA*cos(2*teta0 - 2*atan(yA/xA)) + xA*xA + yA*yA)/(2*cos(teta0/2 - atan(yA/xA)/2)*cos(teta0/2 - atan(yA/xA)/2)*cos(teta0/2 - atan(yA/xA)/2)*cos(teta0/2 - atan(yA/xA)/2))))- 2*xA*cos(teta0 - atan(yA/xA)) + cos(teta0 - atan(yA/xA))*sqrt(((xA*xA*cos(2*teta0 - 2*atan(yA/xA)) - yA*yA*cos(2*teta0 - 2*atan(yA/xA)) + xA*xA + yA*yA)/(2*cos(teta0/2 - atan(yA/xA)/2)*cos(teta0/2 - atan(yA/xA)/2)*cos(teta0/2 - atan(yA/xA)/2)*cos(teta0/2 - atan(yA/xA)/2)))))/(4*yA*cos(teta0/2 - atan(yA/xA)/2)*sin(teta0/2 - atan(yA/xA)/2)));
-
-
-  Affine3d T_ok;
-  Matrix3d rot_ok;
-  rot_ok=from_rpy_to_rotational_matrix(0,0,-angolo_finale);
-  T_ok.linear()=rot_ok;
-
-  T_ok.translation().x()=0;
-  T_ok.translation().y()=0;
-  T_ok.translation().z()=0;
-
-  Affine3d T_finale;
-  T_finale=T_0_tool*T_ok;
-
-
-  move_to_pose_optimized(homo_to_pose(T_finale));
-
-*/
-  stampa_homo_named(T_tool_camera_gazebo,"T_tool_camera_gazebo");
-  stampa_homo_named(T_0_aruco,"T_0_aruco");
-  stampa_homo_named(T_0_camera_gazebo,"T_0_camera_gazebo");
-  stampa_homo_named(T_0_tool,"T_0_tool");
-  stampa_homo_named(T_camera_gazebo_aruco,"T_camera_gazebo_aruco");
-  //stampa_homo_named(T_finale,"T_finale");
-  stampa_homo_named(T_ok,"T_ok");
-  //ROS_INFO("Angolo finale:%f",angolo_finale);
-  //ROS_INFO(" xA:%f",xA);
-  //ROS_INFO(" yA:%f",yA);
-  //ROS_INFO(" teta0:%f",teta0);
-
-/*
-  vettore_gazebo_aruco.x()=T_0_aruco.translation().x()-T_0_camera_gazebo.translation().x();
-  vettore_gazebo_aruco.y()=T_0_aruco.translation().y()-T_0_camera_gazebo.translation().y();
-  vettore_gazebo_aruco.z()=T_0_aruco.translation().z()-T_0_camera_gazebo.translation().z();
-
-
-  roll_oriz = 0;
-  pitch_oriz = atan(vettore_gazebo_aruco.y()/vettore_gazebo_aruco.x());
-  yaw_oriz = 0;
-  rot_allineamento_orizzontale=from_rpy_to_rotational_matrix(roll_oriz,pitch_oriz,yaw_oriz);
-
-  T_all_orizz.translation().x()=0;
-  T_all_orizz.translation().y()=0;
-  T_all_orizz.translation().z()=0;
-  T_all_orizz.linear()=rot_allineamento_orizzontale;
-
-
-
-  T_0_tool_modified_oriz=T_0_aruco*T_all_orizz;
-  T_0_camera_gazebo_modified_orizz=T_0_tool_modified_oriz*T_tool_camera_gazebo;
-  T_camera_gazebo_aruco_modified_orizz=T_0_camera_gazebo_modified_orizz.inverse()*T_0_aruco;
-
-
-  bool debug=true;
-  if(debug){
-
-    stampa_homo_named(T_0_aruco,"T_0_aruco");
-    stampa_homo_named(T_0_camera_gazebo,"T_0_camera_gazebo");
-    stampa_homo_named(T_0_tool,"T_0_tool");
-    stampa_homo_named(T_camera_gazebo_aruco_modified_orizz,"T_camera_gazebo_aruco_modified_orizz");
-    stampa_homo_named(T_0_tool_modified_oriz,"T_0_tool_modified_oriz");
-  }
-
-
-  move_to_pose_optimized(homo_to_pose(T_0_tool_modified_oriz));
-
-*/
-  /*
-  double dissallineamento_verticale=M_PI/2 - atan(T_camera_aruco_modified_orizz.translation().z()/T_camera_aruco_modified_orizz.translation().x());
-  //double sq_dist=sqrt(vettore_gazebo_aruco.x()*vettore_gazebo_aruco.x() +vettore_gazebo_aruco.y()*vettore_gazebo_aruco.y() + vettore_gazebo_aruco.z()*vettore_gazebo_aruco.z());
-
-
-  roll_vert = 0;
-  pitch_vert = dissallineamento_verticale;
-  yaw_vert = 0;
-  rot_all_vert=from_rpy_to_rotational_matrix(roll_vert,pitch_vert,yaw_vert);
-
-  T_all_vert.translation().x()=0;
-  T_all_vert.translation().y()=0;
-  T_all_vert.translation().z()=0;
-  T_all_vert.linear()=rot_all_vert;
-
-
-  roll_rot = 0;
-  pitch_rot = 0;
-  yaw_rot = -M_PI/2;
-  rot_all_rotativo=from_rpy_to_rotational_matrix(roll_rot,pitch_rot,yaw_rot);
-
-  T_all_rotativo.translation().x()=0;
-  T_all_rotativo.translation().y()=0;
-  T_all_rotativo.translation().z()=0;
-  T_all_rotativo.linear()=rot_all_rotativo;
-
-
-
-
-  T_0_camera_gazebo_modified=T_0_camera_gazebo;
-  T_0_camera_gazebo_modified.linear()=rot_allineamento_orizzontale;
-  T_0_camera_gazebo_modified=T_0_camera_gazebo_modified*T_all_vert*T_all_rotativo;
-
-
-
-*/
-
+//  stampa_homo_named(T_tool_camera_gazebo,"T_tool_camera_gazebo");
+//  stampa_homo_named(T_0_aruco,"T_0_aruco");
+//  stampa_homo_named(T_0_camera_gazebo,"T_0_camera_gazebo");
+//  stampa_homo_named(T_0_tool,"T_0_tool");
+//  stampa_homo_named(T_camera_gazebo_aruco,"T_camera_gazebo_aruco");
+//  stampa_homo_named(T_ok,"T_ok");
 
   return true;
 }
-bool zoom_camera_to_aruco(int ID_aruco,double valore){
+/*bool zoom_camera_to_aruco(int ID_aruco,double valore){
   if(!Aruco_values[ID_aruco].valid){
     ROS_INFO("NON POSSEGGO QUELL ARUCO");
     return false;
@@ -2768,6 +2660,7 @@ bool zoom_camera_to_aruco(int ID_aruco,double valore){
   move_to_pose_optimized(homo_to_pose(T_0_tool_zoom));
 
 }
+*/
 bool function_pose_aruco(){
   ur3_control::aruco_serviceResponse msg_from_bridge=bridge_service(str_md_rd,"");
 
@@ -3824,9 +3717,17 @@ bool solleva_imu(){
     pose_final_grasp=homo_to_pose(T_0_finalpos_pregrasp);
   }
 
+  if(aruco_individuato()){
+    aggiorna_aruco_selezionato(ID_IMU_MODULE);
 
-  centra_aruco_nella_camera(ID_IMU_MODULE,0);
-  aggiorna_aruco_selezionato(ID_IMU_MODULE);
+  }
+  else{
+
+    centra_aruco_nella_camera(ID_IMU_MODULE,0);
+    aggiorna_aruco_selezionato(ID_IMU_MODULE);
+
+  }
+
   remove_box("imu_module");
 
   //mi avvicino alla corretta z
@@ -3864,10 +3765,34 @@ bool solleva_imu(){
   }
   else{
     action_gripper("semi_open");
-
   }
 
+  //IMU PRESO, MI ALZO
 
+  Pose pose_final_alzato=robot->getCurrentPose().pose;
+  pose_final_alzato.position.z+=0.2;
+
+  if(!move_to_pose_optimized(pose_final_alzato)){
+    return false;
+  }
+
+  return true;
+}
+bool go_and_attach_imu(){
+
+    Affine3d T_aruco_final,T_0_final;
+    T_aruco_final.translation().x()=debug[0];
+    T_aruco_final.translation().y()=debug[1];
+    T_aruco_final.translation().z()=debug[2];
+    T_aruco_final.linear()=from_rpy_to_rotational_matrix(0,grad_to_rad(90),0);
+
+    T_0_final=pose_to_homo(Aruco_values[ID_IMU_DESTINATION_PLANE].pose)*T_aruco_final;
+
+    Pose pose_final=homo_to_pose(T_0_final);
+    if(!move_to_pose_optimized(pose_final))
+      return false;
+    if(gazebo_bool)
+      picked=false;
 }
 bool solleva_coperchio(){
 
@@ -3949,12 +3874,15 @@ bool solleva_coperchio(){
   T_0_final_avvicinato=T_0_aruco*T_aruco_final_avvicinato;
   pose_final_avvicinato=homo_to_pose(T_0_final_avvicinato);
 
+  remove_box("inspection_box_base_coperchio");
+  remove_box("inspection_box_pomello_coperchio");
   sleep(3);
   if(!move_to_pose_optimized(pose_final_avvicinato)){
       return false;
   }
 
-  action_gripper("semi_close");
+  if(!gazebo_bool)
+    action_gripper("semi_close");
 
   ROS_INFO("IL coperchio e' stato afferrato, lo sollevo e lo appoggio nel punto corretto");
 
@@ -3973,7 +3901,62 @@ bool solleva_coperchio(){
       return false;
   }
 
+  //VADO AD APPOGGIARE COPERCHIO
 
+
+  Affine3d T_aruco_final_storage,T_aruco_final_storage_vicino,T_0_aruco_storage,T_0_final_storage,T_0_final_storage_vicino;
+  Pose pose_final_storage,pose1,pose2,pose_saved1,pose_saved2,pose_saved3,pose_final_storage_vicino;
+  T_0_aruco_storage=pose_to_homo(Aruco_values[ID_INSPECTION_WINDOW_COVER_STORAGE].pose);
+
+
+  T_aruco_final_storage.translation().x()=0;
+  T_aruco_final_storage.translation().y()=0;
+  T_aruco_final_storage.translation().z()=0.2;
+  T_aruco_final_storage.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0)*from_rpy_to_rotational_matrix(M_PI,0,0);
+  T_0_final_storage=T_0_aruco_storage*T_aruco_final_storage;
+  pose_final_storage=homo_to_pose(T_0_final_storage);
+
+  pose_saved1=robot->getCurrentPose().pose;
+  pose1=robot->getCurrentPose().pose;
+  pose1.position.x=pose_final_storage.position.x;
+  pose1.position.y=pose_final_storage.position.y;
+  if(!move_to_pose_cartesian(pose1)){
+    if(!move_to_pose(pose1,true)){
+      return false;
+    }
+  }
+
+  pose2=robot->getCurrentPose().pose;
+  pose2.orientation=pose_final_storage.orientation;
+  if(!move_to_pose_cartesian(pose2)){
+    if(!move_to_pose(pose2,true)){
+      ROS_INFO("MOVIMENTO FALLITO");
+      return false;
+    }
+  }
+
+  //movimento pre finale
+  if(!move_to_pose_cartesian(pose_final_storage)){
+    if(!move_to_pose(pose1,true)){
+      return false;
+    }
+  }
+
+  if(!gazebo_bool){
+    T_aruco_final_storage_vicino.translation().x()=0;
+    T_aruco_final_storage_vicino.translation().y()=0;
+    T_aruco_final_storage_vicino.translation().z()=0.05;
+    T_aruco_final_storage_vicino.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0)*from_rpy_to_rotational_matrix(M_PI,0,0);
+    T_0_final_storage_vicino=T_0_aruco_storage*T_aruco_final_storage_vicino;
+    pose_final_storage_vicino=homo_to_pose(T_0_final_storage_vicino);
+
+    if(!move_to_pose_cartesian(pose_final_storage_vicino)){
+      if(!move_to_pose(pose_final_storage_vicino,true)){
+        return false;
+      }
+    }
+  }
+  action_gripper("open");
   ROS_INFO("FUNCTION COMPLETE");
   return true;
 }
@@ -4118,7 +4101,7 @@ bool action_aruco_button(string ID_str){
   }
 
 
-  if(!gara) {
+  if(gazebo_bool) {
 
     PosizioniBase(str_pos_iniziale);
     return true;
@@ -4232,7 +4215,7 @@ bool right_panel(){
     }
   }
 
-  if(gara){
+  if(!gazebo_bool){
     T_aruco_final_storage_vicino.translation().x()=0;
     T_aruco_final_storage_vicino.translation().y()=0;
     T_aruco_final_storage_vicino.translation().z()=0.05;
@@ -4435,7 +4418,55 @@ bool right_panel(){
 }
 
 }
+bool go_and_recognize_id_in_inspection_window(){
 
+  PosizioniBase(str_pos_iniziale_cam_alta);
+  action_gripper("open");
+
+  Affine3d T_0_scatola,T_scatola_final,T_0_final;
+  T_0_scatola=pose_to_homo(Aruco_values[ID_INSPECTION_WINDOW_COVER].pose);
+
+  T_scatola_final.translation().x()=0.05;
+  T_scatola_final.translation().y()=-0.07;
+  T_scatola_final.translation().z()=0.07;
+  T_scatola_final.linear()=from_rpy_to_rotational_matrix(0,grad_to_rad(90),0);
+
+  T_0_final=T_0_scatola*T_scatola_final;
+
+  remove_box("inspection_box_base_coperchio");
+  remove_box("inspection_box_pomello_coperchio");
+  if(!move_to_pose_optimized(homo_to_pose(T_0_final))){
+
+    return false;
+
+  }
+
+
+  int cont=0;
+  int aruco_nascosto_trovato=-1;
+  ur3_control::aruco_serviceResponse msg=bridge_service(str_md_rd,"");
+  for(int i=0;i<msg.all_aruco_found.size();i++){
+    if(msg.all_aruco_found[i]==true){
+      cont++;
+      if(i>0 && i<10){
+        ROS_INFO("ARUCO NASCOSTO TROVATO, ID: %d",i);
+        aruco_nascosto_trovato=i;
+      }
+    }
+}
+  if(aruco_nascosto_trovato!=-1){
+    //DEVE PRIMA RITORNARE INDIETRO E POI PREMERE IL PULSANTE. MANCA LA PARTE IN CUI TORNA INDIETRO
+
+    ros::NodeHandle n;
+    n.setParam("hidden_id",to_string(aruco_nascosto_trovato));
+  }
+  else{
+    ROS_INFO("Vedo %d elementi ma nessun elemento corrispondente ai pulsanti da premere",cont);
+    //devo cambiare posizione
+  }
+  return true;
+
+}
 
 //Inizializations
 void prova(){
@@ -4472,7 +4503,6 @@ void prova(){
 
 }
 void initialize_parameters(){
-  gara=false;
   show_log=false;
   adding_collision_enabled=true;
   robot->setPlannerId("RRTConnectkConfigDefault");

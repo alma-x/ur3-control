@@ -123,13 +123,13 @@ void esegui_msg_from_inteface(){
         int id;
         cout<<"Quale aruco?";
         cin>>id;
-        zoom_camera_to_aruco(id,20);
+        centra_aruco_nella_camera(id,20);
       }
       if(msg_from_interface.modality=="centra_aruco_and_zoom_out"){
         int id;
         cout<<"Quale aruco?";
         cin>>id;
-        zoom_camera_to_aruco(id,-20);
+        centra_aruco_nella_camera(id,-20);
       }
       if(msg_from_interface.modality=="automazione_go_pos_iniziale"){
 
@@ -158,8 +158,10 @@ void esegui_msg_from_inteface(){
         stampa_giunti();
       }
       if(msg_from_interface.modality=="salva_aruco"){
-
-        se_aruco_individuato_aggiorna_array(0);
+        int id;
+        cout<<"Quale aruco vuoi salvare?";
+        cin>>id;
+        aggiorna_aruco_selezionato(id);
 
       }
       if(msg_from_interface.modality=="esplora_tutto"){
@@ -286,7 +288,7 @@ void param_control(){
     ROS_INFO_STREAM( "imu angle  " << imu_angle);
 
 
-    //left_panel();
+    go_and_attach_imu();
 
     start_node.deleteParam("imu_angle");
     start_node.setParam("objective",0);
@@ -294,8 +296,7 @@ void param_control(){
     break;}
   case 5:{
     // open inspection window
-
-    right_panel();
+    solleva_coperchio();
 
     current_objective=0;
     start_node.setParam("objective",0);
@@ -303,7 +304,7 @@ void param_control(){
   }
   case 6:{
     // inspect window
-
+    go_and_recognize_id_in_inspection_window();
     start_node.setParam("objective",0);
     break;
   }
@@ -316,9 +317,9 @@ void param_control(){
 
     ROS_INFO_STREAM( "hidden id " << hidden_id);
 
-    start_node.deleteParam("hidden_id");
+    action_aruco_button(to_string(hidden_id));
+
     start_node.setParam("objective",0);
-    sleep(4);
     break;
   }
   case 8:{
@@ -381,19 +382,8 @@ int main(int argc, char** argv)
 
 
   string scelta_tipologia;
-  string gara_str;
   node_handle.getParam("interface",scelta_tipologia);
-  node_handle.getParam("gara",gara_str);
-  if(gara_str=="false"){
-    gara=false;
-    ROS_INFO("GARA PARAMETERS NOT SET");
-  }
-  else{
 
-    gara=true;
-    ROS_INFO("GARA PARAMETERS SET");
-
-  }
 
 //  do{
 //      cout<<"0)Esci"<<endl<<"1) Launcher menu"<<endl<<"2) User_interface menu"<<endl<<"3) Old menu"<<endl<<"Choice:";
