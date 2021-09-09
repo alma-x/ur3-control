@@ -8,6 +8,7 @@
 #include "string.h"
 #include "library.h"
 #include "ur3_control/cv_server.h"
+#include "std_msgs/Bool.h"
 using namespace std;
 ur3_control::cv_to_bridge msg_from_cv;
 sensor_msgs::JointState msg_from_joints;
@@ -115,6 +116,29 @@ bool callback_modality(ur3_control::aruco_service::Request &req, ur3_control::ar
   res.all_aruco_found=msg_from_cv.aruco_found;
   return true;
 }
+
+
+bool button_was_pushed=false;
+//https://answers.ros.org/question/36855/is-there-a-way-to-subscribe-to-a-topic-without-setting-the-type/
+void button_callback(const std_msgs::Bool &msg){
+  bool button_msg=msg.data;
+  if(button_msg && !button_was_pushed){
+    freno_a_mano();
+    button_was_pushed=true;
+    //-- da qualche altra parte --
+    /*
+      if(button_was_pushed && freno_a_mano_is_on){
+         sleep(5);
+         get curren pose
+         new pose.x=current pose.x - 4* escursione bottone
+         plan
+         button_was_pushed=false;
+         freno_a_mano_is_of=false;
+      }
+     */
+  }
+}
+
 int main(int argc, char** argv){
 
   signal(SIGINT, signal_callback_handler);
@@ -129,6 +153,7 @@ int main(int argc, char** argv){
   pub_traj_cancel = n.advertise<actionlib_msgs::GoalID>("/arm_controller/follow_joint_trajectory/cancel", 100);
   sub=n.subscribe("/aruco_bridge_opencv",1,cv_callback);
   sub_joint=n.subscribe("/joint_states",1,joint_callback);
+
   serv=n.advertiseService("aruco_modality", callback_modality);
   client = n.serviceClient<ur3_control::cv_server>("/cv_server");
   MoveGroupInterface move_group(PLANNING_GROUP);
