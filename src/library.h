@@ -4121,10 +4121,10 @@ bool action_aruco_button(string ID_str){
 
   Pose pose_final_pose_premuto=homo_to_pose(T_0_finalpos_premuto);
 
-  if(!move_to_pose_optimized(pose_final_pose_premuto)){
-    if(!move_to_pose(pose_final_pose_premuto,true))
-      return false;
-  }
+  ros::NodeHandle n;
+  n.setParam("freno_a_mano_buttons",true);
+
+  move_to_pose_optimized(pose_final_pose_premuto);
 
 
   //RITORNO INDIETRO
@@ -4508,6 +4508,9 @@ void initialize_parameters(){
   robot->setPlannerId("RRTConnectkConfigDefault");
   robot->setPlanningTime(5);
   pose_pannello_elaborata.valid=false;
+
+  ros::NodeHandle n;
+  n.setParam("freno_a_mano_buttons",false);
 }
 void load_parameters()
 {
