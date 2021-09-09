@@ -117,14 +117,22 @@ bool callback_modality(ur3_control::aruco_service::Request &req, ur3_control::ar
   return true;
 }
 
-
+bool freno_a_mano_is_on=false;
 bool button_was_pushed=false;
-//https://answers.ros.org/question/36855/is-there-a-way-to-subscribe-to-a-topic-without-setting-the-type/
 void button_callback(const std_msgs::Bool &msg){
+
+  ros::NodeHandle n;
+  bool button_need_control;
+  n.getParam("freno_a_mano_buttons",button_need_control);
   bool button_msg=msg.data;
-  if(button_msg && !button_was_pushed){
-    freno_a_mano();
-    button_was_pushed=true;
+  if(button_msg && button_need_control ){
+
+    n.setParam("freno_a_mano_buttons",false);
+    ROS_INFO("RILEVATO ARUCO PREMUTO TRAMITE TOPIC");
+//    freno_a_mano_is_on=true;
+    robot->stop();
+    /*
+    button_was_pushed=true;*/
     //-- da qualche altra parte --
     /*
       if(button_was_pushed && freno_a_mano_is_on){
