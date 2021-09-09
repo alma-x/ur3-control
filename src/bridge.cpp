@@ -155,12 +155,21 @@ int main(int argc, char** argv){
 
   static ros::AsyncSpinner spinner(1);
 
-  ros::Subscriber sub,sub_joint;
+  ros::Subscriber sub,sub_joint,sub_but1,sub_but2,sub_but3,sub_but4,sub_but5,sub_but6,sub_but7,sub_but8,sub_but9;
   ros::NodeHandle n;
   ros::ServiceServer serv;
   pub_traj_cancel = n.advertise<actionlib_msgs::GoalID>("/arm_controller/follow_joint_trajectory/cancel", 100);
   sub=n.subscribe("/aruco_bridge_opencv",1,cv_callback);
   sub_joint=n.subscribe("/joint_states",1,joint_callback);
+  sub_but1=n.subscribe("button1",1,button_callback);
+  sub_but2=n.subscribe("button2",1,button_callback);
+  sub_but3=n.subscribe("button3",1,button_callback);
+  sub_but4=n.subscribe("button4",1,button_callback);
+  sub_but5=n.subscribe("button5",1,button_callback);
+  sub_but6=n.subscribe("button6",1,button_callback);
+  sub_but7=n.subscribe("button7",1,button_callback);
+  sub_but8=n.subscribe("button8",1,button_callback);
+  sub_but9=n.subscribe("button9",1,button_callback);
 
   serv=n.advertiseService("aruco_modality", callback_modality);
   client = n.serviceClient<ur3_control::cv_server>("/cv_server");
