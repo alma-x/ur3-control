@@ -1,6 +1,7 @@
 string box_name
 bool add
 bool attach
+bool detach
 geometry_msgs/PoseStamped box_pose
 float32[] box_size
 bool exit

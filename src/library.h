@@ -91,7 +91,7 @@ string nome_oggetto;
 char input_char;
 bool joystick_ready;
 
-int std_planning_time=4;
+int std_planning_time=7;
 
 ros::Publisher pub_gripper;
 ros::Publisher pub_traj_cancel;
@@ -647,12 +647,15 @@ bool aggiorna_aruco_selezionato(int ID){
 
       save_aruco_in_txt();
     }
+    else{
+      return false;
+    }
   }
 
 
 
 
-
+  return true;
 }
 bool se_aruco_individuato_add_collision(int ID){
   //Creazione middle panel
@@ -1436,9 +1439,34 @@ bool attach_box(Collision_box_type box){
   return collision_service(coll_srv).success;
 
 }
+bool detach_box(Collision_box_type box){
+
+  if(!adding_collision_enabled){
+    return false;
+  }
+
+  ur3_control::collision_object_srvRequest coll_srv;
+  coll_srv.add=false;
+  coll_srv.exit=false;
+  coll_srv.attach=false;
+  coll_srv.detach=true;
+  coll_srv.box_name=box.name;
+  coll_srv.box_pose=box.pose;
+  coll_srv.box_size.push_back(box.size[0]);
+  coll_srv.box_size.push_back(box.size[1]);
+  coll_srv.box_size.push_back(box.size[2]);
+
+
+  return collision_service(coll_srv).success;
+
+}
 bool add_and_attach_box(Collision_box_type box){
   add_box(box);
   attach_box(box);
+}
+bool remove_and_detach_box(Collision_box_type box){
+  detach_box(box);
+  remove_box(box.name);
 }
 void blocca_se_vedi_nuovo_aruco(){
   ros::NodeHandle node_handle;
@@ -1741,7 +1769,7 @@ bool update_gripper_collision_box(string new_position){
   collision_boxes[box_name].size[0]=box_size[0];
   collision_boxes[box_name].size[1]=box_size[1];
   collision_boxes[box_name].size[2]=box_size[2];
-  //remove_box(box_name);
+  remove_and_detach_box(collision_boxes["gripper_box"]);
   add_and_attach_box(collision_boxes["gripper_box"]);
 }
 bool action_gripper(string input){
@@ -1931,7 +1959,6 @@ bool move_to_pose(geometry_msgs::Pose pt, bool Orientamento){
   else
     robot->setPoseTarget(pt);
 
-  robot->setPlanningTime(std_planning_time);
   for(int i=0;i<4;i++){
     success = (robot->plan(my_plan) == MoveItErrorCode::SUCCESS);
     if(success){
@@ -1959,6 +1986,7 @@ bool move_to_joints(vector<double> joint_group_positions){
   }
 }
 bool move_to_pose_optimized(geometry_msgs::Pose pose){
+  robot->setPlanningTime(7);
   if(move_to_pose_cartesian(pose)){
       return true;
   }
@@ -2218,7 +2246,71 @@ void set_angolo(unsigned int giunto,int angolo)
   ROS_INFO_NAMED("tutorial", "%s", success ? "SUCCESS" : "FAILED");
   robot->move();
 }
+bool allineamento_w_z_x_y(Pose target){
+//Questa funzione raggiunge il target allineando prima l'orientamento poi z poi x poi y
+  Pose target_w,target_x,target_y,target_z;
+  target_w=robot->getCurrentPose().pose;
+  target_w.orientation=target.orientation;
 
+  if(!move_to_pose_optimized(target_w)){
+    return false;
+  }
+
+  target_z=robot->getCurrentPose().pose;
+  target_z.position.z=target.position.z;
+
+  if(!move_to_pose_optimized(target_z)){
+    return false;
+  }
+
+
+  target_x=robot->getCurrentPose().pose;
+  target_x.position.x=target.position.x;
+
+  if(!move_to_pose_optimized(target_x)){
+    return false;
+  }
+
+
+  if(!move_to_pose_optimized(target)){
+    return false;
+  }
+
+return true;
+}
+bool allineamento_x_y_w_z(Pose target){
+//Questa funzione raggiunge il target allineando prima l'orientamento poi z poi x poi y
+  Pose target_w,target_x,target_y,target_z;
+
+
+
+  target_x=robot->getCurrentPose().pose;
+  target_x.position.x=target.position.x;
+  if(!move_to_pose_optimized(target_x)){
+    return false;
+  }
+
+  target_y=robot->getCurrentPose().pose;
+  target_y.position.y=target.position.y;
+  if(!move_to_pose_optimized(target_y)){
+    return false;
+  }
+
+  target_w=robot->getCurrentPose().pose;
+  target_w.orientation=target.orientation;
+  if(!move_to_pose_optimized(target_w)){
+    return false;
+  }
+
+
+
+
+  if(!move_to_pose_optimized(target)){
+    return false;
+  }
+
+return true;
+}
 
 
 //Trasformate omogenee
@@ -3734,17 +3826,13 @@ bool solleva_imu(){
       return false;
     }
   }
-  if(se_aruco_individuato_aggiorna_array(ID_IMU_MODULE)){
+  if(aggiorna_aruco_selezionato(ID_IMU_MODULE)){
     T_0_aruco_IMU_Module=pose_to_homo(Aruco_values[ID_IMU_MODULE].pose);
     T_0_finalpos_pregrasp=T_0_aruco_IMU_Module*T_aruco_finalpos;
 
     pose_final_grasp=homo_to_pose(T_0_finalpos_pregrasp);
   }
 
-  if(aruco_individuato()){
-    aggiorna_aruco_selezionato(ID_IMU_MODULE);
-
-  }
 
   remove_box("imu_module");
 
@@ -3767,22 +3855,50 @@ bool solleva_imu(){
     }
   }
 
-/* Per evitare problemi nella simulazione
-  //movimento finale
-  if(!move_to_pose_cartesian(pose_final_grasp)){
-    if(!move_to_pose(pose_final_grasp,true)){
-      return false;
-    }
-  }
-*/
 
-  if(gazebo_bool) {
-    string nome;
-    boost::thread pick_thread(pick, "imu_module",debug[2]);
+
+//  if(gazebo_bool) {
+//    string nome;
+//    boost::thread pick_thread(pick, "imu_module",debug[2]);
+//  }
     action_gripper("semi_open");
-  }
-  else{
-    action_gripper("semi_open");
+
+  //Aggiungo collisione imu attached to robot
+  {
+      Affine3d T_tool_center_of_box,T_0_tool,T_0_imu,T_imu_to_center_of_box,T_0_center_of_box;
+      T_0_tool=pose_to_homo(robot->getCurrentPose().pose);
+      T_0_imu=pose_to_homo(Aruco_values[ID_IMU_MODULE].pose);
+
+      T_imu_to_center_of_box.translation().x()=0;
+      T_imu_to_center_of_box.translation().y()=0;
+      T_imu_to_center_of_box.translation().z()=-(0.0012+0.025);
+      T_imu_to_center_of_box.linear()=from_rpy_to_rotational_matrix(0,0,0);
+
+      T_0_center_of_box=T_0_imu*T_imu_to_center_of_box;
+
+      T_tool_center_of_box=T_0_tool.inverse()*T_0_center_of_box;
+
+
+
+      PoseStamped box_pose;
+      float box_size[3];
+      string box_name="imu_module";
+      box_pose.header.frame_id="ee_link";
+      box_size[0]=0.0512;
+      box_size[1]=0.165;
+      box_size[2]=0.05;
+
+
+      Pose pose_center_of_box=homo_to_pose(T_tool_center_of_box);
+      box_pose.pose=pose_center_of_box;
+      SetPoseOrientationRPY(&box_pose.pose,0,0,0);
+
+      collision_boxes[box_name].name=box_name;
+      collision_boxes[box_name].pose=box_pose;
+      collision_boxes[box_name].size[0]=box_size[0];
+      collision_boxes[box_name].size[1]=box_size[1];
+      collision_boxes[box_name].size[2]=box_size[2];
+      add_and_attach_box(collision_boxes[box_name]);
   }
 
   //IMU PRESO, MI ALZO
@@ -3798,19 +3914,53 @@ bool solleva_imu(){
 }
 bool go_and_attach_imu(double angolo){
 
-    Affine3d T_aruco_final,T_0_final;
-    T_aruco_final.translation().x()=debug[0];
-    T_aruco_final.translation().y()=debug[1];
-    T_aruco_final.translation().z()=debug[2];
+    Affine3d T_aruco_final,T_aruco_pre_final,T_0_final,T_0_pre_final;
+    Pose pose_final,pose_pre_final;
+
+
+    T_aruco_pre_final.translation().x()=0.065;
+    T_aruco_pre_final.translation().y()=-0.2;
+    T_aruco_pre_final.translation().z()=0.2;
+    T_aruco_pre_final.linear()=from_rpy_to_rotational_matrix(0,grad_to_rad(90),0)*from_rpy_to_rotational_matrix(grad_to_rad(-90)-grad_to_rad(angolo),0,0);
+
+
+    T_aruco_final.translation().x()=0.065;
+    T_aruco_final.translation().y()=-0.2;
+    T_aruco_final.translation().z()=0.15;
     T_aruco_final.linear()=from_rpy_to_rotational_matrix(0,grad_to_rad(90),0)*from_rpy_to_rotational_matrix(grad_to_rad(-90)-grad_to_rad(angolo),0,0);
 
-    T_0_final=pose_to_homo(Aruco_values[ID_IMU_DESTINATION_PLANE].pose)*T_aruco_final;
 
-    Pose pose_final=homo_to_pose(T_0_final);
+    T_0_final=pose_to_homo(Aruco_values[ID_IMU_DESTINATION_PLANE].pose)*T_aruco_final;
+    T_0_pre_final=pose_to_homo(Aruco_values[ID_IMU_DESTINATION_PLANE].pose)*T_aruco_pre_final;
+
+    pose_final=homo_to_pose(T_0_final);
+    pose_pre_final=homo_to_pose(T_0_pre_final);
+
+    if(!allineamento_w_z_x_y(pose_pre_final)){
+      if(!move_to_pose_optimized(pose_pre_final))
+        return false;
+    }
+
+    remove_box("left_panel");
+    remove_and_detach_box(collision_boxes["imu_module"]);
     if(!move_to_pose_optimized(pose_final))
       return false;
+
+    action_gripper("open");
     if(gazebo_bool)
       picked=false;
+
+    //Mi allontano tornando a dove ero prima
+
+    if(!move_to_pose_optimized(pose_pre_final))
+      return false;
+
+    add_box(collision_boxes["left_panel"]);
+    PosizioniBase(str_pos_iniziale);
+
+
+
+
 }
 bool solleva_coperchio(){
 
@@ -3904,21 +4054,40 @@ bool solleva_coperchio(){
 
   ROS_INFO("IL coperchio e' stato afferrato, lo sollevo e lo appoggio nel punto corretto");
 
+
+  //aggiungo la collisione del coperchio solidale
+  {
+    string box_name_coperchio="inspection_box_base_coperchio";
+    string box_name_pomello="inspection_box_pomello_coperchio";
+    Affine3d T_0_pomello,T_0_coperchio,T_0_tool,T_tool_coperchio,T_tool_pomello;
+    Pose pose_pomello_wrt_ee,pose_coperchio_wrt_ee;//pose pomello with respect to end effector.....
+    T_0_tool=pose_to_homo(robot->getCurrentPose().pose);
+    T_0_pomello=pose_to_homo(collision_boxes[box_name_pomello].pose.pose);
+    T_0_coperchio=pose_to_homo(collision_boxes[box_name_coperchio].pose.pose);
+    T_tool_coperchio=T_0_tool.inverse()*T_0_coperchio;
+    T_tool_pomello=T_0_tool.inverse()*T_0_pomello;
+
+    pose_pomello_wrt_ee=homo_to_pose(T_tool_pomello);
+    pose_coperchio_wrt_ee=homo_to_pose(T_tool_coperchio);
+
+    collision_boxes[box_name_coperchio].pose.header.frame_id="ee_link";
+    collision_boxes[box_name_pomello].pose.header.frame_id="ee_link";
+
+    collision_boxes[box_name_coperchio].pose.pose=pose_coperchio_wrt_ee;
+    collision_boxes[box_name_pomello].pose.pose=pose_pomello_wrt_ee;
+
+    add_and_attach_box(collision_boxes[box_name_coperchio]);
+    add_and_attach_box(collision_boxes[box_name_pomello]);
+
+  }
+
+
+
   //mi alzo
 
   if(!move_to_pose_optimized(pose_final)){
       return false;
   }
-  if(!move_to_pose_optimized(pose_final03)){
-      return false;
-  }
-  if(!move_to_pose_optimized(pose_final02)){
-      return false;
-  }
-  if(!move_to_pose_optimized(pose_final01)){
-      return false;
-  }
-
   //VADO AD APPOGGIARE COPERCHIO
 
 
@@ -3927,13 +4096,15 @@ bool solleva_coperchio(){
   T_0_aruco_storage=pose_to_homo(Aruco_values[ID_INSPECTION_WINDOW_COVER_STORAGE].pose);
 
 
-  T_aruco_final_storage.translation().x()=0;
-  T_aruco_final_storage.translation().y()=0;
-  T_aruco_final_storage.translation().z()=0.2;
-  T_aruco_final_storage.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0)*from_rpy_to_rotational_matrix(M_PI,0,0);
+  T_aruco_final_storage.translation().x()=0.075;
+  T_aruco_final_storage.translation().y()=-0.232;
+  T_aruco_final_storage.translation().z()=0.1;
+  //T_aruco_final_storage.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0)*from_rpy_to_rotational_matrix(M_PI,0,0);
+  T_aruco_final_storage.linear()=from_rpy_to_rotational_matrix(0,0,M_PI/2)*from_rpy_to_rotational_matrix(M_PI/2,0,0);
+
   T_0_final_storage=T_0_aruco_storage*T_aruco_final_storage;
   pose_final_storage=homo_to_pose(T_0_final_storage);
-
+/*
   pose_saved1=robot->getCurrentPose().pose;
   pose1=robot->getCurrentPose().pose;
   pose1.position.x=pose_final_storage.position.x;
@@ -3959,22 +4130,17 @@ bool solleva_coperchio(){
       return false;
     }
   }
+  */
 
-  if(!gazebo_bool){
-    T_aruco_final_storage_vicino.translation().x()=0;
-    T_aruco_final_storage_vicino.translation().y()=0;
-    T_aruco_final_storage_vicino.translation().z()=0.05;
-    T_aruco_final_storage_vicino.linear()=from_rpy_to_rotational_matrix(0,M_PI/2,0)*from_rpy_to_rotational_matrix(M_PI,0,0);
-    T_0_final_storage_vicino=T_0_aruco_storage*T_aruco_final_storage_vicino;
-    pose_final_storage_vicino=homo_to_pose(T_0_final_storage_vicino);
-
-    if(!move_to_pose_cartesian(pose_final_storage_vicino)){
-      if(!move_to_pose(pose_final_storage_vicino,true)){
-        return false;
-      }
-    }
+  if(!allineamento_x_y_w_z(pose_final_storage)){
+    if(!move_to_pose_optimized(pose_final_storage))
+      return false;
   }
+
   action_gripper("open");
+  remove_and_detach_box(collision_boxes["inspection_box_base_coperchio"]);
+  remove_and_detach_box(collision_boxes["inspection_box_pomello_coperchio"]);
+
   ROS_INFO("FUNCTION COMPLETE");
   return true;
 }

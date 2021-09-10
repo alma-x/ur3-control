@@ -298,6 +298,11 @@ void param_control(){
     break;}
   case 5:{
     // open inspection window
+    if(Aruco_values[ID_INSPECTION_WINDOW_COVER].valid){
+
+      flagRightBoxCreated=false;
+       se_aruco_individuato_add_collision(ID_INSPECTION_WINDOW_COVER);
+    }
     solleva_coperchio();
 
     current_objective=0;
@@ -312,14 +317,14 @@ void param_control(){
   }
   case 7:{
     // push button of hidden id
-    int hidden_id;
-    start_node.getParam("hidden_id",hidden_id);
+    string id_nascosto;
+    start_node.getParam("hidden_id",id_nascosto);
 
     // pass hidded_id as id of aruco to press
 
-    ROS_INFO_STREAM( "hidden id " << hidden_id);
+    ROS_INFO_STREAM( "hidden id " << id_nascosto);
 
-    action_aruco_button(to_string(hidden_id));
+    action_aruco_button(id_nascosto);
 
     start_node.setParam("objective",0);
     break;

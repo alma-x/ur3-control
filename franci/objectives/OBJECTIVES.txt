@@ -2,9 +2,9 @@
 
 2	push button sequence: input (string) "ID1 DI2 ID3 ID4"
 
-3	grab eccellerometer                                     //controllare perchè fa 360
+3	grab eccellerometer
 
-4	attach accelerometer: input (int) ANGLE                 //sistemare i valori e prevedere avvicinamento e aggiungere blocco come collision
+4	attach accelerometer: input (int) ANGLE
 
 5	open inspection window                                  //parallelismo
 

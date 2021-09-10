@@ -27,8 +27,11 @@ def callback_service(req):
         return tutorial.add_box(req.box_pose,box_name=req.box_name,box_size=req.box_size)
     if req.attach==True:
         return tutorial.attach_box(req.box_pose,box_name=req.box_name,box_size=req.box_size)
+    if req.detach==True:
+        return tutorial.detach_box(req.box_pose,box_name=req.box_name,box_size=req.box_size)
     if req.add==False and req.exit==False:
         return tutorial.remove_box(box_name=req.box_name)
+
     #return collision_object_srvResponse(success=True)
 
 def all_close(goal, actual, tolerance):
@@ -391,19 +394,13 @@ class MoveGroupPythonIntefaceTutorial(object):
     return self.wait_for_state_update(box_is_attached=True, box_is_known=False, timeout=timeout)
 
 
-  def detach_box(self, timeout=4):
+  def detach_box(self,box_pose,box_name,box_size, timeout=4):
     # Copy class variables to local variables to make the web tutorials more clear.
     # In practice, you should use the class variables directly unless you have a good
     # reason not to.
-    box_name = self.box_name
     scene = self.scene
     eef_link = self.eef_link
 
-    ## BEGIN_SUB_TUTORIAL detach_object
-    ##
-    ## Detaching Objects from the Robot
-    ## ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ## We can also detach and remove the object from the planning scene:
     scene.remove_attached_object(eef_link, name=box_name)
     ## END_SUB_TUTORIAL
 
