@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-  	<arg name="lite" default="true" />
+  	<arg name="lite" default="false" />
         <arg name="inter_arg" default="1" />
         <arg name="gara" default="true" />
         <arg name="load_aruco" default="false" />
