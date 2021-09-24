@@ -92,7 +92,7 @@ char input_char;
 bool joystick_ready;
 
 int std_planning_time=7;
-
+int aaaa;
 ros::Publisher pub_gripper;
 ros::Publisher pub_traj_cancel;
 
@@ -4989,3 +4989,4 @@ void ALL_INITIAL_VOIDS(){
 
   prova();
 }
+int sss;

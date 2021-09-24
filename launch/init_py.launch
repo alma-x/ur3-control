@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<launch>
+  	<arg name="lite" default="false" />
+        <arg name="inter_arg" default="1" />
+        <arg name="gara" default="true" />
+        <arg name="load_aruco" default="false" />
+        <arg name="node_start_delay" default="2.0" />
+        <arg name="gazebox" default="false" />
+
+        <param name="interface" type="str" value="$(arg inter_arg)"/>
+        <param name="gara" type="str" value="$(arg gara)"/>
+        <param name="load_aruco" type="bool" value="$(arg load_aruco)"/>
+        <param name="gazebox" type="bool" value="$(arg gazebox)"/>
+
+        <!-- COLLISION SERVER-->
+        <node name="collision_interface" pkg="ur3_control" type="collision_interface.py" respawn="false" output="screen"></node>
+
+	<!-- CV LAUNCHER-->
+	<node name="bridge" pkg="ur3_control" type="bridge" respawn="false" output="screen"></node>
+
+  	<node name="arucoPanel" pkg="simulation-cv" type="arucoPanel.py" respawn="false" output="screen"></node>
+
+        <!-- CONTROLLER LAUNCHER-->
+
+        <node name="control_py" pkg="ur3_control" type="control_py.py" respawn="false" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
+
+
+	<!-- rviz-->
+	<group unless="$(arg lite)">
+		<include file="$(find ur3_moveit_config)/launch/moveit_rviz.launch">
+		  	<arg name="config" default="true"/>
+		</include> 
+         </group>
+
+</launch>
