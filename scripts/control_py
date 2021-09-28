@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 import copy
+from os import access
+import time
 import sys
 from logging import setLoggerClass
-from math import pi
+from math import pi,cos,sin
 from re import X
 import geometry_msgs.msg
 import moveit_commander
@@ -11,14 +13,16 @@ from moveit_commander.robot import RobotCommander
 from moveit_commander import *
 import moveit_msgs.msg
 import rospy
+import math
+import numpy as np
+
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from moveit_commander.conversions import pose_to_list
 from std_msgs.msg import String
 from ur3_control.srv import (collision_object_srv, collision_object_srvRequest,
                              collision_object_srvResponse,aruco_service,aruco_serviceRequest,aruco_serviceResponse)
 
-## END_SUB_TUTORIAL
 bool_exit=False
-
 
 def all_close(goal, actual, tolerance):
   """
@@ -42,6 +46,121 @@ def all_close(goal, actual, tolerance):
 
   return True
 
+class Transformation_class():
+  def __init__(self):
+        null=0
+  def rot2eul(self,R):
+    beta = -np.arcsin(R[2,0])
+    alpha = np.arctan2(R[2,1]/np.cos(beta),R[2,2]/np.cos(beta))
+    gamma = np.arctan2(R[1,0]/np.cos(beta),R[0,0]/np.cos(beta))
+    return np.array((alpha, beta, gamma))
+  def rpy_from_quat (self,quaternion):
+    orientation_list = [quaternion.x, quaternion.y, quaternion.z, quaternion.w]
+    (roll, pitch, yaw) = euler_from_quaternion (orientation_list)
+    return [roll,pitch,yaw]
+  def Rotation_from_quat(self,quaternion):
+    
+    euler_angles=self.rpy_from_quat(quaternion)
+    return self.eul2rot(euler_angles)
+  def eul2rot(self,theta) :
+
+    R = np.array([[np.cos(theta[1])*np.cos(theta[2]),       np.sin(theta[0])*np.sin(theta[1])*np.cos(theta[2]) - np.sin(theta[2])*np.cos(theta[0]),      np.sin(theta[1])*np.cos(theta[0])*np.cos(theta[2]) + np.sin(theta[0])*np.sin(theta[2])],
+                  [np.sin(theta[2])*np.cos(theta[1]),       np.sin(theta[0])*np.sin(theta[1])*np.sin(theta[2]) + np.cos(theta[0])*np.cos(theta[2]),      np.sin(theta[1])*np.sin(theta[2])*np.cos(theta[0]) - np.sin(theta[0])*np.cos(theta[2])],
+                  [-np.sin(theta[1]),                        np.sin(theta[0])*np.cos(theta[1]),                                                           np.cos(theta[0])*np.cos(theta[1])]])
+
+    return R
+  def Rotation_matrix_of_Affine_matrix(self,aff_matrix):
+    R=np.zeros([3,3])
+    for r in range(3):
+      for c in range(3):
+        R[r,c]=aff_matrix[r,c]
+    return R
+  def Translation_vector_of_Affine_matrix(self,AffineMat):
+    vet=np.zeros(3)
+    for r in range(3):
+      vet[r]=AffineMat[r,3]
+    return vet
+  def create_affine_matrix_from_rotation_matrix_and_translation_vector(self,R,transl):
+    #input: una matrice di rotazione e un vettore riga di traslazione"[0,1,3]"
+    #return the result affine matrix
+    AffineMat=np.zeros([4,4])
+    
+    #copio matrice di rotazione
+    for r in range(3):
+      for c in range(3):
+        AffineMat[r,c]=R[r,c]
+
+    #copio vettore traslazione
+    AffineMat[0,3]=transl[0]
+    AffineMat[1,3]=transl[1]
+    AffineMat[2,3]=transl[2]
+
+    #setto ultima riga standard
+    AffineMat[3,0]=0
+    AffineMat[3,1]=0
+    AffineMat[3,2]=0
+    AffineMat[3,3]=1
+
+    return AffineMat
+  def from_euler_to_quaternion(self,euler_vet):
+    #Input: vettore degli angoli di eulero
+    #Output: Pose with the correct orientation in quaternion
+    roll=euler_vet[0]
+    pitch=euler_vet[1]
+    yaw=euler_vet[2]
+    qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+    qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
+    qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
+    qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+    pose=Pose()
+    pose.orientation.x=qx
+    pose.orientation.y=qy
+    pose.orientation.z=qz
+    pose.orientation.w=qw
+    
+    return pose 
+  def from_rotation_to_quaternion(self,R):
+    #Input: Rotation matrix
+    #Output: Pose with the correct orientation in quaternion
+    euler_vet=self.rot2eul(R)
+    pose_oriented=self.from_euler_to_quaternion(euler_vet)
+    return pose_oriented
+  def from_vet_to_posePosition(self,vet):
+    #Input: vettore contentente la posizione di un frame
+    #Output: Pose con la corretta position
+    pose=Pose()
+    pose.position.x=vet[0]
+    pose.position.y=vet[1]
+    pose.position.z=vet[2]
+    return pose
+  def from_pose_to_matrix(self,pose_):
+    R=self.Rotation_from_quat(pose_.orientation)
+    vet=[pose_.position.x,pose_.position.y,pose_.position.z]
+    AffineMat=self.create_affine_matrix_from_rotation_matrix_and_translation_vector(R,vet)
+    return AffineMat
+  def from_matrix_to_pose(self,AffineMat):
+    #Input: Affine matrix
+    #Output: Pose
+    pose=Pose()
+    
+    R=self.Rotation_matrix_of_Affine_matrix(AffineMat)
+    translation_vet=self.Translation_vector_of_Affine_matrix(AffineMat)
+    
+    #pose with the correct position
+    pose_position=self.from_vet_to_posePosition(translation_vet)
+
+    #pose with the correct orientation
+    pose_orientation=self.from_rotation_to_quaternion(R)
+
+    pose.orientation=pose_orientation.orientation
+    pose.position=pose_position.position
+    return pose
+  def inverse_matrix(self,AffineMat):
+    return np.linalg.inv(AffineMat)
+class Affine_valid():
+    def __init__(self):
+        self.is_valid = False
+        self.Affine_matrix = np.zeros((4,4))
 
 class MoveGroupPythonIntefaceTutorial(object):
   """MoveGroupPythonIntefaceTutorial"""
@@ -437,45 +556,115 @@ class Comunication_class(object):
     rospy.wait_for_service('aruco_modality')
 
     self.bridge_service_information = rospy.ServiceProxy('aruco_modality', aruco_service)
-    
-
   def call_bridge_service(self,first_information,second_information):
     try:
           req=aruco_serviceRequest()
           req.modality=first_information
           req.second_information=second_information
-          
-          resp = self.bridge_service_information(req)
+
+          msg = self.bridge_service_information(req)
+
+          resp=aruco_serviceResponse()
+          resp.x=msg.x
+          resp.y=msg.y
+          resp.z=msg.z
+          resp.all_aruco_found=msg.all_aruco_found
+          resp.aruco_found=msg.aruco_found
+          resp.dim=msg.dim
+          resp.finger_joint=msg.finger_joint
+          resp.id_aruco=msg.id_aruco
+          resp.moreTargets=msg.moreTargets
+          resp.vector=msg.vector
+
           self.print_bridge_response(resp)
           
           return resp
     except rospy.ServiceException as e:
       print("Service call failed: %s"%e)
-
   def print_bridge_response(self,response):
     
     print("Aruco trovato:"+str(response.aruco_found))
     print("ID Aruco:"+str(response.id_aruco))
-    
+  def ask_matrix_camera_aruco(self):
+    ValidMatrix=Affine_valid()
+    msg=self.call_bridge_service("","")
+    if not msg.aruco_found:
+      ValidMatrix.is_valid=False
+      return ValidMatrix
+    ValidMatrix.is_valid=True
+    translation_vet=[msg.x,msg.y,msg.z]
+    R=[[msg.vector[0],msg.vector[1],msg.vector[2]],[msg.vector[3],msg.vector[4],msg.vector[5]],[msg.vector[6],msg.vector[7],msg.vector[8]]]
+    AffineMat=transformation_library.create_affine_matrix_from_rotation_matrix_and_translation_vector(R,translation_vet)
+    ValidMatrix.Affine_matrix=Affine_valid
+    return ValidMatrix
 def cambia_id_aruco_selezionato(ID):
-  res=comunication_object.call_bridge_service("md_next_aruco",ID)
+  res=comunication_object.call_bridge_service("md_next_aruco",ID) 
+  for i in range(100):
+    time.sleep(0.1)
+    res=comunication_object.call_bridge_service("","")
+    if str(res.id_aruco)==ID:
+      return True
+      
+  return False
   
+def aruco_individuato(ID):
+  res=comunication_object.call_bridge_service("md_next_aruco",ID)
+  if str(res.id_aruco)==ID:
+    return res.aruco_found
+  else:
+    cambia_id_aruco_selezionato(ID)
+    res=comunication_object.call_bridge_service("md_next_aruco",ID)
+    return res.aruco_found
 
-    
-    
+def elaborate_affine_matrix_of_visible_aruco(ID):
+  
+  cambia_id_aruco_selezionato(ID)
+  if not aruco_individuato(ID):
+    return False
+  msg=comunication_object.call_bridge_service("")
 
-    
+  T_camera_gaz_aruco=
+  
+def define_std_matrices():
+  global T_tool_camera,T_camera_camera_gazebo,T_tool_camera_gazebo
+  T_tool_camera=Affine_valid()
+  T_camera_camera_gazebo=Affine_valid()
+  T_tool_camera_gazebo=Affine_valid()
 
+  #T_tool_camera.Affine_matrix=np.matrix([[0.9848,-0.1736,0,0],[0,0,-1,0],[0.1736,0.9848,0,0],[0.0081,0.0874,0,1]])
+  T_tool_camera.Affine_matrix=np.matrix([[0.9848,0,0.1736,0.0081],[-0.1736,0,0.9848,0.0874],[0,-1,0,0],[0,0,0,1]])
+  #T_camera_camera_gazebo.Affine_matrix=np.matrix([[0,0,1,0],[0,-1,0,0],[1,0,0,0],[0,0,0,1]])
+  T_camera_camera_gazebo.Affine_matrix=np.matrix([[0,0,1,0],[0,-1,0,0],[1,0,0,0],[0,0,0,1]])
+  #print(T_tool_camera.Affine_matrix)
+  #print(T_camera_camera_gazebo.Affine_matrix)
+  T_tool_camera_gazebo.Affine_matrix=T_tool_camera.Affine_matrix*T_camera_camera_gazebo.Affine_matrix
+
+  #print(T_tool_camera_gazebo.Affine_matrix)
+
+def define_all_initial_functions():
+  define_std_matrices()
+    
+def prova():
+  actual_pose=movegroup_library.move_group.get_current_pose().pose
+  A=transformation_library.from_pose_to_matrix(actual_pose)
+  B=transformation_library.inverse_matrix(A)
+  C=transformation_library.inverse_matrix(B)
+  print(A)
+  print(B)
+  print(C)
+
+  
 def main():
-  global movegroup_library,comunication_object
+  global movegroup_library,comunication_object,transformation_library
   
 
 
   try:
     movegroup_library = MoveGroupPythonIntefaceTutorial()
     comunication_object=Comunication_class()
-    
-    comunication_object.call_bridge_service("","")
+    transformation_library=Transformation_class()
+    define_all_initial_functions()
+    prova()    
 
     while (not rospy.core.is_shutdown()) and (not bool_exit):
 

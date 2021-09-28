@@ -129,6 +129,7 @@ vector<double> debug;
 vector<int> pos_rpy_tb;
 vector<int> pos_rpy_ta;
 bool show_log=false;
+
 struct Affine_valid
 {
      bool valid;

@@ -20,11 +20,6 @@
 
   	<node name="arucoPanel" pkg="simulation-cv" type="arucoPanel.py" respawn="false" output="screen"></node>
 
-        <!-- CONTROLLER LAUNCHER-->
-
-        <node name="control_py" pkg="ur3_control" type="control_py.py" respawn="false" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
-
-
 	<!-- rviz-->
 	<group unless="$(arg lite)">
 		<include file="$(find ur3_moveit_config)/launch/moveit_rviz.launch">
