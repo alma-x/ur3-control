@@ -1,0 +1,26 @@
+Info 2021-09-28 11:31:16: ZMQ install verified.
+Error 2021-09-28 11:31:17: Jupyter Extension (Error in Failed to update settings.json, method:fixSettingsFile): [EntryNotFound (FileSystemError): Unable to read file '/root/.config/Code/User/settings.json' (Error: Unable to resolve non-existing file '/root/.config/Code/User/settings.json')
+	at _handleError (/usr/share/code/resources/app/out/vs/workbench/services/extensions/node/extensionHostProcess.js:94:160087)
+	at processTicksAndRejections (internal/process/task_queues.js:93:5)
+	at async m.readFile (/root/.vscode/extensions/ms-toolsai.jupyter-2021.8.2041215044/out/client/extension.js:90:362224)
+	at async g.fixSettingsFile (/root/.vscode/extensions/ms-toolsai.jupyter-2021.8.2041215044/out/client/extension.js:52:320650)
+	at async Promise.all (index 0)
+	at async g.updateSettings (/root/.vscode/extensions/ms-toolsai.jupyter-2021.8.2041215044/out/client/extension.js:52:322370)] {
+  code: 'FileNotFound'
+}
+Error 2021-09-28 11:31:17: Jupyter Extension (Error in Failed to update settings.json, method:fixSettingsFile): [EntryNotFound (FileSystemError): Unable to read file '/catkin_ws/.vscode/settings.json' (Error: Unable to resolve non-existing file '/catkin_ws/.vscode/settings.json')
+	at _handleError (/usr/share/code/resources/app/out/vs/workbench/services/extensions/node/extensionHostProcess.js:94:160087)
+	at processTicksAndRejections (internal/process/task_queues.js:93:5)
+	at async m.readFile (/root/.vscode/extensions/ms-toolsai.jupyter-2021.8.2041215044/out/client/extension.js:90:362224)
+	at async g.fixSettingsFile (/root/.vscode/extensions/ms-toolsai.jupyter-2021.8.2041215044/out/client/extension.js:52:320650)
+	at async Promise.all (index 1)
+	at async g.updateSettings (/root/.vscode/extensions/ms-toolsai.jupyter-2021.8.2041215044/out/client/extension.js:52:322370)] {
+  code: 'FileNotFound'
+}
+Info 2021-09-28 13:10:29: Shutting down notebooks for f8846178-9267-43ac-b2c0-7e914c4e27ee
+Info 2021-09-28 13:10:29: Disposing HostJupyterExecution a7a6016d-c05f-4f81-a9fc-be7904522e36
+Info 2021-09-28 13:10:29: Disposing super HostJupyterExecution a7a6016d-c05f-4f81-a9fc-be7904522e36
+Info 2021-09-28 13:10:29: Disposing HostJupyterExecution a7a6016d-c05f-4f81-a9fc-be7904522e36
+Info 2021-09-28 13:10:29: Finished disposing HostJupyterExecution  a7a6016d-c05f-4f81-a9fc-be7904522e36
+Info 2021-09-28 13:10:29: Cleaning up server cache a7a6016d-c05f-4f81-a9fc-be7904522e36
+Info 2021-09-28 13:10:29: Finished disposing HostJupyterExecution  a7a6016d-c05f-4f81-a9fc-be7904522e36
