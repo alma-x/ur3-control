@@ -150,10 +150,10 @@ class Pose_valid():
     def __init__(self):
         self.is_valid = False
         self.pose = Pose()
-class MoveGroupPythonIntefaceTutorial(object):
-  """MoveGroupPythonIntefaceTutorial"""
+class Move_group_class(object):
+  """Move_group_class"""
   def __init__(self):
-    super(MoveGroupPythonIntefaceTutorial, self).__init__()
+    super(Move_group_class, self).__init__()
 
     ## BEGIN_SUB_TUTORIAL setup
     ##
@@ -222,11 +222,32 @@ class MoveGroupPythonIntefaceTutorial(object):
     self.planning_frame = planning_frame
     self.eef_link = eef_link
     self.group_names = group_names
-  def ruota_giunto(self,id_giunto,angle_grad):
+  def all_close(self,goal, actual, tolerance):
+    """
+    Convenience method for testing if a list of values are within a tolerance of their counterparts in another list
+    @param: goal       A list of floats, a Pose or a PoseStamped
+    @param: actual     A list of floats, a Pose or a PoseStamped
+    @param: tolerance  A float
+    @returns: bool
+    """
+    all_equal = True
+    if type(goal) is list:
+      for index in range(len(goal)):
+        if abs(actual[index] - goal[index]) > tolerance:
+          return False
+
+    elif type(goal) is geometry_msgs.msg.PoseStamped:
+      return self.all_close(goal.pose, actual.pose, tolerance)
+
+    elif type(goal) is geometry_msgs.msg.Pose:
+      return self.all_close(pose_to_list(goal), pose_to_list(actual), tolerance)
+
+    return True
+
+  def ruota_giunto(self,id_giunto,angle):
     joints=self.get_joints_values()
-    print(joints)
-    joints[id_giunto]=joints[id_giunto]+angle_grad
-    print(joints)
+    joints[id_giunto]=joints[id_giunto]+angle
+    
     self.go_to_joint_state(joints)
   def go_to_joint_state(self,joints_vet):
     # Copy class variables to local variables to make the web tutorials more clear.
@@ -522,6 +543,26 @@ class MoveGroupPythonIntefaceTutorial(object):
     # for i in range(6):
     #   joints_rad[i]=transformation_library.grad_to_rad(joints_grad[i])
     return joints_grad
+  def FermaRobot(self):
+    print("Il robot sta per essere fermato")
+    self.move_group.stop()
+    self.move_group.clear_pose_targets()
+  def Stampa_Info_Robot(self):
+    print("\n\nRobot Status")
+    pose=self.move_group.get_current_pose().pose
+    print("Pose:")
+    print(pose)
+
+    joints=self.get_joints_values()
+    print("\nJoints:")
+    print(joints)
+    
+    rpy=transformation_library.rpy_from_quat(pose.orientation)
+    print("\nRpy:")
+    print(rpy)
+    print("\n\nActive joints:")
+    print(self.move_group.get_active_joints())
+    aruco_library.print_situation_aruco()
 class Comunication_class(object):
   def __init__(self):
     super(Comunication_class, self).__init__()
@@ -639,7 +680,7 @@ class Aruco_class():
       """
     def print_situation_aruco(self):
       tot=self.elaborate_number_of_aruco_found()
-      print("Total aruco found:"+str(tot))
+      print("\nTotal aruco found:"+str(tot))
     def from_id_to_pose_valid_of_the_aruco(self,id):
       #INPUT: id dell aruco in stringa(per esempio, il Button1 ha id="1")
       #Output: Pose_valid classe, dove puoi controllare se l aruco e stato trovato e qual'e il suo valore
@@ -717,53 +758,63 @@ class Aruco_class():
       if(id=="14"):
         self.Inspection_Window_Cover_Storage.is_valid=True
         self.Inspection_Window_Cover_Storage.pose=pose_aruco
-    
+    def cambia_id_aruco_selezionato(self,ID):
+      res=comunication_object.call_bridge_service("md_next_aruco",ID) 
+      for i in range(100):
+        time.sleep(0.1)
+        res=comunication_object.call_bridge_service("","")
+        if str(res.id_aruco)==ID:
+          return True
+          
+      return False
+    def is_aruco_visible_from_camera(self,ID):
+      #Restituisce se l'aruco è attualmente visibile dalla camera
+      res=comunication_object.call_bridge_service("md_next_aruco",ID)
+      if str(res.id_aruco)==ID:
+        return res.aruco_found
+      else:
+        self.cambia_id_aruco_selezionato(ID)
+        res=comunication_object.call_bridge_service("md_next_aruco",ID)
+        return res.aruco_found
+    def elaborate_affine_matrix_of_visible_aruco(self,ID):
+      target=Pose_valid()
+      self.cambia_id_aruco_selezionato(ID)
+      T_camera_gaz_aruco_valid=comunication_object.ask_matrix_camera_aruco()
+      if not T_camera_gaz_aruco_valid.is_valid :
+        target.is_valid=False
+        #print("Non ho trovato nessun aruco")
+        return target
+
+      target.is_valid=True
+      T_camera_gaz_aruco=T_camera_gaz_aruco_valid.Affine_matrix
+
+      actual_pose=movegroup_library.move_group.get_current_pose().pose
+      T_0_tool=transformation_library.from_pose_to_matrix(actual_pose)
+      T_0_aruco=T_0_tool*T_tool_camera_gazebo*T_camera_gaz_aruco
+
+      target.pose=transformation_library.from_matrix_to_pose(T_0_aruco)  
+
+
+      return target
+    def salva_aruco_visibili(self):
+      self.print_situation_aruco()
+
+      res=comunication_object.call_bridge_service("","")
+      for id in range(1,len(res.all_aruco_found)+1):
+
+        id_str=str(id)
+        aruco_valid=self.elaborate_affine_matrix_of_visible_aruco(id_str)
+        if aruco_valid.is_valid:
+          self.set_new_aruco(id_str,aruco_valid.pose)
+          print("Salvo aruco:"+id_str)
+
 
 #Funzioni da finire
-   
-def Stampa_Info_Robot():
-  print("Funzione non pronta")  
-def FermaRobot():
-  print("Il robot sta per essere fermato")
-  movegroup_library.move_group.stop()
-  movegroup_library.move_group.clear_pose_targets()
-def salva_aruco_visibili():
-  aruco_library.print_situation_aruco()
-
-  res=comunication_object.call_bridge_service("","")
-  for id in range(1,len(res.all_aruco_found)+1):
-
-    id_str=str(id)
-    aruco_valid=elaborate_affine_matrix_of_visible_aruco(id_str)
-    if aruco_valid.is_valid:
-      aruco_library.set_new_aruco(id_str,aruco_valid.pose)
-      print("Salvo aruco:"+id_str)
-  
 def move_gripper(gripper_goal):
   print("Per ora non esiste")
 
 
-def all_close(goal, actual, tolerance):
-  """
-  Convenience method for testing if a list of values are within a tolerance of their counterparts in another list
-  @param: goal       A list of floats, a Pose or a PoseStamped
-  @param: actual     A list of floats, a Pose or a PoseStamped
-  @param: tolerance  A float
-  @returns: bool
-  """
-  all_equal = True
-  if type(goal) is list:
-    for index in range(len(goal)):
-      if abs(actual[index] - goal[index]) > tolerance:
-        return False
-
-  elif type(goal) is geometry_msgs.msg.PoseStamped:
-    return all_close(goal.pose, actual.pose, tolerance)
-
-  elif type(goal) is geometry_msgs.msg.Pose:
-    return all_close(pose_to_list(goal), pose_to_list(actual), tolerance)
-
-  return True
+#std functions
 def callback_user_interface(msg):
   global bool_message_from_user,msg_from_user
   msg_from_user=UserInterfaceRequest()
@@ -779,54 +830,17 @@ def handle_user_request():
   if msg_from_user.modality=="automazione_go_pos_iniziale":
     movimenti_base_library.go_to_initial_position()
   if msg_from_user.modality=="automazione_pannello_nextAruco":
-    cambia_id_aruco_selezionato(msg_from_user.second_information)
+    aruco_library.cambia_id_aruco_selezionato(msg_from_user.second_information)
   if msg_from_user.modality=="controlla_gripper":
     move_gripper(msg_from_user.second_information)
   if msg_from_user.modality=="joystick":
     handle_joystick_input(msg_from_user.second_information)
   if msg_from_user.modality=="Stampa_pose_robot":
-    Stampa_Info_Robot()
+    movegroup_library.Stampa_Info_Robot()
   if msg_from_user.modality=="stop_trajectory":
-    FermaRobot()
+    movegroup_library.FermaRobot()
   if msg_from_user.modality=="salva_aruco":
-    salva_aruco_visibili()    
-def cambia_id_aruco_selezionato(ID):
-  res=comunication_object.call_bridge_service("md_next_aruco",ID) 
-  for i in range(100):
-    time.sleep(0.1)
-    res=comunication_object.call_bridge_service("","")
-    if str(res.id_aruco)==ID:
-      return True
-      
-  return False
-def aruco_individuato(ID):
-  res=comunication_object.call_bridge_service("md_next_aruco",ID)
-  if str(res.id_aruco)==ID:
-    return res.aruco_found
-  else:
-    cambia_id_aruco_selezionato(ID)
-    res=comunication_object.call_bridge_service("md_next_aruco",ID)
-    return res.aruco_found
-def elaborate_affine_matrix_of_visible_aruco(ID):
-  target=Pose_valid()
-  cambia_id_aruco_selezionato(ID)
-  T_camera_gaz_aruco_valid=comunication_object.ask_matrix_camera_aruco()
-  if not T_camera_gaz_aruco_valid.is_valid :
-    target.is_valid=False
-    #print("Non ho trovato nessun aruco")
-    return target
-
-  target.is_valid=True
-  T_camera_gaz_aruco=T_camera_gaz_aruco_valid.Affine_matrix
-
-  actual_pose=movegroup_library.move_group.get_current_pose().pose
-  T_0_tool=transformation_library.from_pose_to_matrix(actual_pose)
-  T_0_aruco=T_0_tool*T_tool_camera_gazebo*T_camera_gaz_aruco
-
-  target.pose=transformation_library.from_matrix_to_pose(T_0_aruco)  
-
-
-  return target
+    aruco_library.salva_aruco_visibili()    
 def handle_joystick_input(input):
   global joystick_verso_rotazione,joystick_translation_step,joystick_angle_step
   #q w -> asse x
@@ -900,7 +914,8 @@ def handle_joystick_input(input):
     target_pose.orientation=quaternion_target.orientation
     
     movegroup_library.go_to_pose_goal(target_pose)
- 
+
+
 
 #initial
 def define_std_matrices():
@@ -923,7 +938,7 @@ def define_all_initial_functions():
   global joystick_verso_rotazione,joystick_angle_step,joystick_translation_step,bool_message_from_user
 
   aruco_library=Aruco_class()
-  movegroup_library = MoveGroupPythonIntefaceTutorial()
+  movegroup_library = Move_group_class()
   comunication_object=Comunication_class()
   transformation_library=Transformation_class()
   movimenti_base_library=Movimenti_base_class()

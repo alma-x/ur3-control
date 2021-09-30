@@ -1,0 +1,4 @@
+[2021-09-29 15:37:08.443] [renderer1] [error] Cannot read property 'items' of undefined: TypeError: Cannot read property 'items' of undefined
+	at completionLengthMeasure (/root/.vscode/extensions/ms-python.python-2021.9.1246542782/out/client/extension.js:59:462843)
+	at p (/root/.vscode/extensions/ms-python.python-2021.9.1246542782/out/client/extension.js:59:465507)
+	at async $.provideCompletionItems (/usr/share/code/resources/app/out/vs/workbench/services/extensions/node/extensionHostProcess.js:94:176917)

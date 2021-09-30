@@ -1,0 +1,38 @@
+User belongs to experiment group 'pythonaa'
+User belongs to experiment group 'pythonJediLSP'
+User belongs to experiment group 'pythonDiscoveryModuleWithoutWatcher'
+User belongs to experiment group 'pythonTensorboardExperiment'
+User belongs to experiment group 'pythonSurveyNotificationcf'
+User belongs to experiment group 'PythonPyTorchProfiler'
+User belongs to experiment group 'pythonDeprecatePythonPath'
+User belongs to experiment group 'pythonSortEnvs'
+User belongs to experiment group 'pythonRunFailedTestsButtonDisplayed'
+User belongs to experiment group 'pythonRefreshTestsButtonDisplayed'
+User belongs to experiment group 'pythonRememberDebugConfig'
+Error 2021-09-29 15:13:54: Failed to check if file needs to be fixed [EntryNotFound (FileSystemError): Unable to read file '/root/.config/Code/User/settings.json' (Error: Unable to resolve non-existing file '/root/.config/Code/User/settings.json')
+	at _handleError (/usr/share/code/resources/app/out/vs/workbench/services/extensions/node/extensionHostProcess.js:94:160087)
+	at processTicksAndRejections (internal/process/task_queues.js:93:5)
+	at async y.readText (/root/.vscode/extensions/ms-python.python-2021.9.1246542782/out/client/extension.js:9:314351)
+	at async p.doesFileNeedToBeFixed (/root/.vscode/extensions/ms-python.python-2021.9.1246542782/out/client/extension.js:59:823969)
+	at async /root/.vscode/extensions/ms-python.python-2021.9.1246542782/out/client/extension.js:59:823096
+	at async Promise.all (index 0)
+	at async p.getFilesToBeFixed (/root/.vscode/extensions/ms-python.python-2021.9.1246542782/out/client/extension.js:59:823042)
+	at async p.updateTestSettings (/root/.vscode/extensions/ms-python.python-2021.9.1246542782/out/client/extension.js:59:822669)] {
+  code: 'FileNotFound'
+}
+Error 2021-09-29 15:13:54: Failed to check if file needs to be fixed [EntryNotFound (FileSystemError): Unable to read file '/catkin_ws/.vscode/settings.json' (Error: Unable to resolve non-existing file '/catkin_ws/.vscode/settings.json')
+	at _handleError (/usr/share/code/resources/app/out/vs/workbench/services/extensions/node/extensionHostProcess.js:94:160087)
+	at processTicksAndRejections (internal/process/task_queues.js:93:5)
+	at async y.readText (/root/.vscode/extensions/ms-python.python-2021.9.1246542782/out/client/extension.js:9:314351)
+	at async p.doesFileNeedToBeFixed (/root/.vscode/extensions/ms-python.python-2021.9.1246542782/out/client/extension.js:59:823969)
+	at async /root/.vscode/extensions/ms-python.python-2021.9.1246542782/out/client/extension.js:59:823096
+	at async Promise.all (index 1)
+	at async p.getFilesToBeFixed (/root/.vscode/extensions/ms-python.python-2021.9.1246542782/out/client/extension.js:59:823042)
+	at async p.updateTestSettings (/root/.vscode/extensions/ms-python.python-2021.9.1246542782/out/client/extension.js:59:822669)] {
+  code: 'FileNotFound'
+}
+Python interpreter path: /usr/bin/python3
+Starting Pylance language server.
+> conda --version
+Error 2021-09-30 06:59:06: Error while running worker[Worker 2]. undefined
+Error 2021-09-30 06:59:06: Error while running worker[Worker 1]. undefined

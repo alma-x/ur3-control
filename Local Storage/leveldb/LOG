@@ -1,2 +1,3 @@
-2021/09/28-11:30:32.148 110b Creating DB /catkin_ws/src/ur3-control/Local Storage/leveldb since it was missing.
-2021/09/28-11:30:32.231 110b Reusing MANIFEST /catkin_ws/src/ur3-control/Local Storage/leveldb/MANIFEST-000001
+2021/09/29-15:13:48.649 796 Reusing MANIFEST /catkin_ws/src/ur3-control/Local Storage/leveldb/MANIFEST-000001
+2021/09/29-15:13:48.650 796 Recovering log #3
+2021/09/29-15:13:48.650 796 Reusing old log /catkin_ws/src/ur3-control/Local Storage/leveldb/000003.log 
