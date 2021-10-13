@@ -106,6 +106,19 @@ bool callback_modality(ur3_control::aruco_service::Request &req, ur3_control::ar
   if("smetti_di_bloccare_se_vedi_nuovo_aruco"==req.modality){
     bool_blocca_per_ogni_nuovo_aruco=false;
   }
+  if("turn_on_off_camera"==req.modality){
+      
+      ur3_control::cv_server cv_service_msg;
+      cv_service_msg.request.next_aruco=false;
+      cv_service_msg.request.message="turn_on_off_camera";
+      cv_service_msg.request.second_information="";
+      client.call(cv_service_msg);
+
+      res.moreTargets=cv_service_msg.response.moreTargets;
+      if(show_log)
+        ROS_INFO("targets remaining:%d",res.moreTargets);
+
+  }  
   res.aruco_found=msg_from_cv.success;
   res.x=msg_from_cv.x;
   res.y=msg_from_cv.y;

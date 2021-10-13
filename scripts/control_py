@@ -24,8 +24,12 @@ from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from ur3_control.srv import *  # (collision_object_srv, collision_object_srvRequest,
 
                             # collision_object_srvResponse,aruco_service,aruco_serviceRequest,aruco_serviceResponse,UserInterface)
+from ur3_control.msg import *
 
 
+
+  
+flagMiddlePanelCreated=False
 bool_exit=False
 class Transformation_class():
   def __init__(self):
@@ -142,6 +146,11 @@ class Transformation_class():
     return pose
   def inverse_matrix(self,AffineMat):
     return np.linalg.inv(AffineMat)
+class Collision_Box():
+    def __init__(self):
+        self.box_pose = PoseStamped()
+        self.box_size = np.zeros(3)
+        self.box_name = String()  
 class Affine_valid():
     def __init__(self):
         self.is_valid = False
@@ -275,7 +284,7 @@ class Move_group_class(object):
 
     # For testing:
     current_joints = move_group.get_current_joint_values()
-    return all_close(joints_vet, current_joints, 0.01)
+    return self.all_close(joints_vet, current_joints, 0.01)
   def go_to_pose_goal(self,pose_goal):
     move_group = self.move_group
     ## BEGIN_SUB_TUTORIAL plan_to_pose
@@ -307,7 +316,7 @@ class Move_group_class(object):
     # Note that since this section of code will not be included in the tutorials
     # we use the class variable rather than the copied state variable
     current_pose = self.move_group.get_current_pose().pose
-    return all_close(pose_goal, current_pose, 0.01)
+    return self.all_close(pose_goal, current_pose, 0.01)
   def go_to_pose_cartesian(self,pose_goal):
   
     move_group = self.move_group
@@ -450,7 +459,7 @@ class Move_group_class(object):
     # If we exited the while loop without returning then we timed out
     return False
     ## END_SUB_TUTORIAL
-  def add_box(self,box_pose,box_name,box_size, timeout=4):
+  def add_box(self,collision_box, timeout=0):
     # Copy class variables to local variables to make the web tutorials more clear.
     # In practice, you should use the class variables directly unless you have a good
     # reason not to.
@@ -471,13 +480,8 @@ class Move_group_class(object):
     #box_pose.pose.orientation.w = 1.0
     #box_pose.pose.position.x = -0.1 # slightly above the end effector
     #box_name = "box"
-    size=(box_size[0],box_size[1],box_size[2])
-    scene.add_box(box_name, box_pose, size)
-
-    ## END_SUB_TUTORIAL
-    # Copy local variables back to class variables. In practice, you should use the class
-    # variables directly unless you have a good reason not to.
-    self.box_name=box_name
+    size=(collision_box.box_size[0],collision_box.box_size[1],collision_box.box_size[2])
+    scene.add_box(collision_box.box_name, collision_box.box_pose, size)
     return self.wait_for_state_update(box_is_known=True, timeout=timeout)
   def attach_box(self,box_pose,box_name,box_size, timeout=4):
     # Copy class variables to local variables to make the web tutorials more clear.
@@ -566,32 +570,45 @@ class Move_group_class(object):
 class Comunication_class(object):
   def __init__(self):
     super(Comunication_class, self).__init__()
-    rospy.wait_for_service('aruco_modality')
+    rospy.wait_for_service('cv_server')
 
-    self.bridge_service_information = rospy.ServiceProxy('aruco_modality', aruco_service)
+    self.bridge_service_information = rospy.ServiceProxy('cv_server', cv_server)
   def call_bridge_service(self,first_information,second_information):
+    print("Deprecated")
+    return self.read_data_from_cv()
+    # try:
+    #       req=aruco_serviceRequest()
+    #       req.modality=first_information
+    #       req.second_information=second_information
+
+    #       msg = self.bridge_service_information(req)
+
+    #       resp=aruco_serviceResponse()
+    #       resp.x=msg.x
+    #       resp.y=msg.y
+    #       resp.z=msg.z
+    #       resp.all_aruco_found=msg.all_aruco_found
+    #       resp.aruco_found=msg.aruco_found
+    #       resp.dim=msg.dim
+    #       resp.finger_joint=msg.finger_joint
+    #       resp.id_aruco=msg.id_aruco
+    #       resp.moreTargets=msg.moreTargets
+    #       resp.vector=msg.vector
+
+    #       #self.print_bridge_response(resp)
+          
+    #       return resp
+    # except rospy.ServiceException as e:
+      #print("Service call failed: %s"%e)
+  def call_cv_service(self,first_information,second_information):
+    
     try:
-          req=aruco_serviceRequest()
-          req.modality=first_information
+          req=cv_serverRequest()
+          req.message=first_information
           req.second_information=second_information
 
           msg = self.bridge_service_information(req)
 
-          resp=aruco_serviceResponse()
-          resp.x=msg.x
-          resp.y=msg.y
-          resp.z=msg.z
-          resp.all_aruco_found=msg.all_aruco_found
-          resp.aruco_found=msg.aruco_found
-          resp.dim=msg.dim
-          resp.finger_joint=msg.finger_joint
-          resp.id_aruco=msg.id_aruco
-          resp.moreTargets=msg.moreTargets
-          resp.vector=msg.vector
-
-          #self.print_bridge_response(resp)
-          
-          return resp
     except rospy.ServiceException as e:
       print("Service call failed: %s"%e)
   def print_bridge_response(self,response):
@@ -600,7 +617,7 @@ class Comunication_class(object):
     print("ID Aruco:"+str(response.id_aruco))
   def ask_matrix_camera_aruco(self):
     ValidMatrix=Affine_valid()
-    msg=self.call_bridge_service("","")
+    msg=self.read_data_from_cv()
     if not msg.aruco_found:
       ValidMatrix.is_valid=False
       return ValidMatrix
@@ -611,6 +628,27 @@ class Comunication_class(object):
     AffineMat=transformation_library.create_affine_matrix_from_rotation_matrix_and_translation_vector(R,translation_vet)
     ValidMatrix.Affine_matrix=AffineMat
     return ValidMatrix
+  def read_data_from_cv(self):
+    try:
+      msg=rospy.wait_for_message("/aruco_bridge_opencv",cv_to_bridge)
+      resp=cv_to_bridge()
+      resp.aruco_found=msg.aruco_found
+      resp.pose_camera_aruco=msg.pose_camera_aruco
+      return resp
+    except:
+      print("error reading from cv")
+  def matrix_from_cv_of_specified_aruco(self,id_aruco):
+    data=self.read_data_from_cv()
+    ValidMatrix=Affine_valid()
+    if(data.aruco_found[int(id_aruco)]):
+      ValidMatrix.is_valid=True
+      ValidMatrix.Affine_matrix=transformation_library.from_pose_to_matrix(data.pose_camera_aruco[int(id_aruco)])
+    else:
+      ValidMatrix.is_valid=False
+    return ValidMatrix
+    
+      
+
 class Movimenti_base_class(object):
   def __init__(self):
       super(Movimenti_base_class, self).__init__()
@@ -716,6 +754,8 @@ class Aruco_class():
       print("NO aruco corresponds to your request")
       return Pose_valid()
     def set_new_aruco(self,id,pose_aruco):
+      
+
       if(id=="1"):
         self.Button_1.is_valid=True
         self.Button_1.pose=pose_aruco
@@ -768,7 +808,7 @@ class Aruco_class():
           
       return False
     def is_aruco_visible_from_camera(self,ID):
-      #Restituisce se l'aruco è attualmente visibile dalla camera
+      #Restituisce se l'aruco e' attualmente visibile dalla camera
       res=comunication_object.call_bridge_service("md_next_aruco",ID)
       if str(res.id_aruco)==ID:
         return res.aruco_found
@@ -778,8 +818,7 @@ class Aruco_class():
         return res.aruco_found
     def elaborate_affine_matrix_of_visible_aruco(self,ID):
       target=Pose_valid()
-      self.cambia_id_aruco_selezionato(ID)
-      T_camera_gaz_aruco_valid=comunication_object.ask_matrix_camera_aruco()
+      T_camera_gaz_aruco_valid=comunication_object.matrix_from_cv_of_specified_aruco(ID)
       if not T_camera_gaz_aruco_valid.is_valid :
         target.is_valid=False
         #print("Non ho trovato nessun aruco")
@@ -796,18 +835,116 @@ class Aruco_class():
 
 
       return target
-    def salva_aruco_visibili(self):
+    def salva_aruco_visibili_OOOLD(self):
+      nul=0
+      #   self.print_situation_aruco()
+
+      #   res=comunication_object.call_bridge_service("","")
+      #   for id in range(1,len(res.aruco_found)):
+
+      #     id_str=str(id)
+      #     if res.aruco_found[id]:#Controllo che l'aruco sia stato trovato
+            
+      #       collision_to_be_done=False
+      #       if not self.from_id_to_pose_valid_of_the_aruco(id_str).is_valid: #controllo se ho mai trovato questo aruco, in caso negativo aggiungo la collisione che ne deriva
+      #         collision_to_be_done=True
+  
+      #       aruco_valid=self.elaborate_affine_matrix_of_visible_aruco(id_str)#mi calcolo l'aruco
+      #       if aruco_valid.is_valid:#se ho trovato l'aruco
+      #         self.set_new_aruco(id_str,aruco_valid.pose)
+      #         print("Salvo aruco:"+id_str)
+
+      #         if collision_to_be_done:
+      #           self.add_collision_from_aruco(id_str)#aggiungo la collisione corrispondente
+    def save_visible_arucos(self):
       self.print_situation_aruco()
-
-      res=comunication_object.call_bridge_service("","")
-      for id in range(1,len(res.all_aruco_found)+1):
-
+      for id in range(1,16):
         id_str=str(id)
-        aruco_valid=self.elaborate_affine_matrix_of_visible_aruco(id_str)
-        if aruco_valid.is_valid:
-          self.set_new_aruco(id_str,aruco_valid.pose)
-          print("Salvo aruco:"+id_str)
+        mat_valid=comunication_object.matrix_from_cv_of_specified_aruco(id)
+        if mat_valid.is_valid:
+          collision_to_be_done=False
+          if not self.from_id_to_pose_valid_of_the_aruco(id_str).is_valid: #controllo se ho mai trovato questo aruco, in caso negativo aggiungo la collisione che ne deriva
+            collision_to_be_done=True
+ 
+          aruco_valid=self.elaborate_affine_matrix_of_visible_aruco(id_str)#mi calcolo l'aruco
+          if aruco_valid.is_valid:#se ho trovato l'aruco
+            self.set_new_aruco(id_str,aruco_valid.pose)
+            print("Salvo aruco:"+id_str)
 
+            if collision_to_be_done:
+              self.add_collision_from_aruco(id_str)#aggiungo la collisione corrispondente
+      print("Finish saving arucos")
+    def add_collision_from_aruco(self,ID):
+      global flagMiddlePanelCreated
+      if (ID=="2" or ID=="5" or ID=="8") and not(flagMiddlePanelCreated):
+        collision_box=Collision_Box()
+
+        if not aruco_library.from_id_to_pose_valid_of_the_aruco(ID).is_valid:
+          return False
+
+        flagMiddlePanelCreated=True
+        collision_box.box_name="middle_panel"
+
+        collision_box.box_size[0]=0.001
+        collision_box.box_size[1]=0.3
+        collision_box.box_size[2]=3*0.5
+        collision_box.box_pose.header.frame_id="base_link"
+
+        pose_orientation=transformation_library.from_euler_to_quaternion([0,0,0])
+        collision_box.box_pose.pose.orientation=pose_orientation.orientation
+        
+        collision_box.box_pose.pose.position.x=aruco_library.from_id_to_pose_valid_of_the_aruco(ID).pose.position.x+collision_box.box_size[0]/2
+        collision_box.box_pose.pose.position.y=aruco_library.from_id_to_pose_valid_of_the_aruco(ID).pose.position.y
+        collision_box.box_pose.pose.position.z=aruco_library.from_id_to_pose_valid_of_the_aruco(ID).pose.position.z
+        """
+        collision_boxes[box_name].name=box_name;
+        collision_boxes[box_name].pose=box_pose;
+        collision_boxes[box_name].size[0]=box_size[0];
+        collision_boxes[box_name].size[1]=box_size[1];
+        collision_boxes[box_name].size[2]=box_size[2];
+        """
+        movegroup_library.add_box(collision_box)
+      if (ID>="1" and ID<="9"):
+        coll_box=Collision_Box()
+        pose_aruco_valid=aruco_library.from_id_to_pose_valid_of_the_aruco(ID)
+
+        if not pose_aruco_valid.is_valid:    
+          return False
+
+        pose_0_aruco=pose_aruco_valid.pose
+        Rot=transformation_library.eul2rot([0,0,0])
+        T_aruco_finalpose=transformation_library.create_affine_matrix_from_rotation_matrix_and_translation_vector(Rot,[0,-0.055,0])
+        T_0_aruco=transformation_library.from_pose_to_matrix(pose_0_aruco)
+        T_0_finalpose=T_0_aruco.dot(T_aruco_finalpose)
+
+
+        pose_final=transformation_library.from_matrix_to_pose(T_0_finalpose)
+
+        coll_box.box_name="button_"+ID
+
+        coll_box.box_size[0]=0.023
+        coll_box.box_size[1]=0.04
+        coll_box.box_size[2]=0.04
+
+        coll_box.box_pose.header.frame_id="base_link"
+
+        pose_orient=transformation_library.from_euler_to_quaternion([0,0,0])
+        coll_box.box_pose.pose.orientation=pose_orient.orientation
+        
+        
+        coll_box.box_pose.pose.position.x=pose_final.position.x-coll_box.box_size[0]/2
+        coll_box.box_pose.pose.position.y=pose_final.position.y
+        coll_box.box_pose.pose.position.z=pose_final.position.z
+        
+        """
+        collision_boxes[box_name].name=box_name;
+        collision_boxes[box_name].pose=box_pose;
+        collision_boxes[box_name].size[0]=box_size[0];
+        collision_boxes[box_name].size[1]=box_size[1];
+        collision_boxes[box_name].size[2]=box_size[2];
+        """
+        movegroup_library.add_box(coll_box)
+      
 
 #Funzioni da finire
 def move_gripper(gripper_goal):
@@ -827,10 +964,9 @@ def callback_user_interface(msg):
 def handle_user_request():
   global bool_message_from_user
   bool_message_from_user=False
+  print("Msg received:"+msg_from_user.modality)
   if msg_from_user.modality=="automazione_go_pos_iniziale":
     movimenti_base_library.go_to_initial_position()
-  if msg_from_user.modality=="automazione_pannello_nextAruco":
-    aruco_library.cambia_id_aruco_selezionato(msg_from_user.second_information)
   if msg_from_user.modality=="controlla_gripper":
     move_gripper(msg_from_user.second_information)
   if msg_from_user.modality=="joystick":
@@ -840,7 +976,9 @@ def handle_user_request():
   if msg_from_user.modality=="stop_trajectory":
     movegroup_library.FermaRobot()
   if msg_from_user.modality=="salva_aruco":
-    aruco_library.salva_aruco_visibili()    
+    aruco_library.save_visible_arucos()    
+  if msg_from_user.modality=="turn_on_off_camera":
+    comunication_object.call_cv_service("turn_on_off_camera","")
 def handle_joystick_input(input):
   global joystick_verso_rotazione,joystick_translation_step,joystick_angle_step
   #q w -> asse x

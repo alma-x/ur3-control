@@ -12,13 +12,13 @@
         <param name="load_aruco" type="bool" value="$(arg load_aruco)"/>
         <param name="gazebox" type="bool" value="$(arg gazebox)"/>
 
-        <!-- COLLISION SERVER-->
-        <node name="collision_interface" pkg="ur3_control" type="collision_interface.py" respawn="false" output="screen"></node>
-
+       
 	<!-- CV LAUNCHER-->
-	<node name="bridge" pkg="ur3_control" type="bridge" respawn="false" output="screen"></node>
+	<!--<node name="bridge" pkg="ur3_control" type="bridge" respawn="false" output="screen"></node>-->
 
   	<node name="arucoPanel" pkg="simulation-cv" type="arucoPanel.py" respawn="false" output="screen"></node>
+  	
+      <node name="control_py" pkg="ur3_control" type="control_py" respawn="false" output="screen"></node>
 
 	<!-- rviz-->
 	<group unless="$(arg lite)">
